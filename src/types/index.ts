@@ -176,4 +176,6 @@ export interface StudioSettings {
   default_retention_days: number; // e.g. 90
   tax_rate_percent: number;
   require_pin_for_albums: boolean;
+  album_pin_type: "numeric";
+  calendar_display: "both";
 }

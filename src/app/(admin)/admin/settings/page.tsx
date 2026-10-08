@@ -149,6 +149,37 @@ export default function StudioSettingsPage() {
               </span>
             </label>
           </div>
+
+          <div className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-semibold text-slate-700">Private Album Access</p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Client-selected access method for private galleries.
+              </p>
+              <label className="mt-3 flex items-center gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/60 p-3">
+                <input
+                  type="radio"
+                  checked
+                  readOnly
+                  aria-label="4 to 6 digit numeric PIN"
+                  className="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-xs font-semibold text-indigo-700">
+                  4–6 digit numeric PIN
+                </span>
+              </label>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-slate-700">Calendar Display</p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Show both calendar systems wherever dates are presented.
+              </p>
+              <div className="mt-3 rounded-2xl border border-indigo-200 bg-indigo-50/60 p-3 text-xs font-semibold text-indigo-700">
+                Gregorian • Ethiopian (side-by-side)
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

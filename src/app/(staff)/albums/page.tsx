@@ -22,7 +22,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { studioStore } from "@/lib/api/store";
-import { formatDate } from "@/lib/date";
+import { formatCalendarPair } from "@/lib/date";
 import type { Album as StoreAlbum } from "@/types";
 
 type ClientAlbum = StoreAlbum & {
@@ -51,7 +51,10 @@ export default function ClientAlbumsPage() {
       mediaCount: album.file_count,
       usedMb: album.used_bytes / (1024 * 1024),
       quotaMb: album.quota_bytes / (1024 * 1024),
-      createdDate: formatDate(album.created_at),
+      createdDate: (() => {
+        const dates = formatCalendarPair(album.created_at);
+        return `${dates.gregorian} • ${dates.ethiopian} EC`;
+      })(),
       isPinLocked: album.is_locked,
       slug: album.token,
     }));

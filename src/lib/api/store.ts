@@ -360,6 +360,9 @@ export const studioStore = {
     event_date: string;
     pin?: string;
   }): Album => {
+    if (data.pin && !/^\d{4,6}$/.test(data.pin)) {
+      throw new Error("Album PIN must contain 4 to 6 digits.");
+    }
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
     const newAlb: Album = {
       id: `alb-${Date.now()}`,

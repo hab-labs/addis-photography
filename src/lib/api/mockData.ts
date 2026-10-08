@@ -492,4 +492,6 @@ export const INITIAL_SETTINGS: StudioSettings = {
   default_retention_days: 90,
   tax_rate_percent: 15,
   require_pin_for_albums: true,
+  album_pin_type: "numeric",
+  calendar_display: "both",
 };

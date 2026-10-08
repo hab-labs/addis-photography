@@ -18,7 +18,7 @@ import {
 
 import { useAuth } from "@/lib/auth/context";
 import { studioStore } from "@/lib/api/store";
-import { ADDIS_TIMEZONE } from "@/lib/date";
+import { formatCalendarPair } from "@/lib/date";
 import {
   Select,
   SelectContent,
@@ -40,15 +40,7 @@ export default function TodayLedgerPage() {
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
   const [orders, setOrders] = React.useState<any[]>([]);
-  const currentMonth = React.useMemo(
-    () =>
-      new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        year: "numeric",
-        timeZone: ADDIS_TIMEZONE,
-      }).format(new Date()),
-    []
-  );
+  const currentCalendar = React.useMemo(() => formatCalendarPair(new Date()), []);
 
   const loadOrders = React.useCallback(() => {
     if (typeof studioStore !== "undefined" && studioStore.getOrders) {
@@ -143,7 +135,10 @@ export default function TodayLedgerPage() {
         <div className="flex items-center gap-2.5">
           <button className="flex h-9 items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 text-xs font-semibold text-slate-700 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:bg-slate-50   ">
             <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
-            <span>{currentMonth}</span>
+            <span>
+              {currentCalendar.gregorian} <span className="text-slate-400">•</span>{" "}
+              {currentCalendar.ethiopian} EC
+            </span>
             <ChevronDown className="h-3 w-3 text-slate-400" />
           </button>
           <button 

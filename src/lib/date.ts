@@ -5,26 +5,56 @@
 
 export const ADDIS_TIMEZONE = "Africa/Addis_Ababa";
 
+function formatCalendarDate(
+  dateInput: string | Date | number | null | undefined,
+  calendar: "gregory" | "ethiopic"
+): string {
+  if (!dateInput) return "-";
+  try {
+    const date =
+      typeof dateInput === "string" || typeof dateInput === "number"
+        ? new Date(dateInput)
+        : dateInput;
+    if (isNaN(date.getTime())) return "-";
+
+    const formatter = new Intl.DateTimeFormat(
+      `en-GB-u-ca-${calendar}-nu-latn`,
+      {
+        timeZone: ADDIS_TIMEZONE,
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }
+    );
+    const parts = formatter.formatToParts(date);
+    const values = Object.fromEntries(
+      parts
+        .filter((part) => ["day", "month", "year"].includes(part.type))
+        .map((part) => [part.type, part.value])
+    );
+    return `${values.day}/${values.month}/${values.year}`;
+  } catch {
+    return "-";
+  }
+}
+
 /**
  * Format date string or Date object to dd/mm/yyyy
  */
 export function formatDate(dateInput: string | Date | number | null | undefined): string {
-  if (!dateInput) return "-";
-  try {
-    const date = typeof dateInput === "string" || typeof dateInput === "number" ? new Date(dateInput) : dateInput;
-    if (isNaN(date.getTime())) return "-";
+  return formatCalendarDate(dateInput, "gregory");
+}
 
-    const formatter = new Intl.DateTimeFormat("en-GB", {
-      timeZone: ADDIS_TIMEZONE,
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-
-    return formatter.format(date); // outputs dd/mm/yyyy
-  } catch {
-    return "-";
-  }
+/**
+ * Format a date as Gregorian and Ethiopian dates for side-by-side display.
+ */
+export function formatCalendarPair(
+  dateInput: string | Date | number | null | undefined
+): { gregorian: string; ethiopian: string } {
+  return {
+    gregorian: formatCalendarDate(dateInput, "gregory"),
+    ethiopian: formatCalendarDate(dateInput, "ethiopic"),
+  };
 }
 
 /**

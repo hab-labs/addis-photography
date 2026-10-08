@@ -16,7 +16,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { studioStore } from "@/lib/api/store";
-import { formatDate } from "@/lib/date";
+import { formatCalendarPair } from "@/lib/date";
 import { MediaFile } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -233,6 +233,7 @@ export default function PublicAlbumViewerPage() {
 
   // 2. Unlocked Public Album Gallery View
   const currentMedia = lightboxIndex !== null ? mediaFiles[lightboxIndex] : null;
+  const eventDate = formatCalendarPair(album.event_date);
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col pb-12">
@@ -266,7 +267,7 @@ export default function PublicAlbumViewerPage() {
               {album.title}
             </h1>
             <p className="text-sm sm:text-base font-medium text-amber-400 mt-1">
-              {album.customer_name} • {formatDate(album.event_date)}
+              {album.customer_name} • {eventDate.gregorian} • {eventDate.ethiopian} EC
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
               {mediaFiles.length} Photos & Videos
