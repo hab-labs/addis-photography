@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 0 84% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 0 84% 48%;
+    --radius: 0.5rem;
+
+  }
+
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Brand presentation palette: red, white, and black. */
+@layer utilities {
+  .text-indigo-300,
+  .text-indigo-400,
+  .text-indigo-500,
+  .text-indigo-600,
+  .text-indigo-700,
+  .text-indigo-800,
+  .text-violet-500,
+  .text-violet-600,
+  .text-amber-300,
+  .text-amber-400,
+  .text-amber-500,
+  .text-amber-600,
+  .text-amber-700 {
+    color: rgb(220 38 38) !important;
+  }
+
+  .bg-indigo-50,
+  .bg-indigo-100,
+  .bg-indigo-500\/10,
+  .bg-indigo-600,
+  .bg-violet-50,
+  .bg-violet-500\/10,
+  .bg-amber-50,
+  .bg-amber-100,
+  .bg-amber-500\/10,
+  .bg-amber-500\/20,
+  .bg-amber-600 {
+    background-color: rgb(254 226 226) !important;
+  }
+
+  .bg-indigo-600,
+  .bg-amber-600 {
+    background-color: rgb(220 38 38) !important;
+    color: white !important;
+  }
+
+  .border-indigo-200\/60,
+  .border-indigo-500\/20,
+  .border-amber-200\/60,
+  .border-amber-500\/30,
+  .border-violet-500\/30 {
+    border-color: rgb(252 165 165) !important;
+  }
+
+  .ring-indigo-500\/30,
+  .ring-amber-500\/30 {
+    --tw-ring-color: rgb(220 38 38 / 0.3) !important;
+  }
+
+  .from-indigo-500,
+  .from-amber-500,
+  .from-violet-500 {
+    --tw-gradient-from: rgb(220 38 38) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: rgb(220 38 38 / 0) var(--tw-gradient-to-position) !important;
+  }
+
+  .to-violet-500,
+  .to-amber-600,
+  .to-teal-600 {
+    --tw-gradient-to: rgb(127 29 29) var(--tw-gradient-to-position) !important;
+  }
+}
