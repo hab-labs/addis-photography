@@ -58,8 +58,12 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         <div>
           {/* Logo */}
           <div className="flex items-center gap-3 px-3 py-2">
-          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-red-600/20">
-            <img src="/addis-photography-logo.png" alt="" className="h-10 w-10 object-contain" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-1 shadow-lg shadow-red-600/20">
+            <img
+              src="/addis-photography-logo.png"
+              alt="Addis Photography logo"
+              className="h-full w-full object-contain"
+            />
             </div>
             <div>
             <h2 className="text-sm font-bold leading-tight tracking-tight text-white">Addis Photography</h2>
