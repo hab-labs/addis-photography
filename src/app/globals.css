@@ -38,6 +38,55 @@
   }
 }
 
+@media (max-width: 639px) {
+  html {
+    overflow-x: hidden;
+  }
+
+  body {
+    min-width: 320px;
+    overflow-x: hidden;
+  }
+
+  main h1 {
+    font-size: 1.5rem !important;
+    line-height: 1.25 !important;
+  }
+
+  main h2 {
+    font-size: 1.125rem;
+    line-height: 1.35;
+  }
+
+  main > div {
+    max-width: 100%;
+  }
+
+  main [data-slot="table-container"] {
+    max-width: calc(100vw - 2rem);
+    scrollbar-width: thin;
+  }
+
+  main [data-slot="table"] {
+    min-width: 640px;
+  }
+
+  main input,
+  main select,
+  main textarea,
+  main button {
+    max-width: 100%;
+  }
+
+  main .space-y-8 {
+    row-gap: 1.5rem;
+  }
+
+  main .rounded-3xl {
+    border-radius: 1.25rem;
+  }
+}
+
 /* Brand presentation palette: red, white, and black. */
 @layer utilities {
   .text-indigo-300,

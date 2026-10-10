@@ -1,73 +1,71 @@
 import { LoginForm } from "@/components/login-form";
+import { MapPin, Phone } from "lucide-react";
 
 export default function LoginPage() {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2 bg-white">
-      {/* Left Column: Form with Layered Modern Background */}
-      <div className="relative flex flex-col justify-between p-6 sm:p-10 overflow-hidden bg-white">
-        {/* Subtle grid pattern background */}
-        <div
-          className="absolute inset-0 opacity-40  pointer-events-none"
-          style={{
-            backgroundImage: `
-              radial-gradient(#111827 1px, transparent 1px)
-            `,
-            backgroundSize: "24px 24px",
-          }}
-        />
+    <div className="font-referenceSans grid min-h-[960px] bg-white lg:grid-cols-2">
+      <section className="flex flex-col items-center justify-between bg-white px-8 py-10 sm:px-12 lg:items-stretch lg:px-16 lg:py-12">
+        <div className="flex h-7 w-full items-center gap-3 border-l-[3px] border-[#D51E25] pl-3 text-[14px] font-normal leading-[17px] text-[#2B2B2B]">
+          Addis Photography
+        </div>
 
-        {/* Soft ambient lighting glow behind the form */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="mx-auto w-full max-w-[472px]">
+          <LoginForm />
+        </div>
 
-        {/* Top Studio Header */}
-        <div className="relative z-10  flex items-center gap-2.5 font-semibold tracking-tight text-foreground">
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-black shadow-sm">
-            <img src="/addis-photography-logo.png" alt="" className="h-9 w-9 object-contain" />
+        <div className="flex h-[13px] w-full items-center justify-between text-[11px] font-normal leading-[13px] text-black">
+          <span>Studio Management System</span>
+          <span className="flex items-center gap-1">
+            <span className="h-3 w-3 rounded-sm bg-black" />
+            Authorized studio access
+          </span>
+        </div>
+      </section>
+
+      <section className="relative hidden min-h-[960px] overflow-hidden bg-black px-8 py-12 pb-10 text-white after:absolute after:inset-y-0 after:left-0 after:w-[3px] after:bg-[#D51E25] lg:flex lg:flex-col lg:justify-between lg:px-16">
+        <div className="relative z-10 flex h-[190px] w-full items-start justify-between">
+          <div className="h-[190px] w-[220px] shrink-0 overflow-hidden">
+            <img
+              src="/addis-photography-logo.png"
+              alt="Addis Photography logo"
+              className="block h-[190px] w-[220px] object-contain object-left-top"
+            />
           </div>
-          <span className="text-xl font-semibold text-black">Addis Photography</span>
-        </div>
-
-        {/* Center: Frosted Glass Form Card */}
-        <div className="relative z-10 mx-auto flex w-full max-w-sm flex-col justify-center py-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-black/10 sm:p-8">
-            <LoginForm />
-          </div>
-        </div>
-
-        {/* Bottom Metadata */}
-        <div className="relative z-10 text-xs text-muted-foreground">
-          <span>Jimma, Tsinat Building · +251 973 679 744</span>
-        </div>
-      </div>
-
-      {/* Right Column: Studio Darkroom Visual */}
-      <div className="relative hidden overflow-hidden border-l-8 border-red-600 bg-black p-12 lg:flex lg:flex-col lg:items-center lg:justify-center">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(220,38,38,0.16),_transparent_46%)]" />
-        <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full border border-red-600/20" />
-        <div className="pointer-events-none absolute -bottom-40 -left-40 h-[30rem] w-[30rem] rounded-full border border-white/10" />
-
-        <div className="relative z-10 flex w-full max-w-lg flex-col items-center text-center">
-          <img
-            src="/addis-photography-logo.png"
-            alt="Addis Photography logo"
-            className="h-72 w-72 object-contain drop-shadow-[0_0_35px_rgba(220,38,38,0.28)]"
-          />
-          <div className="mt-8 h-px w-24 bg-red-600" />
-          <h2 className="mt-6 text-2xl font-bold tracking-[0.2em] text-white">
-            ADDIS PHOTOGRAPHY
-          </h2>
-          <p className="mt-3 text-sm uppercase tracking-[0.3em] text-red-500">
-            Studio Management System
-          </p>
-          <p className="mt-8 max-w-sm text-sm leading-6 text-slate-400">
-            Capturing authentic moments with precision, speed, and seamless client delivery.
-          </p>
-          <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs text-slate-300">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />
-            Jimma · Tsinat Building · +251 973 679 744
+          <div className="flex w-[228px] flex-col items-start gap-4 pt-[50px]">
+            <div className="h-0.5 w-9 bg-[#D51E25]" />
+            <span className="text-[11px] font-medium leading-[19px] text-white">STUDIO MANAGEMENT SYSTEM</span>
           </div>
         </div>
-      </div>
+
+        <div className="relative z-10 flex w-full flex-col gap-8">
+          <div className="relative flex h-[350px] w-full items-start overflow-hidden rounded-[10px]">
+            
+            <img
+              src="/login-camera.jpg"
+              alt="Camera on a dark studio surface"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <span className="absolute bottom-4 left-[18px] flex items-center gap-2 text-[10px] leading-3 text-white">
+              <span className="h-px w-4 bg-[#F8F5EF]" />
+              THE ART OF THE MOMENT
+            </span>
+          </div>
+          <div className="flex h-[129px] flex-col items-start gap-[18px]">
+            <h2 className="font-referenceSerif text-[44px] font-normal leading-[53px] text-white">Addis Photography</h2>
+            <p className="w-[500px] max-w-full text-[16px] font-normal leading-[29px] text-white">
+              Capturing authentic moments with precision, speed, and seamless client delivery.
+            </p>
+          </div>
+        </div>
+
+        <div className="relative z-10 flex h-[41px] w-full flex-col gap-6">
+          <div className="h-px w-full bg-white" />
+          <div className="flex h-4 w-full items-center justify-between text-[13px] leading-4">
+            <span className="flex items-center gap-2.5"><MapPin className="h-4 w-4 text-[#D51E25]" /> Jimma · Tsinat Building</span>
+            <span className="flex items-center gap-2.5 text-[#F8F5EF]"><Phone className="h-4 w-4 text-[#D51E25]" /> +251 973 679 744</span>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

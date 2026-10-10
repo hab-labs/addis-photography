@@ -11,7 +11,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isStaff: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  login: (username: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; user?: User; error?: string }>;
   logout: () => void;
 }
 
@@ -29,19 +29,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const readStoredUser = (): User | null => {
     try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      setUser(stored ? JSON.parse(stored) : null);
+      const rememberedUser = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (rememberedUser) {
+        return JSON.parse(rememberedUser) as User;
+      }
+
+      const sessionUser = sessionStorage.getItem(AUTH_STORAGE_KEY);
+      if (sessionUser) {
+        return JSON.parse(sessionUser) as User;
+      }
     } catch {
       localStorage.removeItem(AUTH_STORAGE_KEY);
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+
+    return null;
+  };
+
+  const persistUser = (nextUser: User | null, rememberMe: boolean) => {
+    if (!nextUser) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+      return;
+    }
+
+    const serialized = JSON.stringify(nextUser);
+
+    if (rememberMe) {
+      localStorage.setItem(AUTH_STORAGE_KEY, serialized);
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+      return;
+    }
+
+    sessionStorage.setItem(AUTH_STORAGE_KEY, serialized);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  };
+
+  useEffect(() => {
+    try {
+      setUser(readStoredUser());
+    } catch {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
       setUser(null);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string, rememberMe = false) => {
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Requested-With": "studio" },
@@ -50,9 +88,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const data = await response.json();
 
     if (response.ok) {
-      setUser(data.user);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data.user));
-      return { success: true, user: data.user };
+      const nextUser = data.user as User;
+      setUser(nextUser);
+      persistUser(nextUser, rememberMe);
+      return { success: true, user: nextUser };
     }
 
     return { success: false, error: data.error?.message || "Invalid username or password" };
@@ -60,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+    persistUser(null, false);
     void fetch("/api/auth/logout", { method: "POST", headers: { "X-Requested-With": "studio" } })
       .finally(() => {
         window.location.href = "/login";

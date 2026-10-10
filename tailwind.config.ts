@@ -15,7 +15,13 @@ const config: Config = {
       },
     },
     extend: {
-      colors: {
+    fontFamily: {
+      sans: ["var(--font-plus-jakarta)", "Arial", "Helvetica", "sans-serif"],
+      referenceSans: ["var(--font-plus-jakarta)", "Arial", "Helvetica", "sans-serif"],
+      referenceDisplay: ["var(--font-plus-jakarta)", "Arial", "Helvetica", "sans-serif"],
+      referenceSerif: ["Lora", "Georgia", "Times New Roman", "serif"],
+    },
+    colors: {
         
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
