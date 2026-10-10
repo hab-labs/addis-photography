@@ -120,7 +120,7 @@ export default function TodayLedgerPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
       {/* Title */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -132,10 +132,10 @@ export default function TodayLedgerPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button className="flex h-9 items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 text-xs font-semibold text-slate-700 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:bg-slate-50   ">
+        <div className="flex w-full items-center gap-2.5 sm:w-auto">
+          <button className="flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-700 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:bg-slate-50 sm:flex-none sm:px-4">
             <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
-            <span>
+            <span className="truncate">
               {currentCalendar.gregorian} <span className="text-slate-400">•</span>{" "}
               {currentCalendar.ethiopian} EC
             </span>
@@ -151,8 +151,8 @@ export default function TodayLedgerPage() {
       </div>
 
       {/* Floating Apple Cards */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1C1F3B] to-[#121429] p-6 text-white shadow-xl shadow-indigo-950/20 border border-indigo-900/40 flex flex-col justify-between">
+      <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1C1F3B] to-[#121429] p-4 text-white shadow-xl shadow-indigo-950/20 border border-indigo-900/40 flex flex-col justify-between sm:p-6">
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-indigo-300 backdrop-blur-md">
               <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
@@ -170,7 +170,7 @@ export default function TodayLedgerPage() {
           </div>
         </div>
 
-        <div className="rounded-3xl bg-white  p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100  flex flex-col justify-between hover:shadow-lg transition-all duration-300">
+        <div className="rounded-3xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between hover:shadow-lg transition-all duration-300 sm:p-6">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Collected</span>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600  ">
@@ -188,7 +188,7 @@ export default function TodayLedgerPage() {
           </div>
         </div>
 
-        <div className="rounded-3xl bg-white  p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100  flex flex-col justify-between hover:shadow-lg transition-all duration-300">
+        <div className="rounded-3xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between hover:shadow-lg transition-all duration-300 sm:p-6">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Pending Balance</span>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-rose-600  ">
@@ -203,7 +203,7 @@ export default function TodayLedgerPage() {
           <p className="text-xs font-medium text-slate-400">Awaiting pickup delivery</p>
         </div>
 
-        <div className="rounded-3xl bg-white  p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100  flex flex-col justify-between hover:shadow-lg transition-all duration-300">
+        <div className="rounded-3xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between hover:shadow-lg transition-all duration-300 sm:p-6">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Customer Flow</span>
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-50 text-violet-600  ">
@@ -222,8 +222,8 @@ export default function TodayLedgerPage() {
       </div>
 
       {/* Table Card */}
-      <div className="rounded-3xl bg-white  p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 ">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-slate-100 ">
+      <div className="rounded-3xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 sm:p-6">
+        <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between sm:pb-6">
           <div>
             <h2 className="text-lg font-bold text-slate-900 ">
               Bookings & Production Register
@@ -233,20 +233,20 @@ export default function TodayLedgerPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
+          <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:items-center">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search customers, phones..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-9 w-64 rounded-full bg-slate-100/80 pl-9 pr-4 text-xs font-medium text-slate-700 placeholder-slate-400 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-indigo-500/30   border-none"
+                className="h-9 w-full rounded-full bg-slate-100/80 pl-9 pr-4 text-xs font-medium text-slate-700 placeholder-slate-400 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-indigo-500/30 border-none sm:w-64"
               />
             </div>
 
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="h-9 w-32 rounded-full border-slate-200/80 bg-white text-xs font-semibold shadow-2xs  ">
+              <SelectTrigger className="h-9 w-full rounded-full border-slate-200/80 bg-white text-xs font-semibold shadow-2xs sm:w-32">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl">
