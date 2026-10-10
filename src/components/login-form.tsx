@@ -134,7 +134,7 @@ export function LoginForm({
           )}
         </Button>
 
-        <p className="text-center text-[16px] leading-[24px] text-gray-600">
+        <p className="text-center text-[16px] leading-[24px] text-gray-600 max-w-[400px] mx-auto">
           Need technical support?{' '}
           <span className="text-red-700">Contact the Studio Administrator</span>
         </p>
