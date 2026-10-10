@@ -52,7 +52,7 @@ export default function LoginPage() {
           </div>
           <div className="flex h-[129px] flex-col items-start gap-[18px]">
             <h2 className="font-referenceSerif text-[44px] font-normal leading-[53px] text-white">Addis Photography</h2>
-            <p className="w-[500px] max-w-full text-[16px] font- leading-[29px] text-white">
+            <p className="w-[500px] max-w-full text-[16px] font-normal leading-[29px] text-white">
               Capturing authentic moments with precision, speed, and seamless client delivery.
             </p>
           </div>
