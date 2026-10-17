@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { LoginForm } from "@/components/login-form";
 import { MapPin, Phone } from "lucide-react";
 
@@ -10,7 +11,9 @@ export default function LoginPage() {
         </div>
 
         <div className="mx-auto w-full max-w-[472px]">
-          <LoginForm />
+          <Suspense fallback={<div className="h-64 flex items-center justify-center text-xs text-slate-400">Loading login form…</div>}>
+            <LoginForm />
+          </Suspense>
         </div>
 
         <div className="flex h-[13px] w-full items-center justify-between text-[11px] font-normal leading-[13px] text-black">

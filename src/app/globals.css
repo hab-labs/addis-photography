@@ -57,6 +57,31 @@ main .rounded-full.bg-red-600 {
   border-radius: 0.5rem;
 }
 
+@media print {
+  aside,
+  header,
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  main > div {
+    max-width: 100% !important;
+  }
+}
+
 @media (max-width: 639px) {
   html {
     overflow-x: hidden;

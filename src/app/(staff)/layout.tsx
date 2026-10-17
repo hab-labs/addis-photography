@@ -23,8 +23,10 @@ import {
   X,
   LogOut,
   UserCircle,
+  Globe,
 } from "lucide-react";
 
+import { useI18n } from "@/lib/i18n/context";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const navOperations = [
@@ -46,6 +48,7 @@ const navAdmin = [
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isAdmin, logout } = useAuth();
+  const { locale, setLocale, t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = React.useState(false);
   const visibleAdminNav = isAdmin ? navAdmin : [];
@@ -187,6 +190,16 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
             >
               {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
+            <button
+              type="button"
+              onClick={() => setLocale(locale === "en" ? "am" : "en")}
+              aria-label={`Switch language to ${locale === "en" ? "Amharic" : "English"}`}
+              className="flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+            >
+              <Globe className="h-3.5 w-3.5 text-slate-500" />
+              <span>{locale === "en" ? "አማርኛ" : "EN"}</span>
+            </button>
+
             <button aria-label="Notifications" className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm">
               <Bell className="h-4 w-4" />
             </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import {
   Lock,
@@ -12,16 +12,23 @@ import {
   Camera,
   Eye,
   ShieldAlert,
+  Check,
+  Globe,
 } from "lucide-react";
 import { studioStore } from "@/lib/api/store";
 import { formatCalendarPair } from "@/lib/date";
+import { useI18n } from "@/lib/i18n/context";
 import { MediaFile } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+const fallbackPhoto =
+  "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80";
+
 export default function PublicAlbumViewerPage() {
   const params = useParams();
   const token = (params?.token as string) || "";
+  const { locale, setLocale, t } = useI18n();
 
   const [album, setAlbum] = useState<any>(null);
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
@@ -36,6 +43,7 @@ export default function PublicAlbumViewerPage() {
 
   // Lightbox viewer state
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Fetch album
   useEffect(() => {
@@ -99,19 +107,51 @@ export default function PublicAlbumViewerPage() {
     setLightboxIndex(index);
   };
 
-  const closeLightbox = () => {
+  const closeLightbox = useCallback(() => {
     setLightboxIndex(null);
-  };
+  }, []);
 
-  const prevPhoto = () => {
-    if (lightboxIndex !== null && lightboxIndex > 0) {
-      setLightboxIndex(lightboxIndex - 1);
-    }
-  };
+  const prevPhoto = useCallback(() => {
+    setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+  }, []);
 
-  const nextPhoto = () => {
-    if (lightboxIndex !== null && lightboxIndex < mediaFiles.length - 1) {
-      setLightboxIndex(lightboxIndex + 1);
+  const nextPhoto = useCallback(() => {
+    setLightboxIndex((prev) =>
+      prev !== null && prev < mediaFiles.length - 1 ? prev + 1 : prev
+    );
+  }, [mediaFiles.length]);
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeLightbox();
+      } else if (e.key === "ArrowLeft") {
+        prevPhoto();
+      } else if (e.key === "ArrowRight") {
+        nextPhoto();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxIndex, closeLightbox, prevPhoto, nextPhoto]);
+
+  // Share gallery
+  const handleShare = async () => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({
+          title: album?.title || "Addis Photography Gallery",
+          url: window.location.href,
+        });
+      } else if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+      }
+    } catch {
+      // User cancelled share dialog or clipboard error
     }
   };
 
@@ -128,9 +168,9 @@ export default function PublicAlbumViewerPage() {
 
   if (!album) {
     return (
-      <div className="flex h-screen items-center justify-center p-4 text-center">
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4 text-center text-white">
         <div className="space-y-3">
-          <Camera className="h-10 w-10 text-amber-500 mx-auto" />
+          <Camera className="mx-auto h-10 w-10 text-amber-500" />
           <h2 className="text-xl font-bold">Album Not Found</h2>
           <p className="text-xs text-slate-400">
             This album link might have expired or does not exist.
@@ -171,7 +211,10 @@ export default function PublicAlbumViewerPage() {
           </div>
 
           {pinError && (
-            <div className="rounded-lg bg-red-950/70 border border-red-500/40 p-3 text-xs text-red-300">
+            <div
+              role="alert"
+              className="rounded-lg bg-red-950/70 border border-red-500/40 p-3 text-xs text-red-300"
+            >
               {pinError}
             </div>
           )}
@@ -186,10 +229,11 @@ export default function PublicAlbumViewerPage() {
           ) : (
             <form onSubmit={handlePinSubmit} className="space-y-4">
               <div className="space-y-1.5 text-left">
-                <label className="text-xs font-semibold text-slate-300">
+                <label htmlFor="pin-input" className="text-xs font-semibold text-slate-300">
                   Enter 4–6 Digit PIN Code
                 </label>
                 <Input
+                  id="pin-input"
                   type="password"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -205,8 +249,7 @@ export default function PublicAlbumViewerPage() {
 
               <Button
                 type="submit"
-                variant="gold"
-                className="w-full font-bold bg-amber-600 hover:bg-amber-700"
+                className="w-full font-bold bg-amber-600 hover:bg-amber-700 text-white"
               >
                 Unlock Album
               </Button>
@@ -234,6 +277,9 @@ export default function PublicAlbumViewerPage() {
           <img
             src={album.cover_image_url}
             alt={album.title}
+            onError={(e) => {
+              e.currentTarget.src = fallbackPhoto;
+            }}
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
@@ -243,11 +289,48 @@ export default function PublicAlbumViewerPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
 
         {/* Studio Brand Watermark */}
-        <div className="absolute top-4 left-4 flex items-center space-x-2 bg-black/50 backdrop-blur px-3 py-1.5 rounded-full border border-white/10">
-          <img src="/addis-photography-logo.png" alt="" className="h-5 w-5 rounded object-contain" />
+        <div className="absolute top-4 left-4 flex items-center space-x-2 bg-black/50 backdrop-blur px-3 py-1.5 rounded-full border border-white/10 z-10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/addis-photography-logo.png"
+            alt=""
+            className="h-5 w-5 rounded object-contain"
+          />
           <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
             Addis Photography
           </span>
+        </div>
+
+        {/* Top Right Actions: Language Switcher + Share */}
+        <div className="absolute top-4 right-4 flex items-center space-x-2 z-10">
+          <button
+            type="button"
+            onClick={() => setLocale(locale === "en" ? "am" : "en")}
+            className="inline-flex items-center gap-1.5 bg-black/50 hover:bg-black/70 backdrop-blur px-3 py-1.5 rounded-full border border-white/10 text-xs font-medium text-slate-200 transition"
+            aria-label="Switch language"
+          >
+            <Globe className="h-3.5 w-3.5 text-amber-400" />
+            <span>{locale === "en" ? "አማርኛ" : "English"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleShare}
+            className="inline-flex items-center gap-1.5 bg-black/50 hover:bg-black/70 backdrop-blur px-3 py-1.5 rounded-full border border-white/10 text-xs font-medium text-slate-200 transition"
+            aria-label="Share album"
+          >
+            {copiedLink ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="text-emerald-300">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="h-3.5 w-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Share</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* Album Meta */}
@@ -293,6 +376,9 @@ export default function PublicAlbumViewerPage() {
                     src={media.thumbnail_url || media.url}
                     alt={media.filename}
                     loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.src = fallbackPhoto;
+                    }}
                     className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
 
@@ -317,7 +403,12 @@ export default function PublicAlbumViewerPage() {
 
       {/* Lightbox Swipe / Fullscreen Modal */}
       {lightboxIndex !== null && currentMedia && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-4 backdrop-blur-md">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image preview"
+          className="fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-4 backdrop-blur-md"
+        >
           {/* Top Bar */}
           <div className="flex items-center justify-between z-20 text-white">
             <span className="text-xs font-mono text-slate-400">
@@ -326,7 +417,9 @@ export default function PublicAlbumViewerPage() {
 
             <div className="flex items-center space-x-3">
               <button
+                type="button"
                 onClick={closeLightbox}
+                aria-label="Close photo viewer"
                 className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
               >
                 <X className="h-5 w-5" />
@@ -350,6 +443,9 @@ export default function PublicAlbumViewerPage() {
               <img
                 src={currentMedia.url}
                 alt={currentMedia.filename}
+                onError={(e) => {
+                  e.currentTarget.src = fallbackPhoto;
+                }}
                 className="max-h-full max-w-full object-contain select-none shadow-2xl"
               />
             )}
@@ -357,7 +453,9 @@ export default function PublicAlbumViewerPage() {
             {/* Navigation Arrows */}
             {lightboxIndex > 0 && (
               <button
+                type="button"
                 onClick={prevPhoto}
+                aria-label="Previous photo"
                 className="absolute left-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/60 hover:bg-black/80 text-white transition backdrop-blur z-20"
               >
                 <ChevronLeft className="h-6 w-6" />
@@ -366,7 +464,9 @@ export default function PublicAlbumViewerPage() {
 
             {lightboxIndex < mediaFiles.length - 1 && (
               <button
+                type="button"
                 onClick={nextPhoto}
+                aria-label="Next photo"
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/60 hover:bg-black/80 text-white transition backdrop-blur z-20"
               >
                 <ChevronRight className="h-6 w-6" />
@@ -375,8 +475,12 @@ export default function PublicAlbumViewerPage() {
           </div>
 
           {/* Bottom Info */}
-          <div className="text-center text-xs text-slate-400 py-2">
+          <div className="text-center text-xs text-slate-400 py-2 flex items-center justify-center gap-4">
             <span>{currentMedia.filename}</span>
+            <span className="hidden sm:inline text-slate-600">•</span>
+            <span className="hidden sm:inline text-slate-500">
+              Use arrow keys or Esc to navigate
+            </span>
           </div>
         </div>
       )}

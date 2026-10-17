@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ export function LoginForm({
   ...props
 }: React.ComponentPropsWithoutRef<'form'>) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -35,7 +36,9 @@ export function LoginForm({
         return;
       }
 
-      router.push('/today');
+      const nextUrl = searchParams.get('next');
+      const target = nextUrl && nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/today';
+      router.push(target);
       router.refresh();
     } catch {
       setServerError('Unable to connect to the authentication server.');

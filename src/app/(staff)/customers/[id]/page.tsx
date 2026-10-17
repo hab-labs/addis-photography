@@ -70,7 +70,7 @@ export default function CustomerProfilePage() {
           <span>Back to Customers</span>
         </Link>
 
-        <Link href={`/orders/new`}>
+        <Link href={`/orders/new?customer_id=${customer.id}&name=${encodeURIComponent(customer.name)}&phone=${encodeURIComponent(customer.phone)}`}>
           <Button variant="gold" size="sm">
             <PlusCircle className="h-4 w-4 mr-1.5" />
             New Order for {customer.name.split(" ")[0]}

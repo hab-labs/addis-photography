@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Decimal from "decimal.js";
 import {
   Zap,
@@ -21,13 +21,14 @@ import {
   Banknote,
   Smartphone,
   Building2,
+  Loader2,
 } from "lucide-react";
 
 import { studioStore } from "@/lib/api/store";
 import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { PaymentMethod } from "@/types";
+import type { PaymentMethod, Customer } from "@/types";
 
 interface OrderItem {
   id: string;
@@ -52,18 +53,49 @@ const PAYMENT_METHODS = [
   { id: "bank_transfer", label: "Bank Transfer", icon: Building2, color: "from-blue-500 to-blue-600" },
 ];
 
-export default function NewWalkInOrderPage() {
+function NewWalkInOrderForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
 
   // Form States
-  const [phone, setPhone] = React.useState("");
-  const [customerName, setCustomerName] = React.useState("");
+  const [phone, setPhone] = React.useState(searchParams.get("phone") || "");
+  const [customerName, setCustomerName] = React.useState(searchParams.get("name") || "");
+  const [customerId, setCustomerId] = React.useState(searchParams.get("customer_id") || "");
   const [notes, setNotes] = React.useState("");
   const [paymentMethod, setPaymentMethod] = React.useState("telebirr");
+  const [transactionRef, setTransactionRef] = React.useState("");
   const [paidInput, setPaidInput] = React.useState("350");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [formError, setFormError] = React.useState("");
+
+  const [previewNumber, setPreviewNumber] = React.useState("APS-261015-043");
+
+  React.useEffect(() => {
+    setPreviewNumber(`AP-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`);
+  }, []);
+
+  // Customer auto-detection from store
+  const allCustomers = React.useMemo(() => {
+    try {
+      return studioStore.getCustomers();
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const matchedCustomer = React.useMemo(() => {
+    const clean = phone.replace(/[\s-]/g, "");
+    if (!clean || clean.length < 9) return null;
+    return allCustomers.find((c) => c.phone.replace(/[\s-]/g, "") === clean);
+  }, [phone, allCustomers]);
+
+  React.useEffect(() => {
+    if (matchedCustomer) {
+      setCustomerName(matchedCustomer.name);
+      setCustomerId(matchedCustomer.id);
+    }
+  }, [matchedCustomer]);
 
   // Items State
   const [items, setItems] = React.useState<OrderItem[]>([
@@ -185,6 +217,7 @@ export default function NewWalkInOrderPage() {
     try {
       const prices = studioStore.getPrices();
       studioStore.createOrder({
+        customer_id: customerId || undefined,
         customer_name: customerName.trim(),
         customer_phone: normalizedPhone,
         items: items.map((item) => {
@@ -198,6 +231,7 @@ export default function NewWalkInOrderPage() {
         }),
         payment_method: paymentMethod as PaymentMethod,
         paid_amount: paid.toFixed(2),
+        reference_no: transactionRef.trim() || undefined,
         notes: notes.trim() || undefined,
         is_delivered: markDelivered,
         created_by: {
@@ -222,7 +256,7 @@ export default function NewWalkInOrderPage() {
         </div>
         <div className="hidden rounded-md border border-slate-200 bg-white px-4 py-2 text-right sm:block">
           <p className="text-[9px] text-slate-400">Booking number</p>
-          <p className="font-mono text-[11px] font-semibold text-slate-700">APS-261015-043</p>
+          <p className="font-mono text-[11px] font-semibold text-slate-700">{previewNumber}</p>
         </div>
       </div>
 
@@ -233,16 +267,16 @@ export default function NewWalkInOrderPage() {
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">1</span><div><h2 className="text-xs font-bold text-slate-800">Customer</h2><p className="text-[10px] text-slate-400">Find an existing customer or create a new profile.</p></div></div>
-              <button type="button" onClick={() => { setCustomerName(""); setPhone(""); }} className="rounded-md border border-slate-200 px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50">＋ New Customer</button>
+              <button type="button" onClick={() => { setCustomerName(""); setPhone(""); setCustomerId(""); }} className="rounded-md border border-slate-200 px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50">＋ New Customer</button>
             </div>
-            <label className="mb-1 block text-[10px] font-medium text-slate-500">Search customer</label>
+            <label className="mb-1 block text-[10px] font-medium text-slate-500">Search customer by phone</label>
             <div className="relative">
               <Input type="tel" placeholder="09XXXXXXXX or +2519XXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} className="h-9 rounded-md border-slate-200 pr-8 text-xs" />
               <span className="pointer-events-none absolute right-3 top-2.5 text-xs text-slate-400">⌄</span>
             </div>
             <div className="mt-2 flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50/50 px-3 py-2">
               <div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-600">{customerName ? customerName.slice(0, 2).toUpperCase() : "CU"}</span><div><p className="text-[10px] font-semibold text-slate-700">{customerName || "New customer"}</p><p className="text-[9px] text-slate-400">{phone || "Phone number pending"}</p></div></div>
-              <span className="text-right text-[9px] text-slate-400">Outstanding balance<br /><b className="text-slate-700">ETB 0.00</b> <span className="text-emerald-600">✓</span></span>
+              <span className="text-right text-[9px] text-slate-400">Outstanding balance<br /><b className="text-slate-700">ETB {matchedCustomer ? matchedCustomer.balance_due : "0.00"}</b> {matchedCustomer && Number(matchedCustomer.balance_due) > 0 ? <span className="text-red-600 font-bold">!</span> : <span className="text-emerald-600">✓</span>}</span>
             </div>
             <label className="mt-3 mb-1 block text-[10px] font-medium text-slate-500">Customer full name</label>
             <Input placeholder="e.g. Abebe Kebede" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="h-9 rounded-md border-slate-200 text-xs" />
@@ -269,7 +303,7 @@ export default function NewWalkInOrderPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div><label className="mb-1 block text-[10px] font-medium text-slate-500">Payment amount</label><Input type="number" value={paidInput} onChange={(e) => setPaidInput(e.target.value)} className="h-9 rounded-md text-xs" /></div>
               <div><label className="mb-1 block text-[10px] font-medium text-slate-500">Payment method</label><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-xs"><option value="cash">Cash</option><option value="telebirr">Telebirr</option><option value="cbe_birr">CBE Birr</option><option value="bank_transfer">Bank Transfer</option></select></div>
-              <Input placeholder="Transaction reference (optional)" value="" readOnly className="h-9 rounded-md text-xs" /><Input placeholder="Internal notes — visible only to staff" value={notes} onChange={(e) => setNotes(e.target.value)} className="h-9 rounded-md text-xs" />
+              <Input placeholder="Transaction reference (e.g. Telebirr code)" value={transactionRef} onChange={(e) => setTransactionRef(e.target.value)} className="h-9 rounded-md text-xs" /><Input placeholder="Internal notes — visible only to staff" value={notes} onChange={(e) => setNotes(e.target.value)} className="h-9 rounded-md text-xs" />
             </div>
             <div className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-[9px] font-semibold text-emerald-700">✓ ETB {paid.toFixed(2)} will be recorded as a valid payment. <span className="block font-normal">Remaining balance: ETB {balance.toFixed(2)}</span></div>
           </section>
@@ -279,10 +313,40 @@ export default function NewWalkInOrderPage() {
           <h2 className="border-b border-slate-200 pb-3 text-xs font-bold text-slate-700">Order summary</h2>
           <div className="space-y-2 border-b border-slate-100 py-3 text-[10px] text-slate-500"><div className="flex justify-between"><span>Items × {items.length}</span><b className="text-slate-700">ETB {total.toFixed(2)}</b></div><div className="flex justify-between"><span>Payment</span><b className="text-emerald-600">− ETB {paid.toFixed(2)}</b></div></div>
           <div className="flex justify-between py-3 text-xs font-bold text-slate-800"><span>Remaining balance</span><span className="text-red-600">ETB {balance.toFixed(2)}</span></div>
-          <div className="space-y-2"><Button type="button" disabled={isSubmitting} onClick={() => handleSaveOrder(false)} className="h-8 w-full rounded-md bg-[#e21b23] text-[10px] font-bold hover:bg-red-700">Save Order</Button><Button type="button" disabled={isSubmitting} onClick={() => handleSaveOrder(true)} variant="outline" className="h-8 w-full rounded-md text-[10px]">Save & Mark Delivered</Button><button type="button" onClick={handleReset} className="w-full py-1 text-[10px] text-slate-400 hover:text-slate-700">Cancel</button></div>
+          <div className="space-y-2">
+            <Button type="button" disabled={isSubmitting} onClick={() => handleSaveOrder(false)} className="h-8 w-full rounded-md bg-[#e21b23] text-[10px] font-bold hover:bg-red-700">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Saving Order...
+                </>
+              ) : (
+                "Save Order"
+              )}
+            </Button>
+            <Button type="button" disabled={isSubmitting} onClick={() => handleSaveOrder(true)} variant="outline" className="h-8 w-full rounded-md text-[10px]">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save & Mark Delivered"
+              )}
+            </Button>
+            <button type="button" onClick={handleReset} className="w-full py-1 text-[10px] text-slate-400 hover:text-slate-700">Cancel</button>
+          </div>
           <p className="mt-3 border-t border-slate-100 pt-3 text-[8px] text-slate-400">🔒 Payment info — this payment will be recorded.</p>
         </aside>
       </div>
     </div>
+  );
+}
+
+export default function NewWalkInOrderPage() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Loading order form…</div>}>
+      <NewWalkInOrderForm />
+    </React.Suspense>
   );
 }

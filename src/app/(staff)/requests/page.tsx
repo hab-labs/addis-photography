@@ -20,6 +20,16 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { studioStore } from "@/lib/api/store";
 import { formatDate, isOverdue } from "@/lib/date";
 import type { ClientRequest } from "@/types";
@@ -55,7 +65,17 @@ export default function ProductionRequestsPage() {
   const [viewMode, setViewMode] = React.useState<"kanban" | "list">("kanban");
   const [isLoading, setIsLoading] = React.useState(true);
 
-  React.useEffect(() => {
+  // New Request dialog state
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [reqName, setReqName] = React.useState("");
+  const [reqPhone, setReqPhone] = React.useState("");
+  const [reqService, setReqService] = React.useState("Studio Portrait Session (Digital)");
+  const [reqDueDate, setReqDueDate] = React.useState("");
+  const [reqNotes, setReqNotes] = React.useState("");
+  const [dialogError, setDialogError] = React.useState("");
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  const loadRequests = React.useCallback(() => {
     const orders = studioStore.getOrders();
     const orderById = new Map(orders.map((order) => [order.id, order]));
     const sharedRequests = studioStore.getRequests().map((request: ClientRequest) => {
@@ -75,6 +95,44 @@ export default function ProductionRequestsPage() {
     setRequests(sharedRequests);
     setIsLoading(false);
   }, []);
+
+  React.useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  const handleCreateRequest = (e: React.FormEvent) => {
+    e.preventDefault();
+    setDialogError("");
+    const cleanPhone = reqPhone.replace(/[\s-]/g, "");
+    if (!reqName.trim()) {
+      setDialogError("Please enter customer name.");
+      return;
+    }
+    if (!cleanPhone) {
+      setDialogError("Please enter customer phone number.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      studioStore.createRequest({
+        customer_name: reqName.trim(),
+        customer_phone: cleanPhone,
+        service_type: reqService.trim() || "Studio Photography",
+        due_date: reqDueDate ? new Date(reqDueDate).toISOString() : undefined,
+        notes: reqNotes.trim() || undefined,
+      });
+      loadRequests();
+      setIsCreateOpen(false);
+      setReqName("");
+      setReqPhone("");
+      setReqNotes("");
+      setReqDueDate("");
+    } catch (err) {
+      setDialogError(err instanceof Error ? err.message : "Failed to create request.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const filteredRequests = React.useMemo(() => {
     return requests.filter((r) => {
@@ -161,7 +219,20 @@ export default function ProductionRequestsPage() {
             <span>Overdue only</span>
           </button>
 
-          <Button className="h-8 rounded-md bg-[#e21b23] px-3 text-[10px] font-semibold text-white hover:bg-red-700"><span className="mr-1">+</span> New Request</Button>
+          <Button
+            type="button"
+            onClick={() => {
+              setDialogError("");
+              setReqName("");
+              setReqPhone("");
+              setReqNotes("");
+              setReqDueDate("");
+              setIsCreateOpen(true);
+            }}
+            className="h-8 rounded-md bg-[#e21b23] px-3 text-[10px] font-semibold text-white hover:bg-red-700"
+          >
+            <span className="mr-1">+</span> New Request
+          </Button>
         </div>
       </div>
 
@@ -235,7 +306,20 @@ export default function ProductionRequestsPage() {
                         </span>
                       </div>
 
-                      {/* Bottom Footer: Staff & Advance Step */}
+                      {/* Bottom Footer: Advance Step */}
+                      {item.status !== "delivered" && (
+                        <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+                          <span className="text-[9px] text-slate-400">Advance stage</span>
+                          <button
+                            type="button"
+                            onClick={() => handleAdvanceStatus(item.id)}
+                            className="inline-flex items-center gap-1 rounded bg-slate-100 hover:bg-red-50 hover:text-[#e21b23] px-2 py-0.5 text-[9px] font-semibold text-slate-700 transition-colors"
+                          >
+                            <span>Next</span>
+                            <ArrowRight className="h-2.5 w-2.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
 
@@ -279,6 +363,7 @@ export default function ProductionRequestsPage() {
                   </span>
                   {item.status !== "delivered" && (
                     <button
+                      type="button"
                       onClick={() => handleAdvanceStatus(item.id)}
                       className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-600"
                     >
@@ -291,6 +376,119 @@ export default function ProductionRequestsPage() {
           </div>
         </div>
       )}
+
+      {/* New Request Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-md">
+          <form onSubmit={handleCreateRequest}>
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold text-slate-900">
+                Create Production Request
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Track photo editing, printing, retouching, or framing jobs in the studio production pipeline.
+              </DialogDescription>
+            </DialogHeader>
+
+            {dialogError && (
+              <div role="alert" className="mt-3 rounded-md bg-red-50 p-2.5 text-xs font-semibold text-red-700 border border-red-200">
+                {dialogError}
+              </div>
+            )}
+
+            <div className="grid gap-3 py-4">
+              <div className="grid gap-1">
+                <Label htmlFor="req-name" className="text-xs font-semibold text-slate-700">
+                  Customer Name *
+                </Label>
+                <Input
+                  id="req-name"
+                  placeholder="e.g. Dawit Haile"
+                  value={reqName}
+                  onChange={(e) => setReqName(e.target.value)}
+                  className="h-9 text-xs"
+                  required
+                />
+              </div>
+
+              <div className="grid gap-1">
+                <Label htmlFor="req-phone" className="text-xs font-semibold text-slate-700">
+                  Customer Phone *
+                </Label>
+                <Input
+                  id="req-phone"
+                  type="tel"
+                  placeholder="09XXXXXXXX or +2519XXXXXXXX"
+                  value={reqPhone}
+                  onChange={(e) => setReqPhone(e.target.value)}
+                  className="h-9 text-xs"
+                  required
+                />
+              </div>
+
+              <div className="grid gap-1">
+                <Label htmlFor="req-service" className="text-xs font-semibold text-slate-700">
+                  Service / Task *
+                </Label>
+                <Input
+                  id="req-service"
+                  placeholder="e.g. Wedding Photo Retouching & Album Binding"
+                  value={reqService}
+                  onChange={(e) => setReqService(e.target.value)}
+                  className="h-9 text-xs"
+                  required
+                />
+              </div>
+
+              <div className="grid gap-1">
+                <Label htmlFor="req-due" className="text-xs font-semibold text-slate-700">
+                  Due Date
+                </Label>
+                <Input
+                  id="req-due"
+                  type="date"
+                  value={reqDueDate}
+                  onChange={(e) => setReqDueDate(e.target.value)}
+                  className="h-9 text-xs"
+                />
+              </div>
+
+              <div className="grid gap-1">
+                <Label htmlFor="req-notes" className="text-xs font-semibold text-slate-700">
+                  Instructions / Notes
+                </Label>
+                <Input
+                  id="req-notes"
+                  placeholder="e.g. Warm color tone, deliver high-res via Telegram"
+                  value={reqNotes}
+                  onChange={(e) => setReqNotes(e.target.value)}
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCreateOpen(false)}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isSaving}
+                className="bg-[#e21b23] text-white hover:bg-red-700"
+              >
+                {isSaving ? "Creating..." : "Create Request"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

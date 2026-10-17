@@ -16,9 +16,12 @@ import {
   MoreHorizontal,
   FolderOpen,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { studioStore } from "@/lib/api/store";
 import type { Customer as StoreCustomer } from "@/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -30,6 +33,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 type Customer = StoreCustomer;
 
@@ -38,6 +49,18 @@ export default function CustomersPage() {
   const [search, setSearch] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(true);
 
+  // Dialog state
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [newName, setNewName] = React.useState("");
+  const [newPhone, setNewPhone] = React.useState("");
+  const [newNotes, setNewNotes] = React.useState("");
+  const [dialogError, setDialogError] = React.useState("");
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  // Pagination state
+  const PAGE_SIZE = 8;
+  const [currentPage, setCurrentPage] = React.useState(1);
+
   React.useEffect(() => {
     try {
       setCustomers(studioStore.getCustomers());
@@ -45,6 +68,10 @@ export default function CustomersPage() {
       setIsLoading(false);
     }
   }, []);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   const metrics = React.useMemo(() => {
     let spent = new Decimal(0);
@@ -73,6 +100,39 @@ export default function CustomersPage() {
     });
   }, [customers, search]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / PAGE_SIZE));
+  const paginatedCustomers = React.useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredCustomers.slice(start, start + PAGE_SIZE);
+  }, [filteredCustomers, currentPage]);
+
+  const handleCreateCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    setDialogError("");
+    const cleanPhone = newPhone.replace(/[\s-]/g, "");
+    if (!newName.trim()) {
+      setDialogError("Please enter the customer's full name.");
+      return;
+    }
+    if (!/^(09\d{8}|\+2519\d{8})$/.test(cleanPhone)) {
+      setDialogError("Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX).");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      studioStore.createCustomer(newName.trim(), cleanPhone);
+      setCustomers(studioStore.getCustomers());
+      setIsCreateOpen(false);
+      setNewName("");
+      setNewPhone("");
+      setNewNotes("");
+    } catch (err) {
+      setDialogError(err instanceof Error ? err.message : "Failed to create customer.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -90,7 +150,18 @@ export default function CustomersPage() {
           <h1 className="mt-1 text-[25px] font-medium leading-none tracking-[-0.04em] text-slate-900">Customers</h1>
           <p className="mt-2 text-[11px] text-slate-500">Manage customer profiles, orders, requests, and albums.</p>
         </div>
-        <Button size="sm" className="h-9 gap-1.5 rounded-md bg-[#e21b23] px-4 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(226,27,35,0.22)] hover:bg-red-700">
+        <Button
+          type="button"
+          onClick={() => {
+            setDialogError("");
+            setNewName("");
+            setNewPhone("");
+            setNewNotes("");
+            setIsCreateOpen(true);
+          }}
+          size="sm"
+          className="h-9 gap-1.5 rounded-md bg-[#e21b23] px-4 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(226,27,35,0.22)] hover:bg-red-700"
+        >
           <Plus className="h-3.5 w-3.5" /> New Customer
         </Button>
       </div>
@@ -104,7 +175,7 @@ export default function CustomersPage() {
           <button className="flex h-8 flex-1 items-center justify-between rounded-md border border-slate-200 px-3 text-[10px] font-semibold text-slate-700">
             All customers <span className="text-slate-400">⌄</span>
           </button>
-          <span className="hidden w-14 self-center text-[9px] leading-tight text-slate-400 sm:block">{customers.length.toLocaleString()}<br />customers</span>
+          <span className="hidden w-14 self-center text-[9px] leading-tight text-slate-400 sm:block">{filteredCustomers.length.toLocaleString()}<br />results</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -121,12 +192,12 @@ export default function CustomersPage() {
             <TableBody className="divide-y divide-slate-100/80 ">
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-40 text-center text-xs text-slate-400">
+                  <TableCell colSpan={5} className="h-40 text-center text-xs text-slate-400">
                     Loading customer records…
                   </TableCell>
                 </TableRow>
-              ) : filteredCustomers.length > 0 ? (
-                filteredCustomers.map((cust) => {
+              ) : paginatedCustomers.length > 0 ? (
+                paginatedCustomers.map((cust) => {
                   const hasDue = Number(cust.balance_due) > 0;
 
                   return (
@@ -192,16 +263,139 @@ export default function CustomersPage() {
           </Table>
         </div>
         <div className="flex items-center justify-between border-t border-slate-200 px-3 py-3 text-[9px] text-slate-400">
-          <span>Showing 1–{Math.min(filteredCustomers.length, 5)} of {customers.length.toLocaleString()}</span>
+          <span>
+            Showing {filteredCustomers.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–
+            {Math.min(currentPage * PAGE_SIZE, filteredCustomers.length)} of {filteredCustomers.length.toLocaleString()} customers
+          </span>
           <div className="flex items-center gap-1">
-            <button className="h-6 w-6 rounded-md border border-slate-200 text-slate-400">‹</button>
-            <button className="h-6 w-6 rounded-md bg-[#111] text-white">1</button>
-            <button className="h-6 w-6 rounded-md border border-slate-200">2</button>
-            <button className="h-6 w-6 rounded-md border border-slate-200">3</button>
-            <button className="h-6 w-6 rounded-md border border-slate-200">›</button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              aria-label="Previous page"
+              className="h-6 w-6 rounded-md border border-slate-200 text-slate-400 disabled:opacity-30 hover:bg-slate-50"
+            >
+              ‹
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+              <button
+                key={pg}
+                type="button"
+                onClick={() => setCurrentPage(pg)}
+                className={`h-6 w-6 rounded-md text-[10px] font-bold ${
+                  currentPage === pg
+                    ? "bg-[#111] text-white"
+                    : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {pg}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              aria-label="Next page"
+              className="h-6 w-6 rounded-md border border-slate-200 text-slate-400 disabled:opacity-30 hover:bg-slate-50"
+            >
+              ›
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Create Customer Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-md">
+          <form onSubmit={handleCreateCustomer}>
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold text-slate-900">
+                Register New Customer
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Add a new customer profile for portrait shoots, photo prints, or albums.
+              </DialogDescription>
+            </DialogHeader>
+
+            {dialogError && (
+              <div role="alert" className="mt-3 rounded-md bg-red-50 p-2.5 text-xs font-semibold text-red-700 border border-red-200">
+                {dialogError}
+              </div>
+            )}
+
+            <div className="grid gap-3 py-4">
+              <div className="grid gap-1">
+                <Label htmlFor="cust-name" className="text-xs font-semibold text-slate-700">
+                  Full Name *
+                </Label>
+                <Input
+                  id="cust-name"
+                  placeholder="e.g. Bethlehem Assefa"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="h-9 text-xs"
+                  required
+                />
+              </div>
+
+              <div className="grid gap-1">
+                <Label htmlFor="cust-phone" className="text-xs font-semibold text-slate-700">
+                  Phone Number *
+                </Label>
+                <Input
+                  id="cust-phone"
+                  type="tel"
+                  placeholder="09XXXXXXXX or +2519XXXXXXXX"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  className="h-9 text-xs"
+                  required
+                />
+              </div>
+
+              <div className="grid gap-1">
+                <Label htmlFor="cust-notes" className="text-xs font-semibold text-slate-700">
+                  Notes / Preferences (Optional)
+                </Label>
+                <Input
+                  id="cust-notes"
+                  placeholder="e.g. Prefers Telegram delivery, passport urgent"
+                  value={newNotes}
+                  onChange={(e) => setNewNotes(e.target.value)}
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCreateOpen(false)}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isSaving}
+                className="bg-[#e21b23] text-white hover:bg-red-700"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Create Customer"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import Decimal from "decimal.js";
 import {
   Calendar as CalendarIcon,
@@ -19,6 +20,8 @@ import {
 import { useAuth } from "@/lib/auth/context";
 import { studioStore } from "@/lib/api/store";
 import { formatCalendarPair } from "@/lib/date";
+import { formatETB } from "@/lib/money";
+import type { Order } from "@/types";
 import {
   Select,
   SelectContent,
@@ -36,16 +39,20 @@ import {
 } from "@/components/ui/table";
 
 export default function TodayLedgerPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
-  const [orders, setOrders] = React.useState<any[]>([]);
+  const [orders, setOrders] = React.useState<Order[]>([]);
   const currentCalendar = React.useMemo(() => formatCalendarPair(new Date()), []);
 
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
   const loadOrders = React.useCallback(() => {
-    if (typeof studioStore !== "undefined" && studioStore.getOrders) {
-      setOrders(studioStore.getOrders());
+    setIsRefreshing(true);
+    if (typeof studioStore !== "undefined" && studioStore.getTodayOrders) {
+      setOrders(studioStore.getTodayOrders());
     }
+    setTimeout(() => setIsRefreshing(false), 400);
   }, []);
 
   React.useEffect(() => {
@@ -57,9 +64,9 @@ export default function TodayLedgerPage() {
     let balance = new Decimal(0);
 
     orders.forEach((order) => {
-      collected = collected.plus(new Decimal(order.paid || order.paid_amount || 0));
-      const total = new Decimal(order.total || order.total_amount || 0);
-      const paid = new Decimal(order.paid || order.paid_amount || 0);
+      collected = collected.plus(new Decimal(order.paid_amount || 0));
+      const total = new Decimal(order.total_amount || 0);
+      const paid = new Decimal(order.paid_amount || 0);
       const diff = total.minus(paid);
       if (diff.isPositive()) {
         balance = balance.plus(diff);
@@ -75,8 +82,8 @@ export default function TodayLedgerPage() {
 
   const filteredOrders = React.useMemo(() => {
     return orders.filter((o) => {
-      const customer = (o.customer?.name || o.customer_name || "").toLowerCase();
-      const phone = (o.customer?.phone || o.customer_phone || "").toLowerCase();
+      const customer = (o.customer?.name || "").toLowerCase();
+      const phone = (o.customer?.phone || "").toLowerCase();
       const id = String(o.id || o.order_number || "").toLowerCase();
       const term = search.toLowerCase();
 
@@ -86,6 +93,69 @@ export default function TodayLedgerPage() {
       return matchesSearch && matchesStatus;
     });
   }, [orders, search, status]);
+
+  const handleExportCSV = React.useCallback(() => {
+    if (filteredOrders.length === 0) return;
+    const headers = ["Order Number", "Customer Name", "Phone", "Services", "Total (ETB)", "Paid (ETB)", "Balance (ETB)", "Status", "Date"];
+    const rows = filteredOrders.map((o) => [
+      o.order_number || o.id,
+      `"${(o.customer?.name || "Walk-In").replace(/"/g, '""')}"`,
+      `"${o.customer?.phone || ""}"`,
+      `"${(o.items?.map((i) => `${i.quantity}x ${i.photo_type_name}`).join("; ") || "Studio Photography").replace(/"/g, '""')}"`,
+      o.total_amount,
+      o.paid_amount,
+      o.balance_amount,
+      o.status,
+      o.created_at,
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `addis-today-ledger-${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [filteredOrders]);
+
+  const paymentTotals = React.useMemo(() => {
+    const totals: Record<string, Decimal> = {};
+    orders.forEach((order) => {
+      (order.payments || []).forEach((payment) => {
+        const method = payment.payment_method || "other";
+        totals[method] = (totals[method] || new Decimal(0)).plus(payment.amount || 0);
+      });
+    });
+    return totals;
+  }, [orders]);
+
+  const outstandingCustomers = React.useMemo(() => {
+    const balances = new Map<string, { name: string; orderNumber: string; balance: Decimal }>();
+    orders.forEach((order) => {
+      const balance = new Decimal(order.balance_amount || 0);
+      if (!balance.isPositive()) return;
+      const customerId = order.customer_id || order.customer?.id || order.id;
+      const current = balances.get(customerId);
+      balances.set(customerId, {
+        name: order.customer?.name || "Walk-In Guest",
+        orderNumber: order.order_number || order.id,
+        balance: (current?.balance || new Decimal(0)).plus(balance),
+      });
+    });
+    return Array.from(balances.values()).sort((a, b) => b.balance.comparedTo(a.balance)).slice(0, 3);
+  }, [orders]);
+
+  const quantityTotals = React.useMemo(() => {
+    const totals: Record<string, number> = { "3×4": 0, "10×15": 0, "30×45": 0, "13×18": 0, "20×25": 0, Other: 0 };
+    orders.forEach((order) => {
+      (order.items || []).forEach((item) => {
+        const name = item.photo_type_name || "";
+        const label = Object.keys(totals).find((candidate) => candidate !== "Other" && name.includes(candidate.replace("×", "x")));
+        totals[label || "Other"] += Number(item.quantity) || 0;
+      });
+    });
+    return totals;
+  }, [orders]);
 
   const renderStatus = (orderStatus: string) => {
     switch (orderStatus?.toLowerCase()) {
@@ -125,7 +195,7 @@ export default function TodayLedgerPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[25px] font-medium leading-none tracking-[-0.04em] text-slate-900 ">
-            Good morning, Meron
+            Good morning, {user?.name?.split(" ")[0] || "there"}
           </h1>
           <p className="mt-1 text-[11px] text-slate-500">
             Here’s what’s happening at your studio today.
@@ -142,10 +212,13 @@ export default function TodayLedgerPage() {
             <ChevronDown className="h-3 w-3 text-slate-400" />
           </button>
           <button 
+            type="button"
             onClick={loadOrders}
-            className="hidden"
+            disabled={isRefreshing}
+            aria-label="Refresh today ledger"
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
           >
-            <RefreshCcw className="h-3.5 w-3.5" />
+            <RefreshCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-red-600" : "text-slate-500"}`} />
           </button>
         </div>
       </div>
@@ -155,16 +228,16 @@ export default function TodayLedgerPage() {
         <div className="relative flex min-h-[118px] flex-col justify-between overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-medium text-slate-600">Bookings</span>
-            <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• +8.4%</span>
+            <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• Today</span>
           </div>
           <div className="text-[21px] font-bold tracking-tight text-slate-900">{metrics.count}</div>
-          <div className="flex items-end justify-between text-[9px] text-slate-400"><span>Orders created on 15 Oct</span><span className="h-5 w-16 bg-[linear-gradient(to_top,#ededed_0_55%,transparent_55%_100%)] opacity-80" /></div>
+          <div className="flex items-end justify-between text-[9px] text-slate-400"><span>Orders created on {currentCalendar.gregorian}</span><span className="h-5 w-16 bg-[linear-gradient(to_top,#ededed_0_55%,transparent_55%_100%)] opacity-80" /></div>
         </div>
 
         <div className="flex min-h-[118px] flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between"><span className="text-[11px] font-medium text-slate-600">Paid</span><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• +12.6%</span></div>
+          <div className="flex items-center justify-between"><span className="text-[11px] font-medium text-slate-600">Paid</span><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• Collected</span></div>
           <div className="text-[21px] font-bold tracking-tight text-slate-900">{isAdmin ? `ETB ${metrics.collected}` : "ETB ••••••"}</div>
-          <div className="flex items-end justify-between text-[9px] text-slate-400"><span>Payments received on 15 Oct</span><span className="h-5 w-16 bg-[linear-gradient(to_top,#ededed_0_55%,transparent_55%)] opacity-80" /></div>
+          <div className="flex items-end justify-between text-[9px] text-slate-400"><span>Payments received on {currentCalendar.gregorian}</span><span className="h-5 w-16 bg-[linear-gradient(to_top,#ededed_0_55%,transparent_55%)] opacity-80" /></div>
         </div>
 
         <div className="flex min-h-[118px] flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -174,25 +247,18 @@ export default function TodayLedgerPage() {
         </div>
 
         <div className="flex min-h-[118px] flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between"><span className="text-[11px] font-medium text-slate-600">Cash received today</span><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• +5.2%</span></div>
-          <div className="text-[21px] font-bold tracking-tight text-slate-900">{isAdmin ? `ETB ${metrics.collected}` : "ETB ••••••"}</div>
+          <div className="flex items-center justify-between"><span className="text-[11px] font-medium text-slate-600">Cash received today</span><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• Valid</span></div>
+          <div className="text-[21px] font-bold tracking-tight text-slate-900">{isAdmin ? `ETB ${(paymentTotals["cash"] || new Decimal(0)).toFixed(2)}` : "ETB ••••••"}</div>
           <div className="flex items-end justify-between text-[9px] text-slate-400"><span>Valid cash payments today</span><span className="h-5 w-16 bg-[linear-gradient(to_top,#f2b4b7_0_70%,transparent_70%)] opacity-80" /></div>
         </div>
       </div>
 
       <div className="flex h-[56px] items-center rounded-lg border border-slate-200 bg-white px-4 shadow-sm">
         <div className="w-[190px]"><p className="text-[11px] font-bold text-slate-800">Photo quantities</p><p className="text-[9px] text-slate-400">Items booked today</p></div>
-        {[
-          ["68", "3×4"],
-          ["34", "10×15"],
-          ["12", "30×45"],
-          ["21", "13×18"],
-          ["9", "20×25"],
-          ["6", "Other"],
-        ].map(([value, label]) => (
-          <div key={label} className="flex flex-1 items-center justify-center gap-2 border-l border-slate-200 text-[9px] text-slate-400">
-            <strong className="text-[16px] text-slate-900">{value}</strong>{label}
-          </div>
+        {Object.entries(quantityTotals).map(([label, value]) => (
+      <div key={label} className="flex flex-1 items-center justify-center gap-2 border-l border-slate-200 text-[9px] text-slate-400">
+        <strong className="text-[16px] text-slate-900">{value}</strong>{label}
+      </div>
         ))}
       </div>
 
@@ -209,8 +275,13 @@ export default function TodayLedgerPage() {
             </p>
           </div>
 
-          <button className="hidden h-8 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 sm:flex">
-            ↓&nbsp; Export
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            disabled={filteredOrders.length === 0}
+            className="flex h-8 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            ↓&nbsp; Export CSV
           </button>
         </div>
 
@@ -232,7 +303,7 @@ export default function TodayLedgerPage() {
               </SelectTrigger>
               <SelectContent className="rounded-2xl">
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="received">New</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="ready">Ready</SelectItem>
                 <SelectItem value="delivered">Delivered</SelectItem>
@@ -259,15 +330,15 @@ export default function TodayLedgerPage() {
             <TableBody className="divide-y divide-slate-100/80 ">
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((order) => {
-                  const total = new Decimal(order.total || order.total_amount || 0);
-                  const paid = new Decimal(order.paid || order.paid_amount || 0);
+                  const total = new Decimal(order.total_amount || 0);
+                  const paid = new Decimal(order.paid_amount || 0);
                   const bal = total.minus(paid);
 
                   const serviceSummary = Array.isArray(order.items) && order.items.length > 0
                     ? order.items
-                        .map((i: any) => `${i.quantity || 1}x ${i.name || i.service_name || "Portrait"}`)
+                        .map((i) => `${i.quantity || 1}x ${i.photo_type_name || "Portrait"}`)
                         .join(", ")
-                    : order.service_summary || "Studio Photography";
+                    : "Studio Photography";
 
                   return (
                     <TableRow 
@@ -275,11 +346,13 @@ export default function TodayLedgerPage() {
                       className="border-t border-slate-100 transition-colors hover:bg-slate-50 group cursor-pointer"
                     >
                       <TableCell className="pl-3 font-mono text-[9px] font-bold text-slate-800">
-                        {order.order_number || order.id}
+                        <Link href={`/orders/${order.id}`} className="hover:text-[#e21b23] hover:underline">
+                          {order.order_number || order.id}
+                        </Link>
                       </TableCell>
                       <TableCell className="text-[10px] font-bold text-slate-800">
-                        <div>{order.customer?.name || order.customer_name || "Walk-In Guest"}</div>
-                        <div className="text-[8px] font-normal text-slate-400">{order.customer?.phone || order.customer_phone || "—"}</div>
+                        <div>{order.customer?.name || "Walk-In Guest"}</div>
+                        <div className="text-[8px] font-normal text-slate-400">{order.customer?.phone || "—"}</div>
                       </TableCell>
                       <TableCell className="max-w-[120px] truncate text-[9px] text-slate-500">
                         {serviceSummary}
@@ -318,20 +391,24 @@ export default function TodayLedgerPage() {
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-3 py-3">
             <h2 className="text-xs font-semibold text-slate-800">Payments by method</h2>
-            <p className="mt-1 text-[9px] text-slate-400">Valid payments · 15 Oct</p>
+            <p className="mt-1 text-[9px] text-slate-400">Valid payments · {currentCalendar.gregorian}</p>
           </div>
           <div className="flex items-center gap-3 p-4">
             <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full" style={{ background: "conic-gradient(#e21b23 0 64%, #111 64% 82%, #aeb0b4 82% 94%, #ddd 94% 100%)" }}>
               <div className="flex h-[55px] w-[55px] flex-col items-center justify-center rounded-full bg-white text-center">
-                <strong className="text-[14px] text-slate-800">48.2K</strong>
+                <strong className="text-[14px] text-slate-800">{isAdmin ? formatETB(metrics.collected).replace("ETB ", "") : "••••"}</strong>
                 <span className="text-[7px] text-slate-400">Total ETB</span>
               </div>
             </div>
             <div className="space-y-2 text-[9px] text-slate-600">
-              <p>🔴 Cash <b className="float-right ml-4">31,800</b></p>
-              <p>⚫ Telebirr <b className="float-right ml-4">8,450</b></p>
-              <p>◾ Bank transfer <b className="float-right ml-4">6,200</b></p>
-              <p>◽ Card & other <b className="float-right ml-4">1,800</b></p>
+              {[
+                ["🔴", "Cash", "cash"],
+                ["⚫", "Telebirr", "telebirr"],
+                ["◾", "Bank transfer", "bank_transfer"],
+                ["◽", "CBE Birr", "cbe_birr"],
+              ].map(([icon, label, method]) => (
+                <p key={method}>{icon} {label} <b className="float-right ml-4">{isAdmin ? formatETB(paymentTotals[method] || 0).replace("ETB ", "") : "••••"}</b></p>
+              ))}
             </div>
           </div>
         </section>
@@ -340,17 +417,14 @@ export default function TodayLedgerPage() {
             <div><h2 className="text-xs font-semibold text-slate-800">Outstanding balances</h2><p className="mt-1 text-[9px] text-slate-400">Top five customers</p></div>
             <span className="text-[9px] font-semibold text-[#e21b23]">View all</span>
           </div>
-          {[
-            ["HA", "Henok Alemu", "ETB 1,400.00"],
-            ["RT", "Rahel Tadesse", "ETB 1,550.00"],
-            ["BG", "Bethlehem Girma", "ETB 1,600.00"],
-          ].map(([initials, name, amount]) => (
+          {outstandingCustomers.map(({ name, orderNumber, balance }) => (
             <div key={name} className="flex items-center gap-2 border-b border-slate-100 px-3 py-3 last:border-0">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f5dddd] text-[9px] font-bold text-[#c52b2f]">{initials}</span>
-              <div className="min-w-0 flex-1"><p className="truncate text-[10px] font-semibold text-slate-800">{name}</p><p className="text-[8px] text-slate-400">APS-261015-041</p></div>
-              <b className="text-[9px] text-[#e21b23]">{amount}</b>
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f5dddd] text-[9px] font-bold text-[#c52b2f]">{name.slice(0, 2).toUpperCase()}</span>
+              <div className="min-w-0 flex-1"><p className="truncate text-[10px] font-semibold text-slate-800">{name}</p><p className="text-[8px] text-slate-400">{orderNumber}</p></div>
+              <b className="text-[9px] text-[#e21b23]">{isAdmin ? formatETB(balance) : "ETB ••••••"}</b>
             </div>
           ))}
+          {outstandingCustomers.length === 0 && <p className="px-3 py-5 text-center text-[10px] text-slate-400">No outstanding balances today.</p>}
         </section>
       </aside>
     </div>

@@ -25,7 +25,8 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_SETTINGS,
 } from "./mockData";
-import { calculateBalance, calculateLineTotal, calculateOrderTotal } from "../money";
+import Decimal from "decimal.js";
+import { calculateBalance, calculateLineTotal, calculateOrderTotal, toDecimal } from "../money";
 import { isTodayInAddis } from "../date";
 
 const STORAGE_KEY_PREFIX = "addis_studio_data_";
@@ -91,10 +92,38 @@ export const studioStore = {
   updatePrice: (id: string, newPrice: string): PriceItem => {
     const prices = getStored<PriceItem[]>("prices", INITIAL_PRICES);
     const updated = prices.map((p) =>
-      p.id === id ? { ...p, standard_unit_price: Number(newPrice).toFixed(2) } : p
+      p.id === id ? { ...p, standard_unit_price: new Decimal(newPrice || 0).toFixed(2) } : p
     );
     setStored("prices", updated);
     return updated.find((p) => p.id === id)!;
+  },
+
+  createPrice: (data: {
+    name: string;
+    category: PriceItem["category"];
+    standard_unit_price: string;
+    turnaround_days: number;
+    description?: string;
+  }): PriceItem => {
+    const prices = getStored<PriceItem[]>("prices", INITIAL_PRICES);
+    const code = data.name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8) || "SRV";
+    const newPrice: PriceItem = {
+      id: `prc-${Date.now()}`,
+      code,
+      name: data.name,
+      category: data.category,
+      standard_unit_price: new Decimal(data.standard_unit_price || 0).toFixed(2),
+      turnaround_days: data.turnaround_days,
+      description: data.description,
+      is_active: true,
+    };
+    setStored("prices", [...prices, newPrice]);
+    return newPrice;
+  },
+
+  deletePrice: (id: string): void => {
+    const prices = getStored<PriceItem[]>("prices", INITIAL_PRICES);
+    setStored("prices", prices.filter((p) => p.id !== id));
   },
 
   getOrders: (): Order[] => {
@@ -118,6 +147,7 @@ export const studioStore = {
     items: Array<{ price_item_id: string; photo_type_name: string; quantity: number; unit_price: string; notes?: string }>;
     payment_method: PaymentMethod;
     paid_amount: string;
+    reference_no?: string;
     notes?: string;
     is_delivered?: boolean;
     created_by: { id: string; name: string };
@@ -137,8 +167,9 @@ export const studioStore = {
       Math.floor(Math.random() * 90000) + 10000
     )}`;
 
+    const orderId = `ord-${Date.now()}`;
     const newOrder: Order = {
-      id: `ord-${Date.now()}`,
+      id: orderId,
       order_number: orderNumber,
       customer_id: customer.id,
       customer,
@@ -156,16 +187,17 @@ export const studioStore = {
           ? [
               {
                 id: `pay-${Date.now()}`,
-                order_id: `ord-${Date.now()}`,
-                amount: Number(data.paid_amount).toFixed(2),
+                order_id: orderId,
+                amount: new Decimal(data.paid_amount || 0).toFixed(2),
                 payment_method: data.payment_method,
+                reference_no: data.reference_no,
                 created_by_name: data.created_by.name,
                 created_at: new Date().toISOString(),
               },
             ]
           : [],
       total_amount: orderTotal,
-      paid_amount: Number(data.paid_amount).toFixed(2),
+      paid_amount: toDecimal(data.paid_amount).toFixed(2),
       balance_amount: balance,
       status: data.is_delivered ? "delivered" : "received",
       notes: data.notes,
@@ -187,8 +219,8 @@ export const studioStore = {
         return {
           ...c,
           total_orders: c.total_orders + 1,
-          total_spent: (Number(c.total_spent) + Number(orderTotal)).toFixed(2),
-          balance_due: (Number(c.balance_due) + Number(balance)).toFixed(2),
+          total_spent: new Decimal(c.total_spent || 0).plus(orderTotal).toFixed(2),
+          balance_due: new Decimal(c.balance_due || 0).plus(balance).toFixed(2),
           updated_at: new Date().toISOString(),
         };
       }
@@ -284,13 +316,13 @@ export const studioStore = {
     const target = orders.find((o) => o.id === orderId);
     if (!target) throw new Error("Order not found");
 
-    const newPaid = (Number(target.paid_amount) + Number(amount)).toFixed(2);
+    const newPaid = toDecimal(target.paid_amount).plus(toDecimal(amount)).toFixed(2);
     const newBalance = calculateBalance(target.total_amount, newPaid);
 
     const payment = {
       id: `pay-${Date.now()}`,
       order_id: orderId,
-      amount: Number(amount).toFixed(2),
+      amount: toDecimal(amount).toFixed(2),
       payment_method: method,
       reference_no: referenceNo,
       created_by_name: user.name,
@@ -336,6 +368,32 @@ export const studioStore = {
     const updated = requests.map((r) => (r.id === id ? { ...r, status } : r));
     setStored("requests", updated);
     return updated.find((r) => r.id === id)!;
+  },
+
+  createRequest: (data: {
+    customer_name: string;
+    customer_phone: string;
+    service_type: string;
+    due_date?: string;
+    notes?: string;
+    assigned_to_name?: string;
+  }): ClientRequest => {
+    const requests = getStored<ClientRequest[]>("requests", INITIAL_REQUESTS);
+    const newReq: ClientRequest = {
+      id: `req-${Date.now()}`,
+      customer_id: `cust-${Date.now()}`,
+      customer_name: data.customer_name,
+      customer_phone: data.customer_phone,
+      service_type: data.service_type,
+      status: "received",
+      due_date: data.due_date || new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+      is_overdue: false,
+      notes: data.notes,
+      assigned_to_name: data.assigned_to_name || "Studio Staff",
+      created_at: new Date().toISOString(),
+    };
+    setStored("requests", [newReq, ...requests]);
+    return newReq;
   },
 
   getAlbums: (): Album[] => {
@@ -384,6 +442,21 @@ export const studioStore = {
     }
     setStored("albums", updated);
     return updatedAlbum;
+  },
+
+  extendAlbumRetention: (id: string, days: number = 30): Album => {
+    const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
+    const updated = albums.map((a) => {
+      if (a.id === id) {
+        const currentExp = new Date(a.expires_at).getTime();
+        const base = currentExp > Date.now() ? currentExp : Date.now();
+        const nextExp = new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
+        return { ...a, expires_at: nextExp };
+      }
+      return a;
+    });
+    setStored("albums", updated);
+    return updated.find((a) => a.id === id)!;
   },
 
   createAlbum: (data: {
