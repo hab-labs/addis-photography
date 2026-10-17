@@ -25,6 +25,7 @@ export default function StudioSettingsPage() {
 
   React.useEffect(() => {
     setSettings(studioStore.getSettings());
+    studioStore.syncSettings().then(setSettings).catch(() => {});
   }, []);
 
   const handleChange = <K extends keyof StudioSettings>(key: K, value: StudioSettings[K]) => {

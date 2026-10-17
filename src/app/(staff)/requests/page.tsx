@@ -76,24 +76,29 @@ export default function ProductionRequestsPage() {
   const [isSaving, setIsSaving] = React.useState(false);
 
   const loadRequests = React.useCallback(() => {
-    const orders = studioStore.getOrders();
-    const orderById = new Map(orders.map((order) => [order.id, order]));
-    const sharedRequests = studioStore.getRequests().map((request: ClientRequest) => {
-      const order = request.order_id ? orderById.get(request.order_id) : undefined;
-      return {
-        id: request.id,
-        orderNumber: order?.order_number || request.order_id || request.id,
-        customerName: request.customer_name,
-        phone: request.customer_phone,
-        service: request.service_type,
-        dueDate: formatDate(request.due_date),
-        assignedStaff: request.assigned_to_name || "Unassigned",
-        status: request.status,
-        isOverdue: request.status !== "delivered" && isOverdue(request.due_date),
-      };
-    });
-    setRequests(sharedRequests);
-    setIsLoading(false);
+    const refreshData = () => {
+      const orders = studioStore.getOrders();
+      const orderById = new Map(orders.map((order) => [order.id, order]));
+      const sharedRequests = studioStore.getRequests().map((request: ClientRequest) => {
+        const order = request.order_id ? orderById.get(request.order_id) : undefined;
+        return {
+          id: request.id,
+          orderNumber: order?.order_number || request.order_id || request.id,
+          customerName: request.customer_name,
+          phone: request.customer_phone,
+          service: request.service_type,
+          dueDate: formatDate(request.due_date),
+          assignedStaff: request.assigned_to_name || "Unassigned",
+          status: request.status,
+          isOverdue: request.status !== "delivered" && isOverdue(request.due_date),
+        };
+      });
+      setRequests(sharedRequests);
+      setIsLoading(false);
+    };
+
+    refreshData();
+    studioStore.syncRequests().then(() => refreshData()).catch(() => {});
   }, []);
 
   React.useEffect(() => {

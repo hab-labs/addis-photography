@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   Check,
   Globe,
+  Download,
 } from "lucide-react";
 import { studioStore } from "@/lib/api/store";
 import { formatCalendarPair } from "@/lib/date";
@@ -45,23 +46,43 @@ export default function PublicAlbumViewerPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Fetch album
-  useEffect(() => {
+  // Fetch album from server with local store fallback
+  const fetchAlbumData = useCallback(async () => {
     try {
-      const alb = studioStore.getAlbumByToken(token);
-      if (alb) {
-        setAlbum(alb);
-        setMediaFiles(studioStore.getMediaFiles(alb.id));
-
-        const unlockedSession = sessionStorage.getItem(`album_unlocked_${alb.token}`);
-        if (!alb.is_locked || unlockedSession === "true") {
+      const res = await fetch(`/api/a/${token}`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === "unlocked") {
+          setAlbum(data.album);
+          setMediaFiles(data.media || []);
           setIsUnlocked(true);
+          return;
+        } else if (data.status === "locked") {
+          setAlbum(data.album);
+          setIsUnlocked(false);
+          return;
         }
       }
-    } finally {
-      setIsLoading(false);
+    } catch {
+      // Network or SSR fallback
+    }
+
+    // Fallback to store
+    const alb = studioStore.getAlbumByToken(token);
+    if (alb) {
+      setAlbum(alb);
+      setMediaFiles(studioStore.getMediaFiles(alb.id));
+
+      const unlockedSession = typeof window !== "undefined" ? sessionStorage.getItem(`album_unlocked_${alb.token}`) : null;
+      if (!alb.is_locked || unlockedSession === "true") {
+        setIsUnlocked(true);
+      }
     }
   }, [token]);
+
+  useEffect(() => {
+    fetchAlbumData().finally(() => setIsLoading(false));
+  }, [fetchAlbumData]);
 
   // Lockout countdown timer
   useEffect(() => {
@@ -72,8 +93,8 @@ export default function PublicAlbumViewerPage() {
     return () => clearInterval(interval);
   }, [lockoutSeconds]);
 
-  // Handle PIN Unlock
-  const handlePinSubmit = (e: React.FormEvent) => {
+  // Handle PIN Unlock via server-authoritative API
+  const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (lockoutSeconds > 0) return;
 
@@ -83,19 +104,56 @@ export default function PublicAlbumViewerPage() {
       return;
     }
 
-    const storedPin = localStorage.getItem(`addis_album_pin_${album?.token}`);
+    try {
+      const res = await fetch(`/api/a/${token}/unlock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: pinInput }),
+        credentials: "include",
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setIsUnlocked(true);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(`album_unlocked_${token}`, "true");
+        }
+        setPinInput("");
+        await fetchAlbumData();
+        return;
+      }
+
+      if (data.retryAfterSeconds) {
+        setLockoutSeconds(data.retryAfterSeconds);
+        setPinError(`Too many incorrect attempts. Please wait ${data.retryAfterSeconds} seconds.`);
+        setPinInput("");
+        return;
+      }
+
+      if (data.error) {
+        setPinError(data.error);
+        setPinInput("");
+        return;
+      }
+    } catch {
+      // Fallback to local check
+    }
+
+    const storedPin = typeof window !== "undefined" ? localStorage.getItem(`addis_album_pin_${album?.token}`) : null;
 
     if (storedPin && pinInput === storedPin) {
       setIsUnlocked(true);
-      sessionStorage.setItem(`album_unlocked_${album?.token}`, "true");
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(`album_unlocked_${album?.token}`, "true");
+      }
       setFailedAttempts(0);
     } else {
       const nextFailures = failedAttempts + 1;
       setFailedAttempts(nextFailures);
 
       if (nextFailures >= 5) {
-        setLockoutSeconds(30);
-        setPinError("Too many incorrect attempts. Please wait 30 seconds.");
+        setLockoutSeconds(900); // 15 minutes lockout per Section 7
+        setPinError("Too many incorrect attempts. Locked out for 15 minutes.");
       } else {
         setPinError(`Incorrect PIN. ${5 - nextFailures} attempts remaining.`);
       }
@@ -347,10 +405,17 @@ export default function PublicAlbumViewerPage() {
             </p>
           </div>
 
-          <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-slate-300">
-            <Eye className="h-4 w-4 text-amber-400" />
-            View only · Downloads disabled
-          </span>
+          {album.allow_download ? (
+            <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-950/40 px-3 py-2 text-xs font-semibold text-emerald-300">
+              <Download className="h-4 w-4 text-emerald-400" />
+              Downloads enabled
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-slate-300">
+              <Eye className="h-4 w-4 text-amber-400" />
+              View only · Downloads disabled
+            </span>
+          )}
         </div>
       </header>
 
@@ -416,6 +481,17 @@ export default function PublicAlbumViewerPage() {
             </span>
 
             <div className="flex items-center space-x-3">
+              {album.allow_download && (
+                <a
+                  href={`/api/a/${album.token}/media/${currentMedia.id}/download`}
+                  download={currentMedia.filename}
+                  className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition inline-flex items-center gap-1.5 text-xs font-semibold"
+                  aria-label="Download media"
+                >
+                  <Download className="h-4 w-4 text-emerald-400" />
+                  <span className="hidden sm:inline">Download</span>
+                </a>
+              )}
               <button
                 type="button"
                 onClick={closeLightbox}

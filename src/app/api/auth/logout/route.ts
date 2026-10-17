@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import { AUTH_COOKIE_NAME } from "@/lib/auth/config";
+import { getSessionIdFromRequest, destroySession, clearSessionCookie } from "@/server/auth/session";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const sessionId = getSessionIdFromRequest(request);
+  if (sessionId) {
+    await destroySession(sessionId);
+  }
+
   const response = NextResponse.json({ success: true });
-  response.cookies.set({
-    name: AUTH_COOKIE_NAME,
-    value: "",
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  });
+  clearSessionCookie(response);
   return response;
 }

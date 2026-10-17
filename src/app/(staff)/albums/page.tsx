@@ -59,23 +59,29 @@ export default function ClientAlbumsPage() {
   const [isSaving, setIsSaving] = React.useState(false);
 
   const loadAlbums = React.useCallback(() => {
-    setAlbums(
-      studioStore.getAlbums().map((album: StoreAlbum) => {
-        const date = formatCalendarPair(album.created_at);
-        return {
-          ...album,
-          clientName: album.customer_name,
-          coverUrl: album.cover_image_url || fallbackCover,
-          mediaCount: album.file_count,
-          createdDate: `${date.gregorian}`,
-        };
-      })
-    );
+    const refreshData = () => {
+      setAlbums(
+        studioStore.getAlbums().map((album: StoreAlbum) => {
+          const date = formatCalendarPair(album.created_at);
+          return {
+            ...album,
+            clientName: album.customer_name,
+            coverUrl: album.cover_image_url || fallbackCover,
+            mediaCount: album.file_count,
+            createdDate: `${date.gregorian}`,
+          };
+        })
+      );
+    };
+
+    refreshData();
+    studioStore.syncAlbums().then(() => refreshData()).catch(() => {});
   }, []);
 
   React.useEffect(() => {
     loadAlbums();
     setCustomers(studioStore.getCustomers());
+    studioStore.syncCustomers().then(setCustomers).catch(() => {});
   }, [loadAlbums]);
 
   const handleCustomerSelect = (id: string) => {

@@ -64,6 +64,7 @@ export default function CustomersPage() {
   React.useEffect(() => {
     try {
       setCustomers(studioStore.getCustomers());
+      studioStore.syncCustomers().then(setCustomers).catch(() => {});
     } finally {
       setIsLoading(false);
     }

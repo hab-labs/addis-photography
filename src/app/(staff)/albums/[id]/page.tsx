@@ -70,6 +70,13 @@ export default function AlbumDetailsPage() {
     return studioStore.getMediaFiles(albumId);
   }, [albumId, refreshTrigger]);
 
+  useEffect(() => {
+    studioStore
+      .syncAlbums()
+      .then(() => setRefreshTrigger((c) => c + 1))
+      .catch(() => {});
+  }, [albumId]);
+
   // Initialize Chunked Uploader instance
   useEffect(() => {
     const uploader = new ChunkUploader((items) => {

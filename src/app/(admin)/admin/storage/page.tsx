@@ -46,6 +46,7 @@ export default function DiskStoragePage() {
     setIsRefreshing(true);
     try {
       setAlbums(studioStore.getAlbums());
+      studioStore.syncAlbums().then(setAlbums).catch(() => {});
     } finally {
       setTimeout(() => setIsRefreshing(false), 300);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -59,6 +59,13 @@ export default function OrderDetailsPage() {
   const order = useMemo(() => {
     return studioStore.getOrderById(orderId);
   }, [orderId, refreshTrigger]);
+
+  useEffect(() => {
+    studioStore
+      .syncOrders()
+      .then(() => setRefreshTrigger((c) => c + 1))
+      .catch(() => {});
+  }, [orderId]);
 
   if (!order) {
     return (

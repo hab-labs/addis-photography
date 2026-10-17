@@ -9,7 +9,6 @@ import {
   MediaFile,
   User,
   AuditLog,
-  DailyReport,
   StudioSettings,
   OrderStatus,
   PaymentMethod,
@@ -28,8 +27,13 @@ import {
 import Decimal from "decimal.js";
 import { calculateBalance, calculateLineTotal, calculateOrderTotal, toDecimal } from "../money";
 import { isTodayInAddis } from "../date";
+import { api } from "./client";
 
 const STORAGE_KEY_PREFIX = "addis_studio_data_";
+
+function isBrowser(): boolean {
+  return typeof window !== "undefined" && !process.env.VITEST;
+}
 
 function getStored<T>(key: string, initial: T): T {
   if (typeof window === "undefined") return initial;
@@ -50,7 +54,74 @@ function setStored<T>(key: string, value: T): void {
   }
 }
 
+function mapBackendOrder(o: any): Order {
+  const statusMap: Record<string, OrderStatus> = {
+    New: "received",
+    "In Progress": "in_progress",
+    Ready: "ready",
+    Delivered: "delivered",
+    Cancelled: "voided",
+  };
+  const isVoid = o.voided === true || o.voided === "true" || o.voided === "TRUE";
+  const status: OrderStatus = isVoid
+    ? "voided"
+    : statusMap[o.status] || (o.status?.toLowerCase() as OrderStatus) || "received";
+
+  return {
+    id: o.id,
+    order_number: o.booking_ref || `AP-${o.booking_no || o.id.slice(-5)}`,
+    customer_id: o.customer_id,
+    customer: {
+      id: o.customer_id,
+      name: o.customer_name || "Customer",
+      phone: o.customer_phone || "",
+      total_orders: 1,
+      total_spent: o.order_total || o.total_amount || "0.00",
+      balance_due: o.balance_amount || "0.00",
+      created_at: o.created_at,
+      updated_at: o.created_at,
+    },
+    items: (o.items || []).map((it: any, idx: number) => ({
+      id: it.id || `item-${idx}`,
+      price_item_id: it.photo_type_id || it.price_item_id || "",
+      photo_type_name: it.photo_type_name || "Service",
+      quantity: Number(it.quantity || 1),
+      unit_price: new Decimal(it.unit_price || 0).toFixed(2),
+      line_total: new Decimal(it.line_total || 0).toFixed(2),
+      notes: it.notes || undefined,
+    })),
+    payments: (o.payments || []).map((p: any) => ({
+      id: p.id,
+      order_id: o.id,
+      amount: new Decimal(p.amount || 0).toFixed(2),
+      payment_method: (p.method?.toLowerCase() === "telebirr"
+        ? "telebirr"
+        : p.method?.toLowerCase() === "bank transfer"
+        ? "bank_transfer"
+        : "cash") as PaymentMethod,
+      reference_no: p.reference_no || undefined,
+      created_by_name: p.created_by_name || "Staff",
+      created_at: p.created_at || p.paid_at || new Date().toISOString(),
+    })),
+    total_amount: new Decimal(o.order_total || o.total_amount || 0).toFixed(2),
+    paid_amount: new Decimal(o.paid_amount || 0).toFixed(2),
+    balance_amount: new Decimal(o.balance_amount || 0).toFixed(2),
+    status,
+    notes: o.notes || undefined,
+    created_by_id: o.created_by_id || "usr-1",
+    created_by_name: o.created_by_name || "Staff",
+    is_instant_delivery: status === "delivered",
+    delivered_at: status === "delivered" ? o.created_at : null,
+    void_reason: o.void_reason || null,
+    voided_at: o.voided_at || null,
+    voided_by: o.voided_by || null,
+    created_at: o.created_at || new Date().toISOString(),
+    updated_at: o.updated_at || o.created_at || new Date().toISOString(),
+  };
+}
+
 export const studioStore = {
+  // --- Customers ---
   getCustomers: (query?: string): Customer[] => {
     const customers = getStored<Customer[]>("customers", INITIAL_CUSTOMERS);
     if (!query || !query.trim()) return customers;
@@ -82,9 +153,34 @@ export const studioStore = {
       updated_at: new Date().toISOString(),
     };
     setStored("customers", [newCust, ...customers]);
+
+    if (isBrowser()) {
+      api.post("/api/customers", { name, phone, notes })
+        .then((res) => {
+          if (res?.customer) {
+            studioStore.syncCustomers().catch(() => {});
+          }
+        })
+        .catch(console.error);
+    }
+
     return newCust;
   },
 
+  async syncCustomers(): Promise<Customer[]> {
+    try {
+      const res = await api.get<{ customers: Customer[] }>("/api/customers");
+      if (res?.customers && Array.isArray(res.customers)) {
+        setStored("customers", res.customers);
+        return res.customers;
+      }
+    } catch {
+      // Fallback
+    }
+    return studioStore.getCustomers();
+  },
+
+  // --- Prices / Photo Types ---
   getPrices: (): PriceItem[] => {
     return getStored<PriceItem[]>("prices", INITIAL_PRICES);
   },
@@ -95,6 +191,15 @@ export const studioStore = {
       p.id === id ? { ...p, standard_unit_price: new Decimal(newPrice || 0).toFixed(2) } : p
     );
     setStored("prices", updated);
+
+    if (isBrowser()) {
+      api.patch(`/api/photo-types/${id}`, {
+        standard_price: new Decimal(newPrice || 0).toFixed(2),
+      })
+        .then(() => studioStore.syncPrices().catch(() => {}))
+        .catch(console.error);
+    }
+
     return updated.find((p) => p.id === id)!;
   },
 
@@ -118,14 +223,57 @@ export const studioStore = {
       is_active: true,
     };
     setStored("prices", [...prices, newPrice]);
+
+    if (isBrowser()) {
+      api.post("/api/photo-types", {
+        name: data.name,
+        category: data.category,
+        standard_unit_price: data.standard_unit_price,
+        turnaround_days: data.turnaround_days,
+        description: data.description,
+      })
+        .then(() => studioStore.syncPrices().catch(() => {}))
+        .catch(console.error);
+    }
+
     return newPrice;
   },
 
   deletePrice: (id: string): void => {
     const prices = getStored<PriceItem[]>("prices", INITIAL_PRICES);
     setStored("prices", prices.filter((p) => p.id !== id));
+
+    if (isBrowser()) {
+      api.delete(`/api/photo-types/${id}`)
+        .then(() => studioStore.syncPrices().catch(() => {}))
+        .catch(console.error);
+    }
   },
 
+  async syncPrices(): Promise<PriceItem[]> {
+    try {
+      const res = await api.get<{ photo_types: any[] }>("/api/photo-types?include_inactive=true");
+      if (res?.photo_types && Array.isArray(res.photo_types)) {
+        const mapped: PriceItem[] = res.photo_types.map((pt) => ({
+          id: pt.id,
+          code: pt.name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8) || "SRV",
+          name: pt.name,
+          category: (pt.category || "portrait") as PriceItem["category"],
+          standard_unit_price: pt.standard_price ? new Decimal(pt.standard_price).toFixed(2) : "0.00",
+          turnaround_days: pt.turnaround_days || 1,
+          description: pt.description || undefined,
+          is_active: pt.active !== false,
+        }));
+        setStored("prices", mapped);
+        return mapped;
+      }
+    } catch {
+      // Fallback
+    }
+    return studioStore.getPrices();
+  },
+
+  // --- Orders ---
   getOrders: (): Order[] => {
     return getStored<Order[]>("orders", INITIAL_ORDERS);
   },
@@ -212,7 +360,7 @@ export const studioStore = {
     const orders = getStored<Order[]>("orders", INITIAL_ORDERS);
     setStored("orders", [newOrder, ...orders]);
 
-    // Update customer stats
+    // Update customer stats locally
     const customers = getStored<Customer[]>("customers", INITIAL_CUSTOMERS);
     const updatedCustomers = customers.map((c) => {
       if (c.id === customer.id) {
@@ -259,6 +407,44 @@ export const studioStore = {
       details: `Created order ${newOrder.order_number} for ${customer.name}. Total: ETB ${orderTotal}`,
     });
 
+    // Authoritative Server API Sync
+    if (isBrowser()) {
+      const methodMap: Record<PaymentMethod, string> = {
+        cash: "Cash",
+        telebirr: "Telebirr",
+        bank_transfer: "Bank Transfer",
+        cbe_birr: "Bank Transfer",
+      };
+
+      api.post("/api/orders", {
+        customer_id: data.customer_id,
+        customer_name: data.customer_name,
+        customer_phone: data.customer_phone,
+        items: data.items.map((it) => ({
+          photo_type_id: it.price_item_id,
+          photo_type_name: it.photo_type_name,
+          quantity: it.quantity,
+          unit_price: it.unit_price,
+          notes: it.notes,
+        })),
+        initial_payment:
+          Number(data.paid_amount) > 0
+            ? {
+                amount: data.paid_amount,
+                method: methodMap[data.payment_method] || "Cash",
+                reference_no: data.reference_no,
+              }
+            : undefined,
+        notes: data.notes,
+        is_delivered: data.is_delivered,
+      })
+        .then(() => {
+          studioStore.syncOrders().catch(() => {});
+          studioStore.syncCustomers().catch(() => {});
+        })
+        .catch(console.error);
+    }
+
     return newOrder;
   },
 
@@ -301,6 +487,12 @@ export const studioStore = {
       target_id: orderId,
       details: `Voided order ${target.order_number}. Reason: ${reason}`,
     });
+
+    if (isBrowser()) {
+      api.post(`/api/orders/${orderId}/void`, { reason })
+        .then(() => studioStore.syncOrders().catch(() => {}))
+        .catch(console.error);
+    }
 
     return updated.find((o) => o.id === orderId)!;
   },
@@ -353,9 +545,44 @@ export const studioStore = {
       details: `Recorded payment of ETB ${amount} via ${method} for ${target.order_number}`,
     });
 
+    if (isBrowser()) {
+      const methodMap: Record<PaymentMethod, string> = {
+        cash: "Cash",
+        telebirr: "Telebirr",
+        bank_transfer: "Bank Transfer",
+        cbe_birr: "Bank Transfer",
+      };
+
+      api.post(`/api/orders/${orderId}/payments`, {
+        amount,
+        method: methodMap[method] || "Cash",
+        reference_no: referenceNo,
+      })
+        .then(() => {
+          studioStore.syncOrders().catch(() => {});
+          studioStore.syncCustomers().catch(() => {});
+        })
+        .catch(console.error);
+    }
+
     return updated.find((o) => o.id === orderId)!;
   },
 
+  async syncOrders(): Promise<Order[]> {
+    try {
+      const res = await api.get<{ orders: any[] }>("/api/orders");
+      if (res?.orders && Array.isArray(res.orders)) {
+        const mapped = res.orders.map(mapBackendOrder);
+        setStored("orders", mapped);
+        return mapped;
+      }
+    } catch {
+      // Fallback
+    }
+    return studioStore.getOrders();
+  },
+
+  // --- Requests ---
   getRequests: (): ClientRequest[] => {
     return getStored<ClientRequest[]>("requests", INITIAL_REQUESTS);
   },
@@ -367,6 +594,13 @@ export const studioStore = {
     const requests = getStored<ClientRequest[]>("requests", INITIAL_REQUESTS);
     const updated = requests.map((r) => (r.id === id ? { ...r, status } : r));
     setStored("requests", updated);
+
+    if (isBrowser()) {
+      api.patch(`/api/requests/${id}`, { status })
+        .then(() => studioStore.syncRequests().catch(() => {}))
+        .catch(console.error);
+    }
+
     return updated.find((r) => r.id === id)!;
   },
 
@@ -393,27 +627,60 @@ export const studioStore = {
       created_at: new Date().toISOString(),
     };
     setStored("requests", [newReq, ...requests]);
+
+    if (isBrowser()) {
+      api.post("/api/requests", {
+        title: data.service_type,
+        due_date: data.due_date,
+        notes: data.notes,
+      })
+        .then(() => studioStore.syncRequests().catch(() => {}))
+        .catch(console.error);
+    }
+
     return newReq;
   },
 
+  async syncRequests(): Promise<ClientRequest[]> {
+    try {
+      const res = await api.get<{ requests: any[] }>("/api/requests");
+      if (res?.requests && Array.isArray(res.requests)) {
+        const mapped: ClientRequest[] = res.requests.map((r) => ({
+          id: r.id,
+          order_id: r.order_id || undefined,
+          customer_id: r.customer_id || `cust-${r.id}`,
+          customer_name: r.customer_name || "Client",
+          customer_phone: r.customer_phone || "",
+          service_type: r.title || r.service_type || "Photography Service",
+          status: (r.status?.toLowerCase() === "done" ? "delivered" : r.status?.toLowerCase() || "received") as ClientRequest["status"],
+          due_date: r.due_date || new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          is_overdue: !!r.is_overdue,
+          notes: r.description || r.notes || undefined,
+          assigned_to_name: r.assigned_to_name || "Studio Staff",
+          created_at: r.created_at || new Date().toISOString(),
+        }));
+        setStored("requests", mapped);
+        return mapped;
+      }
+    } catch {
+      // Fallback
+    }
+    return studioStore.getRequests();
+  },
+
+  // --- Albums ---
   getAlbums: (): Album[] => {
-    return getStored<Album[]>("albums", INITIAL_ALBUMS).map((album) => ({
-      ...album,
-      allow_download: false,
-      allow_zip: false,
-    }));
+    return getStored<Album[]>("albums", INITIAL_ALBUMS);
   },
 
   getAlbumByToken: (token: string): Album | undefined => {
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
-    const album = albums.find((a) => a.token === token);
-    return album ? { ...album, allow_download: false, allow_zip: false } : undefined;
+    return albums.find((a) => a.token === token);
   },
 
   getAlbumById: (id: string): Album | undefined => {
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
-    const album = albums.find((a) => a.id === id);
-    return album ? { ...album, allow_download: false, allow_zip: false } : undefined;
+    return albums.find((a) => a.id === id);
   },
 
   updateAlbumAccess: (id: string, access: { isPrivate: boolean; pin?: string }): Album => {
@@ -429,18 +696,30 @@ export const studioStore = {
             ...item,
             is_locked: access.isPrivate,
             pin_set: access.isPrivate,
-            allow_download: false,
-            allow_zip: false,
           }
-        : item,
+        : item
     );
     const updatedAlbum = updated.find((item) => item.id === id)!;
     if (access.isPrivate && access.pin) {
-      localStorage.setItem(`addis_album_pin_${updatedAlbum.token}`, access.pin);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`addis_album_pin_${updatedAlbum.token}`, access.pin);
+      }
     } else {
-      localStorage.removeItem(`addis_album_pin_${updatedAlbum.token}`);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(`addis_album_pin_${updatedAlbum.token}`);
+      }
     }
     setStored("albums", updated);
+
+    if (isBrowser()) {
+      api.patch(`/api/albums/${id}`, {
+        visibility: access.isPrivate ? "private" : "public",
+        pin: access.pin,
+      })
+        .then(() => studioStore.syncAlbums().catch(() => {}))
+        .catch(console.error);
+    }
+
     return updatedAlbum;
   },
 
@@ -456,6 +735,13 @@ export const studioStore = {
       return a;
     });
     setStored("albums", updated);
+
+    if (isBrowser()) {
+      api.post(`/api/albums/${id}/retention`, { extension_days: days })
+        .then(() => studioStore.syncAlbums().catch(() => {}))
+        .catch(console.error);
+    }
+
     return updated.find((a) => a.id === id)!;
   },
 
@@ -488,13 +774,58 @@ export const studioStore = {
       expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date().toISOString(),
     };
-    if (data.pin) {
+    if (data.pin && typeof window !== "undefined") {
       localStorage.setItem(`addis_album_pin_${newAlb.token}`, data.pin);
     }
     setStored("albums", [newAlb, ...albums]);
+
+    if (isBrowser()) {
+      api.post("/api/albums", {
+        title: data.title,
+        order_id: newAlb.token,
+        customer_id: data.customer_id,
+        visibility: data.pin ? "private" : "public",
+        pin: data.pin,
+      })
+        .then(() => studioStore.syncAlbums().catch(() => {}))
+        .catch(console.error);
+    }
+
     return newAlb;
   },
 
+  async syncAlbums(): Promise<Album[]> {
+    try {
+      const res = await api.get<{ albums: any[] }>("/api/albums");
+      if (res?.albums && Array.isArray(res.albums)) {
+        const mapped: Album[] = res.albums.map((a) => ({
+          id: a.id,
+          title: a.title,
+          token: a.token || a.id,
+          customer_id: a.customer_id || "",
+          customer_name: a.customer_name || "Customer",
+          event_date: a.created_at,
+          is_locked: a.visibility === "private" || !!a.pin_set,
+          pin_set: !!a.pin_set,
+          quota_bytes: Number(a.quota_bytes) || 1073741824,
+          used_bytes: Number(a.used_bytes) || 0,
+          file_count: Number(a.file_count) || 0,
+          cover_image_url: a.cover_image_url || undefined,
+          allow_download: !!a.allow_download,
+          allow_zip: !!a.allow_zip,
+          expires_at: a.expires_at || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+          created_at: a.created_at || new Date().toISOString(),
+        }));
+        setStored("albums", mapped);
+        return mapped;
+      }
+    } catch {
+      // Fallback
+    }
+    return studioStore.getAlbums();
+  },
+
+  // --- Media Files ---
   getMediaFiles: (albumId: string): MediaFile[] => {
     const media = getStored<MediaFile[]>("media", INITIAL_MEDIA);
     return media.filter((m) => m.album_id === albumId);
@@ -520,6 +851,7 @@ export const studioStore = {
     setStored("albums", updatedAlbums);
   },
 
+  // --- Users / Operators ---
   getUsers: (): User[] => {
     return getStored<User[]>("users", INITIAL_USERS);
   },
@@ -528,9 +860,40 @@ export const studioStore = {
     const users = getStored<User[]>("users", INITIAL_USERS);
     const updated = users.map((u) => (u.id === id ? { ...u, ...updates } : u));
     setStored("users", updated);
+
+    if (isBrowser()) {
+      api.put("/api/admin/operators", { id, ...updates })
+        .then(() => studioStore.syncUsers().catch(() => {}))
+        .catch(console.error);
+    }
+
     return updated.find((u) => u.id === id)!;
   },
 
+  async syncUsers(): Promise<User[]> {
+    try {
+      const res = await api.get<{ users: any[] }>("/api/admin/operators");
+      if (res?.users && Array.isArray(res.users)) {
+        const mapped: User[] = res.users.map((u) => ({
+          id: u.id,
+          name: u.name,
+          username: u.username,
+          email: u.email || "",
+          phone: u.phone || "",
+          role: u.role === "admin" ? "admin" : "staff",
+          is_active: u.active !== false,
+          created_at: u.created_at || new Date().toISOString(),
+        }));
+        setStored("users", mapped);
+        return mapped;
+      }
+    } catch {
+      // Fallback
+    }
+    return studioStore.getUsers();
+  },
+
+  // --- Audit Logs ---
   getAuditLogs: (): AuditLog[] => {
     return getStored<AuditLog[]>("audit_logs", INITIAL_AUDIT_LOGS);
   },
@@ -540,12 +903,38 @@ export const studioStore = {
     const entry: AuditLog = {
       ...log,
       id: `aud-${Date.now()}`,
-      ip_address: "192.168.1.50",
+      ip_address: "127.0.0.1",
       timestamp: new Date().toISOString(),
     };
     setStored("audit_logs", [entry, ...logs]);
   },
 
+  async syncAuditLogs(): Promise<AuditLog[]> {
+    try {
+      const res = await api.get<{ logs: any[] }>("/api/audit-logs");
+      if (res?.logs && Array.isArray(res.logs)) {
+        const mapped: AuditLog[] = res.logs.map((l) => ({
+          id: l.id,
+          action: l.action,
+          actor_id: l.user_id || "system",
+          actor_name: l.user_name || "System",
+          actor_role: "staff",
+          target_type: l.entity_type || "System",
+          target_id: l.entity_id || "",
+          details: typeof l.details === "object" ? JSON.stringify(l.details) : String(l.details || ""),
+          ip_address: l.ip_address || "127.0.0.1",
+          timestamp: l.created_at || new Date().toISOString(),
+        }));
+        setStored("audit_logs", mapped);
+        return mapped;
+      }
+    } catch {
+      // Fallback
+    }
+    return studioStore.getAuditLogs();
+  },
+
+  // --- Settings ---
   getSettings: (): StudioSettings => {
     return getStored<StudioSettings>("settings", INITIAL_SETTINGS);
   },
@@ -554,6 +943,40 @@ export const studioStore = {
     const current = getStored<StudioSettings>("settings", INITIAL_SETTINGS);
     const updated = { ...current, ...newSettings };
     setStored("settings", updated);
+
+    if (isBrowser()) {
+      api.put("/api/settings", newSettings)
+        .then(() => studioStore.syncSettings().catch(() => {}))
+        .catch(console.error);
+    }
+
     return updated;
+  },
+
+  async syncSettings(): Promise<StudioSettings> {
+    try {
+      const res = await api.get<{ settings: StudioSettings }>("/api/settings");
+      if (res?.settings) {
+        setStored("settings", res.settings);
+        return res.settings;
+      }
+    } catch {
+      // Fallback
+    }
+    return studioStore.getSettings();
+  },
+
+  // --- Complete Synchronizer ---
+  async syncWithServer(): Promise<void> {
+    await Promise.allSettled([
+      studioStore.syncCustomers(),
+      studioStore.syncPrices(),
+      studioStore.syncOrders(),
+      studioStore.syncRequests(),
+      studioStore.syncAlbums(),
+      studioStore.syncSettings(),
+      studioStore.syncUsers(),
+      studioStore.syncAuditLogs(),
+    ]);
   },
 };

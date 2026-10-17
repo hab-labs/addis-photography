@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -33,14 +33,23 @@ export default function CustomerProfilePage() {
   const params = useParams();
   const customerId = (params?.id as string) || "";
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    Promise.allSettled([
+      studioStore.syncCustomers(),
+      studioStore.syncOrders(),
+    ]).then(() => setRefreshTrigger((c) => c + 1));
+  }, [customerId]);
+
   const customer = useMemo(() => {
     return studioStore.getCustomerById(customerId);
-  }, [customerId]);
+  }, [customerId, refreshTrigger]);
 
   const orders = useMemo(() => {
     const all = studioStore.getOrders();
     return all.filter((o) => o.customer_id === customerId);
-  }, [customerId]);
+  }, [customerId, refreshTrigger]);
 
   if (!customer) {
     return (

@@ -29,6 +29,7 @@ export default function AuditLogPage() {
 
   React.useEffect(() => {
     setLogs(studioStore.getAuditLogs());
+    studioStore.syncAuditLogs().then(setLogs).catch(() => {});
   }, []);
 
   const users = Array.from(new Set(logs.map((log) => log.actor_name)));

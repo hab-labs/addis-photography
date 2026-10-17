@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, UserRole } from "@/types";
+import { studioStore } from "@/lib/api/store";
 
 const AUTH_STORAGE_KEY = "addis_auth_user_v2";
 
@@ -68,15 +69,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let isMounted = true;
     try {
-      setUser(readStoredUser());
+      const stored = readStoredUser();
+      if (stored) setUser(stored);
     } catch {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      sessionStorage.removeItem(AUTH_STORAGE_KEY);
       setUser(null);
-    } finally {
-      setIsLoading(false);
     }
+
+    // Authoritative session verification with backend
+    fetch("/api/auth/me", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted) return;
+        if (data?.user) {
+          const activeUser = data.user as User;
+          setUser(activeUser);
+          studioStore.syncWithServer().catch(() => {});
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (username: string, password: string, rememberMe = false) => {
@@ -84,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Requested-With": "studio" },
       body: JSON.stringify({ username, password }),
+      credentials: "include",
     });
     const data = await response.json();
 
@@ -91,10 +111,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const nextUser = data.user as User;
       setUser(nextUser);
       persistUser(nextUser, rememberMe);
+      studioStore.syncWithServer().catch(() => {});
       return { success: true, user: nextUser };
     }
 
-    return { success: false, error: data.error?.message || "Invalid username or password" };
+    return { success: false, error: data.error?.message || data.error || "Invalid username or password" };
   };
 
   const logout = () => {

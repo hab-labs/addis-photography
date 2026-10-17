@@ -19,7 +19,7 @@ import {
 
 import { useAuth } from "@/lib/auth/context";
 import { studioStore } from "@/lib/api/store";
-import { formatCalendarPair } from "@/lib/date";
+import { formatCalendarPair, isTodayInAddis } from "@/lib/date";
 import { formatETB } from "@/lib/money";
 import type { Order } from "@/types";
 import {
@@ -51,8 +51,16 @@ export default function TodayLedgerPage() {
     setIsRefreshing(true);
     if (typeof studioStore !== "undefined" && studioStore.getTodayOrders) {
       setOrders(studioStore.getTodayOrders());
+      studioStore
+        .syncOrders()
+        .then((all) => {
+          setOrders(all.filter((o) => isTodayInAddis(o.created_at)));
+        })
+        .catch(() => {})
+        .finally(() => setIsRefreshing(false));
+    } else {
+      setTimeout(() => setIsRefreshing(false), 300);
     }
-    setTimeout(() => setIsRefreshing(false), 400);
   }, []);
 
   React.useEffect(() => {

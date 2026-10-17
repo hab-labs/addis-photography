@@ -72,6 +72,7 @@ export default function PriceListPage() {
   const loadPrices = React.useCallback(() => {
     try {
       setPrices(studioStore.getPrices());
+      studioStore.syncPrices().then(setPrices).catch(() => {});
     } finally {
       setIsLoading(false);
     }

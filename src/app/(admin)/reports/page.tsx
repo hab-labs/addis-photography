@@ -26,6 +26,7 @@ export default function SalesReportsPage() {
   const loadData = React.useCallback(() => {
     try {
       setOrders(studioStore.getOrders());
+      studioStore.syncOrders().then(setOrders).catch(() => {});
     } finally {
       setIsLoading(false);
     }
