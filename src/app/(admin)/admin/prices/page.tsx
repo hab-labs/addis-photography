@@ -44,14 +44,14 @@ export default function PriceListPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 ">
-              Studio Price List
+              Price List
             </h1>
             <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700  border border-indigo-500/20">
               <Tags className="h-3 w-3" /> Live Catalog
             </span>
           </div>
           <p className="text-xs font-medium text-slate-400 mt-1">
-            Configure default billing rates for walk-in services and laboratory packages.
+            Manage standard studio services and active prices.
           </p>
         </div>
 

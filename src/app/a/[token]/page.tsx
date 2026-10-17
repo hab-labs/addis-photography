@@ -4,14 +4,12 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import {
   Lock,
-  Download,
   Share2,
   ChevronLeft,
   ChevronRight,
   X,
   Play,
   Camera,
-  Archive,
   Eye,
   ShieldAlert,
 } from "lucide-react";
@@ -35,7 +33,6 @@ export default function PublicAlbumViewerPage() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
   const [pinError, setPinError] = useState("");
-  const [downloadNotice, setDownloadNotice] = useState("");
 
   // Lightbox viewer state
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -78,11 +75,9 @@ export default function PublicAlbumViewerPage() {
       return;
     }
 
-    // Look for stored PIN or accept sample PIN "2026" or "1234"
-    const storedPin =
-      localStorage.getItem(`addis_album_pin_${album?.token}`) || "2026";
+    const storedPin = localStorage.getItem(`addis_album_pin_${album?.token}`);
 
-    if (pinInput === storedPin || pinInput === "2026" || pinInput === "1234") {
+    if (storedPin && pinInput === storedPin) {
       setIsUnlocked(true);
       sessionStorage.setItem(`album_unlocked_${album?.token}`, "true");
       setFailedAttempts(0);
@@ -98,11 +93,6 @@ export default function PublicAlbumViewerPage() {
       }
       setPinInput("");
     }
-  };
-
-  const handleDownloadAllZip = () => {
-    if (!album?.allow_zip) return;
-    setDownloadNotice("ZIP download is being prepared. It will start when processing is complete.");
   };
 
   const openLightbox = (index: number) => {
@@ -274,25 +264,12 @@ export default function PublicAlbumViewerPage() {
             </p>
           </div>
 
-          {/* Conditional ZIP Download button */}
-          {album.allow_zip && mediaFiles.length > 0 && (
-            <Button
-              onClick={handleDownloadAllZip}
-              variant="gold"
-              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shadow-lg"
-            >
-              <Archive className="h-4 w-4 mr-2" />
-              Download All Photos (ZIP)
-            </Button>
-          )}
+          <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-slate-300">
+            <Eye className="h-4 w-4 text-amber-400" />
+            View only · Downloads disabled
+          </span>
         </div>
       </header>
-
-      {downloadNotice && (
-        <div role="status" className="mx-auto mt-4 max-w-6xl rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs font-medium text-amber-200">
-          {downloadNotice}
-        </div>
-      )}
 
       {/* Media Grid (Lazy-Loaded, Mobile-First) */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-8">
@@ -348,18 +325,6 @@ export default function PublicAlbumViewerPage() {
             </span>
 
             <div className="flex items-center space-x-3">
-              {album.allow_download && (
-                <a
-                  href={currentMedia.url}
-                  download={currentMedia.filename}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
-                  title="Download File"
-                >
-                  <Download className="h-5 w-5" />
-                </a>
-              )}
               <button
                 onClick={closeLightbox}
                 className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"

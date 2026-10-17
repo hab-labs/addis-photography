@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Decimal from "decimal.js";
 import {
@@ -212,302 +213,75 @@ export default function NewWalkInOrderPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Title & Action Banner */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 ">
-              <Zap className="h-4 w-4 fill-current" />
-            </div>
-
-            {formError && (
-              <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">
-                {formError}
-              </div>
-            )}
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 ">
-              Fast Walk-In Order
-            </h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700   border border-amber-200/60 ">
-              <Sparkles className="h-3 w-3" /> Under 60s Flow
-            </span>
-          </div>
-          <p className="text-xs font-medium text-slate-400">
-            Rapid customer intake, service allocation, and instant counter receipt.
-          </p>
+    <div className="mx-auto max-w-[1140px] space-y-5">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div>
+          <Link href="/today" className="text-[11px] font-medium text-slate-400 hover:text-slate-700">← Back to today</Link>
+          <h1 className="mt-1 text-xl font-bold tracking-tight text-slate-900">New Order</h1>
+          <p className="text-[11px] text-slate-500">Create a booking and record an optional first payment.</p>
         </div>
-
-        <button
-          type="button"
-          onClick={handleReset}
-          className="flex h-9 items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 text-xs font-semibold text-slate-600 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:bg-slate-50    transition-all"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-          <span>Reset Form</span>
-        </button>
+        <div className="hidden rounded-md border border-slate-200 bg-white px-4 py-2 text-right sm:block">
+          <p className="text-[9px] text-slate-400">Booking number</p>
+          <p className="font-mono text-[11px] font-semibold text-slate-700">APS-261015-043</p>
+        </div>
       </div>
 
-      {/* Main Grid: Form Left, Receipt Right */}
-      <div className="grid gap-8 lg:grid-cols-12 items-start">
-        {/* Left Side: Form Sections (8 Cols) */}
-        <div className="space-y-6 lg:col-span-8">
-          {/* Card 1: Customer Profile */}
-          <div className="rounded-3xl bg-white  p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100  space-y-4">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-              <User className="h-3.5 w-3.5 text-indigo-500" />
-              <span>1. Customer Identity</span>
-            </div>
+      {formError && <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">{formError}</div>}
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 ">
-                  Ethiopian Phone Number <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
-                  <Input
-                    type="tel"
-                    placeholder="09... or +251..."
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="h-10 rounded-2xl bg-slate-50/80 pl-10 text-xs font-mono border-slate-200/80   focus:bg-white"
-                  />
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_198px]">
+        <div className="space-y-3">
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">1</span><div><h2 className="text-xs font-bold text-slate-800">Customer</h2><p className="text-[10px] text-slate-400">Find an existing customer or create a new profile.</p></div></div>
+              <button type="button" onClick={() => { setCustomerName(""); setPhone(""); }} className="rounded-md border border-slate-200 px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50">＋ New Customer</button>
+            </div>
+            <label className="mb-1 block text-[10px] font-medium text-slate-500">Search customer</label>
+            <div className="relative">
+              <Input type="tel" placeholder="09XXXXXXXX or +2519XXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} className="h-9 rounded-md border-slate-200 pr-8 text-xs" />
+              <span className="pointer-events-none absolute right-3 top-2.5 text-xs text-slate-400">⌄</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50/50 px-3 py-2">
+              <div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-600">{customerName ? customerName.slice(0, 2).toUpperCase() : "CU"}</span><div><p className="text-[10px] font-semibold text-slate-700">{customerName || "New customer"}</p><p className="text-[9px] text-slate-400">{phone || "Phone number pending"}</p></div></div>
+              <span className="text-right text-[9px] text-slate-400">Outstanding balance<br /><b className="text-slate-700">ETB 0.00</b> <span className="text-emerald-600">✓</span></span>
+            </div>
+            <label className="mt-3 mb-1 block text-[10px] font-medium text-slate-500">Customer full name</label>
+            <Input placeholder="e.g. Abebe Kebede" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="h-9 rounded-md border-slate-200 text-xs" />
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between"><div className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">2</span><div><h2 className="text-xs font-bold text-slate-800">Order Items</h2><p className="text-[10px] text-slate-400">Prices are populated from the active price list.</p></div></div><button type="button" onClick={() => handleAddItem()} className="rounded-md border border-slate-200 px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50">＋ Add Item</button></div>
+            <div className="hidden grid-cols-[1fr_82px_100px_100px_18px] gap-2 px-2 pb-1 text-[8px] uppercase text-slate-400 sm:grid"><span>Photo type</span><span>Quantity</span><span>Unit price</span><span>Line total</span></div>
+            <div className="space-y-2">
+              {items.map((item, idx) => { const lineTotal = new Decimal(item.price || 0).times(item.quantity || 1); return (
+                <div key={item.id} className="grid gap-2 rounded-md border border-slate-200 p-2 sm:grid-cols-[1fr_82px_100px_100px_18px] sm:items-center">
+                  <Input value={item.name} disabled={item.locked} onChange={(e) => handleUpdateItem(idx, "name", e.target.value)} className="h-8 rounded-md text-[10px]" />
+                  <Input type="number" min="1" value={item.quantity} onChange={(e) => handleUpdateItem(idx, "quantity", parseInt(e.target.value) || 1)} className="h-8 rounded-md text-center text-[10px]" />
+                  <Input type="number" value={item.price} disabled={item.locked} onChange={(e) => handleUpdateItem(idx, "price", parseFloat(e.target.value) || 0)} className="h-8 rounded-md text-[10px]" />
+                  <span className="text-right font-mono text-[10px] font-bold text-slate-700">ETB {lineTotal.toFixed(2)}</span>
+                  <button type="button" onClick={() => handleRemoveItem(idx)} disabled={items.length <= 1} className="text-slate-400 hover:text-red-600 disabled:opacity-30"><Trash2 className="h-3 w-3" /></button>
                 </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 ">
-                  Customer Full Name <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
-                  <Input
-                    type="text"
-                    placeholder="e.g. Abebe Kebede"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="h-10 rounded-2xl bg-slate-50/80 pl-10 text-xs font-medium border-slate-200/80   focus:bg-white"
-                  />
-                </div>
-              </div>
+              ); })}
             </div>
-          </div>
+          </section>
 
-          {/* Card 2: Services & Line Items */}
-          <div className="rounded-3xl bg-white  p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100  space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                <span>2. Services & Prints</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleAddItem()}
-                className="flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-100   transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Custom Item</span>
-              </button>
+          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">3</span><div><h2 className="text-xs font-bold text-slate-800">Payment</h2><p className="text-[10px] text-slate-400">Record a payment now or leave the balance due.</p></div></div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div><label className="mb-1 block text-[10px] font-medium text-slate-500">Payment amount</label><Input type="number" value={paidInput} onChange={(e) => setPaidInput(e.target.value)} className="h-9 rounded-md text-xs" /></div>
+              <div><label className="mb-1 block text-[10px] font-medium text-slate-500">Payment method</label><select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-xs"><option value="cash">Cash</option><option value="telebirr">Telebirr</option><option value="cbe_birr">CBE Birr</option><option value="bank_transfer">Bank Transfer</option></select></div>
+              <Input placeholder="Transaction reference (optional)" value="" readOnly className="h-9 rounded-md text-xs" /><Input placeholder="Internal notes — visible only to staff" value={notes} onChange={(e) => setNotes(e.target.value)} className="h-9 rounded-md text-xs" />
             </div>
-
-            {/* Quick Preset Selector Chips */}
-            <div className="flex flex-wrap gap-2 pt-1">
-              <span className="text-[11px] font-semibold text-slate-400 flex items-center pr-1">Quick Add:</span>
-              {PRESET_SERVICES.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => handleAddItem(preset)}
-                  className="rounded-full border border-slate-200/80 bg-slate-50/80 px-3 py-1 text-[11px] font-medium text-slate-600 hover:border-indigo-300 hover:bg-indigo-50/50 hover:text-indigo-600    transition-all"
-                >
-                  + {preset.name.split(" ")[0]} ({preset.price} ETB)
-                </button>
-              ))}
-            </div>
-
-            {/* Line Items List */}
-            <div className="space-y-3 pt-2">
-              {items.map((item, idx) => {
-                const lineTotal = new Decimal(item.price || 0).times(item.quantity || 1);
-
-                return (
-                  <div
-                    key={item.id}
-                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 rounded-2xl bg-slate-50/80  p-3.5 border border-slate-100 "
-                  >
-                    <div className="flex-1">
-                      <Input
-                        value={item.name}
-                        disabled={item.locked}
-                        onChange={(e) => handleUpdateItem(idx, "name", e.target.value)}
-                        className="h-9 rounded-xl bg-white  text-xs font-medium border-slate-200/80 "
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="w-20">
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => handleUpdateItem(idx, "quantity", parseInt(e.target.value) || 1)}
-                          className="h-9 text-center rounded-xl bg-white  text-xs font-bold border-slate-200/80 "
-                        />
-                      </div>
-
-                      <div className="w-28 relative">
-                        <Input
-                          type="number"
-                          value={item.price}
-                          disabled={item.locked}
-                          onChange={(e) => handleUpdateItem(idx, "price", parseFloat(e.target.value) || 0)}
-                          className="h-9 pr-6 rounded-xl bg-white  text-xs font-mono font-semibold border-slate-200/80 "
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateItem(idx, "locked", !item.locked)}
-                          className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600"
-                        >
-                          {item.locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5 text-amber-500" />}
-                        </button>
-                      </div>
-
-                      <div className="w-24 text-right font-mono text-xs font-bold text-slate-800  tabular-nums">
-                        ETB {lineTotal.toFixed(2)}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(idx)}
-                        disabled={items.length <= 1}
-                        className="text-slate-400 hover:text-rose-500 disabled:opacity-30 p-1.5 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Card 3: Notes & Instructions */}
-          <div className="rounded-3xl bg-white  p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100  space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              3. Specific Photo Instructions
-            </label>
-            <Input
-              placeholder="e.g. White background for US Visa, slight skin touch-up, pickup before 5:00 PM..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="h-10 rounded-2xl bg-slate-50/80 text-xs border-slate-200/80   focus:bg-white"
-            />
-          </div>
+            <div className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-[9px] font-semibold text-emerald-700">✓ ETB {paid.toFixed(2)} will be recorded as a valid payment. <span className="block font-normal">Remaining balance: ETB {balance.toFixed(2)}</span></div>
+          </section>
         </div>
 
-        {/* Right Side: Sticky Apple Receipt & Payment (4 Cols) */}
-        <div className="lg:col-span-4 sticky top-6 space-y-6">
-          <div className="rounded-3xl bg-gradient-to-br from-[#1C1F3B] to-[#121429] p-6 text-white shadow-xl shadow-indigo-950/20 border border-indigo-900/40 space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-4 w-4 text-indigo-400" />
-                <h3 className="text-sm font-bold tracking-tight">Checkout Summary</h3>
-              </div>
-              <span className="text-[10px] font-mono text-indigo-300">Live Bill</span>
-            </div>
-
-            {/* Payment Method Selector Pills */}
-            <div className="space-y-2.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-indigo-300/80">
-                Payment Channel
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {PAYMENT_METHODS.map((method) => {
-                  const isSelected = paymentMethod === method.id;
-                  return (
-                    <button
-                      key={method.id}
-                      type="button"
-                      onClick={() => setPaymentMethod(method.id)}
-                      className={`flex items-center gap-2 rounded-2xl p-2.5 text-xs font-semibold transition-all ${
-                        isSelected
-                          ? "bg-white text-slate-900 shadow-md shadow-white/10 font-bold"
-                          : "bg-white/5 text-slate-300 hover:bg-white/10"
-                      }`}
-                    >
-                      <method.icon className={`h-3.5 w-3.5 ${isSelected ? "text-indigo-600" : "text-slate-400"}`} />
-                      <span>{method.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Amount Paid Field */}
-            <div className="space-y-2 pt-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-indigo-200">Amount Paid (ETB)</span>
-                <button
-                  type="button"
-                  onClick={handleSetFull}
-                  className="text-[11px] font-semibold text-amber-400 hover:underline"
-                >
-                  Pay Full (ETB {total.toFixed(2)})
-                </button>
-              </div>
-              <div className="relative">
-                <Input
-                  type="number"
-                  value={paidInput}
-                  onChange={(e) => setPaidInput(e.target.value)}
-                  className="h-11 rounded-2xl bg-white/10 border-white/10 text-white font-mono text-base font-bold pl-4 focus:border-indigo-400"
-                />
-              </div>
-            </div>
-
-            {/* Financial Ledger Display */}
-            <div className="space-y-2.5 pt-4 border-t border-white/10 text-xs">
-              <div className="flex justify-between text-slate-300">
-                <span>Subtotal Items</span>
-                <span className="font-mono tabular-nums">ETB {total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-emerald-400 font-semibold">
-                <span>Paid Now</span>
-                <span className="font-mono tabular-nums">ETB {paid.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm font-bold pt-2 border-t border-white/10">
-                <span>Balance Due</span>
-                <span className={`font-mono tabular-nums ${balance.isPositive() && !balance.isZero() ? "text-rose-400" : "text-slate-400"}`}>
-                  ETB {balance.toFixed(2)}
-                </span>
-              </div>
-            </div>
-
-            {/* Primary Action Buttons */}
-            <div className="space-y-2.5 pt-2">
-              <Button
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => handleSaveOrder(true)}
-                className="w-full h-11 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-lg shadow-emerald-500/25"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                <span>Save & Mark Delivered</span>
-              </Button>
-
-              <Button
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => handleSaveOrder(false)}
-                className="w-full h-11 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-semibold text-xs border border-white/10"
-              >
-                <span>Save Order to Queue</span>
-                <ArrowRight className="h-4 w-4 ml-1.5" />
-              </Button>
-            </div>
-          </div>
-        </div>
+        <aside className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-4">
+          <h2 className="border-b border-slate-200 pb-3 text-xs font-bold text-slate-700">Order summary</h2>
+          <div className="space-y-2 border-b border-slate-100 py-3 text-[10px] text-slate-500"><div className="flex justify-between"><span>Items × {items.length}</span><b className="text-slate-700">ETB {total.toFixed(2)}</b></div><div className="flex justify-between"><span>Payment</span><b className="text-emerald-600">− ETB {paid.toFixed(2)}</b></div></div>
+          <div className="flex justify-between py-3 text-xs font-bold text-slate-800"><span>Remaining balance</span><span className="text-red-600">ETB {balance.toFixed(2)}</span></div>
+          <div className="space-y-2"><Button type="button" disabled={isSubmitting} onClick={() => handleSaveOrder(false)} className="h-8 w-full rounded-md bg-[#e21b23] text-[10px] font-bold hover:bg-red-700">Save Order</Button><Button type="button" disabled={isSubmitting} onClick={() => handleSaveOrder(true)} variant="outline" className="h-8 w-full rounded-md text-[10px]">Save & Mark Delivered</Button><button type="button" onClick={handleReset} className="w-full py-1 text-[10px] text-slate-400 hover:text-slate-700">Cancel</button></div>
+          <p className="mt-3 border-t border-slate-100 pt-3 text-[8px] text-slate-400">🔒 Payment info — this payment will be recorded.</p>
+        </aside>
       </div>
     </div>
   );

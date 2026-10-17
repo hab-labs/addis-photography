@@ -67,14 +67,14 @@ export default function DiskStoragePage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 ">
-              Disk Capacity & Retention Monitor
+              Storage
             </h1>
             <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700  border border-indigo-500/20">
               <HardDrive className="h-3 w-3" /> Storage Engine
             </span>
           </div>
           <p className="text-xs font-medium text-slate-400 mt-1">
-            Studio NVMe SSD capacity status and 90-day retention policies for client photo galleries.
+            Monitor usage and identify albums that need attention.
           </p>
         </div>
 

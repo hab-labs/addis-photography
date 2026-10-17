@@ -339,17 +339,51 @@ export const studioStore = {
   },
 
   getAlbums: (): Album[] => {
-    return getStored<Album[]>("albums", INITIAL_ALBUMS);
+    return getStored<Album[]>("albums", INITIAL_ALBUMS).map((album) => ({
+      ...album,
+      allow_download: false,
+      allow_zip: false,
+    }));
   },
 
   getAlbumByToken: (token: string): Album | undefined => {
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
-    return albums.find((a) => a.token === token);
+    const album = albums.find((a) => a.token === token);
+    return album ? { ...album, allow_download: false, allow_zip: false } : undefined;
   },
 
   getAlbumById: (id: string): Album | undefined => {
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
-    return albums.find((a) => a.id === id);
+    const album = albums.find((a) => a.id === id);
+    return album ? { ...album, allow_download: false, allow_zip: false } : undefined;
+  },
+
+  updateAlbumAccess: (id: string, access: { isPrivate: boolean; pin?: string }): Album => {
+    if (access.isPrivate && (!access.pin || !/^\d{4,6}$/.test(access.pin))) {
+      throw new Error("A private album requires a 4 to 6 digit PIN.");
+    }
+    const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
+    const album = albums.find((item) => item.id === id);
+    if (!album) throw new Error("Album not found.");
+    const updated = albums.map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            is_locked: access.isPrivate,
+            pin_set: access.isPrivate,
+            allow_download: false,
+            allow_zip: false,
+          }
+        : item,
+    );
+    const updatedAlbum = updated.find((item) => item.id === id)!;
+    if (access.isPrivate && access.pin) {
+      localStorage.setItem(`addis_album_pin_${updatedAlbum.token}`, access.pin);
+    } else {
+      localStorage.removeItem(`addis_album_pin_${updatedAlbum.token}`);
+    }
+    setStored("albums", updated);
+    return updatedAlbum;
   },
 
   createAlbum: (data: {
@@ -376,8 +410,8 @@ export const studioStore = {
       quota_bytes: 1073741824, // 1 GB
       used_bytes: 0,
       file_count: 0,
-      allow_download: true,
-      allow_zip: true,
+      allow_download: false,
+      allow_zip: false,
       expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date().toISOString(),
     };

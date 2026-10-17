@@ -120,20 +120,20 @@ export default function TodayLedgerPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
+    <div className="mx-auto max-w-[1128px] space-y-3">
       {/* Title */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 ">
-            Dashboard
+          <h1 className="text-[25px] font-medium leading-none tracking-[-0.04em] text-slate-900 ">
+            Good morning, Meron
           </h1>
-          <p className="text-xs font-medium text-slate-400 mt-1">
-            Studio booking pipeline and live sales collections.
+          <p className="mt-1 text-[11px] text-slate-500">
+            Here’s what’s happening at your studio today.
           </p>
         </div>
 
         <div className="flex w-full items-center gap-2.5 sm:w-auto">
-          <button className="flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-700 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:bg-slate-50 sm:flex-none sm:px-4">
+          <button className="flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:min-w-[178px] sm:flex-none sm:px-4">
             <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
             <span className="truncate">
               {currentCalendar.gregorian} <span className="text-slate-400">•</span>{" "}
@@ -143,111 +143,92 @@ export default function TodayLedgerPage() {
           </button>
           <button 
             onClick={loadOrders}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white text-slate-600 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:bg-slate-50   "
+            className="hidden"
           >
             <RefreshCcw className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Floating Apple Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1C1F3B] to-[#121429] p-4 text-white shadow-xl shadow-indigo-950/20 border border-indigo-900/40 flex flex-col justify-between sm:p-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="relative flex min-h-[118px] flex-col justify-between overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-indigo-300 backdrop-blur-md">
-              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
-              Live Studio
-            </span>
-            <MoreHorizontal className="h-4 w-4 text-slate-500" />
+            <span className="text-[11px] font-medium text-slate-600">Bookings</span>
+            <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• +8.4%</span>
           </div>
-          <div className="my-4">
-            <p className="text-xs font-medium text-slate-300">Daily Bookings</p>
-            <div className="text-3xl font-extrabold tracking-tight mt-1">{metrics.count} <span className="text-xs font-normal text-slate-400">Sessions</span></div>
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-indigo-300/80 pt-2 border-t border-white/5">
-            <span>Production status</span>
-            <span className="text-white font-semibold flex items-center">Active <ArrowUpRight className="h-3 w-3 ml-0.5" /></span>
-          </div>
+          <div className="text-[21px] font-bold tracking-tight text-slate-900">{metrics.count}</div>
+          <div className="flex items-end justify-between text-[9px] text-slate-400"><span>Orders created on 15 Oct</span><span className="h-5 w-16 bg-[linear-gradient(to_top,#ededed_0_55%,transparent_55%_100%)] opacity-80" /></div>
         </div>
 
-        <div className="rounded-3xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between hover:shadow-lg transition-all duration-300 sm:p-6">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Collected</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600  ">
-              <Wallet className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="my-2">
-            <div className="text-2xl font-black tracking-tight text-slate-900  tabular-nums">
-              {isAdmin ? `ETB ${metrics.collected}` : "••••••"}
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 ">
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span>+100% counter verified</span>
-          </div>
+        <div className="flex min-h-[118px] flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between"><span className="text-[11px] font-medium text-slate-600">Paid</span><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• +12.6%</span></div>
+          <div className="text-[21px] font-bold tracking-tight text-slate-900">{isAdmin ? `ETB ${metrics.collected}` : "ETB ••••••"}</div>
+          <div className="flex items-end justify-between text-[9px] text-slate-400"><span>Payments received on 15 Oct</span><span className="h-5 w-16 bg-[linear-gradient(to_top,#ededed_0_55%,transparent_55%)] opacity-80" /></div>
         </div>
 
-        <div className="rounded-3xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between hover:shadow-lg transition-all duration-300 sm:p-6">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Pending Balance</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-rose-600  ">
-              <CreditCard className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="my-2">
-            <div className="text-2xl font-black tracking-tight text-slate-900  tabular-nums">
-              {isAdmin ? `ETB ${metrics.balance}` : "••••••"}
-            </div>
-          </div>
-          <p className="text-xs font-medium text-slate-400">Awaiting pickup delivery</p>
+        <div className="flex min-h-[118px] flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-[11px] font-medium text-slate-600">Due</div>
+          <div className="text-[21px] font-bold tracking-tight text-[#e21b23]">{isAdmin ? `ETB ${metrics.balance}` : "ETB ••••••"}</div>
+          <div className="flex items-end justify-between text-[9px] text-slate-400"><span>Balance on today’s bookings</span><span className="h-5 w-16 bg-[linear-gradient(to_top,#ededed_0_55%,transparent_55%)] opacity-80" /></div>
         </div>
 
-        <div className="rounded-3xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between hover:shadow-lg transition-all duration-300 sm:p-6">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Customer Flow</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-50 text-violet-600  ">
-              <Users className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="my-2">
-            <div className="text-2xl font-black tracking-tight text-slate-900 ">
-              {metrics.count > 0 ? "High" : "Optimal"}
-            </div>
-          </div>
-          <p className="text-xs font-semibold text-violet-600  flex items-center gap-1">
-            <Sparkles className="h-3 w-3" /> Studio capacity active
-          </p>
+        <div className="flex min-h-[118px] flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between"><span className="text-[11px] font-medium text-slate-600">Cash received today</span><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• +5.2%</span></div>
+          <div className="text-[21px] font-bold tracking-tight text-slate-900">{isAdmin ? `ETB ${metrics.collected}` : "ETB ••••••"}</div>
+          <div className="flex items-end justify-between text-[9px] text-slate-400"><span>Valid cash payments today</span><span className="h-5 w-16 bg-[linear-gradient(to_top,#f2b4b7_0_70%,transparent_70%)] opacity-80" /></div>
         </div>
       </div>
 
-      {/* Table Card */}
-      <div className="rounded-3xl bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 sm:p-6">
-        <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between sm:pb-6">
+      <div className="flex h-[56px] items-center rounded-lg border border-slate-200 bg-white px-4 shadow-sm">
+        <div className="w-[190px]"><p className="text-[11px] font-bold text-slate-800">Photo quantities</p><p className="text-[9px] text-slate-400">Items booked today</p></div>
+        {[
+          ["68", "3×4"],
+          ["34", "10×15"],
+          ["12", "30×45"],
+          ["21", "13×18"],
+          ["9", "20×25"],
+          ["6", "Other"],
+        ].map(([value, label]) => (
+          <div key={label} className="flex flex-1 items-center justify-center gap-2 border-l border-slate-200 text-[9px] text-slate-400">
+            <strong className="text-[16px] text-slate-900">{value}</strong>{label}
+          </div>
+        ))}
+      </div>
+
+      {/* Bookings and right-side summaries */}
+      <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_260px]">
+      <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 ">
-              Bookings & Production Register
+            <h2 className="text-sm font-semibold text-slate-900 ">
+              Today’s bookings
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Live orders, customer contact, and real-time payment audit.
+            <p className="mt-0.5 text-[9px] text-slate-400">
+              {filteredOrders.length} of {orders.length} bookings shown
             </p>
           </div>
 
-          <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:items-center">
+          <button className="hidden h-8 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 sm:flex">
+            ↓&nbsp; Export
+          </button>
+        </div>
+
+        <div className="flex gap-2 border-b border-slate-200 px-3 py-2">
             <div className="relative w-full sm:w-auto">
-              <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Search className="absolute left-3 top-2 h-3 w-3 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search customers, phones..."
+                placeholder="Name, phone, or reference"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-9 w-full rounded-full bg-slate-100/80 pl-9 pr-4 text-xs font-medium text-slate-700 placeholder-slate-400 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-indigo-500/30 border-none sm:w-64"
+                className="h-8 w-full rounded-md border border-slate-200 bg-white pl-8 pr-3 text-[10px] text-slate-700 outline-none sm:w-44"
               />
             </div>
 
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="h-9 w-full rounded-full border-slate-200/80 bg-white text-xs font-semibold shadow-2xs sm:w-32">
-                <SelectValue placeholder="All Status" />
+              <SelectTrigger className="h-8 w-full rounded-md border-slate-200 bg-white text-[10px] font-semibold shadow-none sm:w-44">
+                <SelectValue placeholder="All photo types" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl">
                 <SelectItem value="all">All Status</SelectItem>
@@ -257,23 +238,22 @@ export default function TodayLedgerPage() {
                 <SelectItem value="delivered">Delivered</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+            <button className="hidden h-8 rounded-md border border-slate-200 px-3 text-[10px] font-semibold text-slate-600 sm:block">⚱ More filters</button>
         </div>
 
-        <div className="overflow-x-auto pt-2">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-none hover:bg-transparent text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                <TableHead className="w-28 pl-4">Order ID</TableHead>
-                <TableHead>Time</TableHead>
+              <TableRow className="border-none bg-[#fafafa] text-[8px] font-bold uppercase tracking-wide text-slate-400 hover:bg-[#fafafa]">
+                <TableHead className="w-24 pl-3">Booking</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Services / Package</TableHead>
-                <TableHead className="text-right">Total (ETB)</TableHead>
-                <TableHead className="text-right">Paid (ETB)</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="pr-4 text-right">Handled By</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Paid</TableHead>
+                <TableHead>Balance</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="pr-3 text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-slate-100/80 ">
@@ -292,38 +272,34 @@ export default function TodayLedgerPage() {
                   return (
                     <TableRow 
                       key={order.id || order.order_number}
-                      className="border-none hover:bg-slate-50/80  transition-colors group cursor-pointer"
+                      className="border-t border-slate-100 transition-colors hover:bg-slate-50 group cursor-pointer"
                     >
-                      <TableCell className="font-mono text-xs font-bold pl-4 text-indigo-600 ">
-                        #{order.order_number || order.id}
+                      <TableCell className="pl-3 font-mono text-[9px] font-bold text-slate-800">
+                        {order.order_number || order.id}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-400 font-medium">
-                        {order.time || "10:30 AM"}
+                      <TableCell className="text-[10px] font-bold text-slate-800">
+                        <div>{order.customer?.name || order.customer_name || "Walk-In Guest"}</div>
+                        <div className="text-[8px] font-normal text-slate-400">{order.customer?.phone || order.customer_phone || "—"}</div>
                       </TableCell>
-                      <TableCell className="text-xs font-bold text-slate-800 ">
-                        {order.customer?.name || order.customer_name || "Walk-In Guest"}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-slate-400">
-                        {order.customer?.phone || order.customer_phone || "—"}
-                      </TableCell>
-                      <TableCell className="text-xs font-medium text-slate-600  max-w-xs truncate">
+                      <TableCell className="max-w-[120px] truncate text-[9px] text-slate-500">
                         {serviceSummary}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs font-semibold tabular-nums text-slate-800 ">
-                        {total.toFixed(2)}
+                      <TableCell className="text-[9px] tabular-nums text-slate-600">
+                        ETB {total.toFixed(2)}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs font-bold tabular-nums text-emerald-600 ">
-                        {paid.toFixed(2)}
+                      <TableCell className="text-[9px] tabular-nums text-slate-600">
+                        ETB {paid.toFixed(2)}
                       </TableCell>
-                      <TableCell className={`text-right font-mono text-xs font-bold tabular-nums ${bal.isPositive() && !bal.isZero() ? "text-rose-500" : "text-slate-300 "}`}>
-                        {bal.toFixed(2)}
+                      <TableCell className={`text-[9px] tabular-nums ${bal.isPositive() && !bal.isZero() ? "font-bold text-[#e21b23]" : "text-slate-500"}`}>
+                        ETB {bal.toFixed(2)}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-[9px] text-slate-500">
+                        {order.payments?.[0]?.payment_method || "Cash"}
+                      </TableCell>
+                      <TableCell>
                         {renderStatus(order.status)}
                       </TableCell>
-                      <TableCell className="text-xs font-medium text-slate-500 text-right pr-4">
-                        {order.created_by_name || order.handled_by || "Yonas"}
-                      </TableCell>
+                      <TableCell className="pr-3 text-right text-slate-500">›</TableCell>
                     </TableRow>
                   );
                 })
@@ -338,6 +314,46 @@ export default function TodayLedgerPage() {
           </Table>
         </div>
       </div>
+      <aside className="space-y-3">
+        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-3 py-3">
+            <h2 className="text-xs font-semibold text-slate-800">Payments by method</h2>
+            <p className="mt-1 text-[9px] text-slate-400">Valid payments · 15 Oct</p>
+          </div>
+          <div className="flex items-center gap-3 p-4">
+            <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full" style={{ background: "conic-gradient(#e21b23 0 64%, #111 64% 82%, #aeb0b4 82% 94%, #ddd 94% 100%)" }}>
+              <div className="flex h-[55px] w-[55px] flex-col items-center justify-center rounded-full bg-white text-center">
+                <strong className="text-[14px] text-slate-800">48.2K</strong>
+                <span className="text-[7px] text-slate-400">Total ETB</span>
+              </div>
+            </div>
+            <div className="space-y-2 text-[9px] text-slate-600">
+              <p>🔴 Cash <b className="float-right ml-4">31,800</b></p>
+              <p>⚫ Telebirr <b className="float-right ml-4">8,450</b></p>
+              <p>◾ Bank transfer <b className="float-right ml-4">6,200</b></p>
+              <p>◽ Card & other <b className="float-right ml-4">1,800</b></p>
+            </div>
+          </div>
+        </section>
+        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-200 px-3 py-3">
+            <div><h2 className="text-xs font-semibold text-slate-800">Outstanding balances</h2><p className="mt-1 text-[9px] text-slate-400">Top five customers</p></div>
+            <span className="text-[9px] font-semibold text-[#e21b23]">View all</span>
+          </div>
+          {[
+            ["HA", "Henok Alemu", "ETB 1,400.00"],
+            ["RT", "Rahel Tadesse", "ETB 1,550.00"],
+            ["BG", "Bethlehem Girma", "ETB 1,600.00"],
+          ].map(([initials, name, amount]) => (
+            <div key={name} className="flex items-center gap-2 border-b border-slate-100 px-3 py-3 last:border-0">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f5dddd] text-[9px] font-bold text-[#c52b2f]">{initials}</span>
+              <div className="min-w-0 flex-1"><p className="truncate text-[10px] font-semibold text-slate-800">{name}</p><p className="text-[8px] text-slate-400">APS-261015-041</p></div>
+              <b className="text-[9px] text-[#e21b23]">{amount}</b>
+            </div>
+          ))}
+        </section>
+      </aside>
+    </div>
     </div>
   );
 }

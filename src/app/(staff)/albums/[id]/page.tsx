@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/context";
 import { studioStore } from "@/lib/api/store";
+import { formatCalendarPair } from "@/lib/date";
 import {
   ChunkUploader,
   UploadItem,
@@ -53,6 +54,10 @@ export default function AlbumDetailsPage() {
   const [qrPngUrl, setQrPngUrl] = useState<string>("");
   const [copiedLink, setCopiedLink] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [accessMode, setAccessMode] = useState<"public" | "private">("public");
+  const [accessPin, setAccessPin] = useState("");
+  const [accessMessage, setAccessMessage] = useState("");
+  const [accessError, setAccessError] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploaderRef = useRef<ChunkUploader | null>(null);
@@ -98,6 +103,8 @@ export default function AlbumDetailsPage() {
   // Generate QR Code data URL when album is loaded
   useEffect(() => {
     if (album) {
+      setAccessMode(album.is_locked ? "private" : "public");
+      setAccessPin("");
       const publicUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/a/${album.token}`;
       generateQrPng(publicUrl).then(setQrPngUrl);
     }
@@ -123,6 +130,21 @@ export default function AlbumDetailsPage() {
     100,
     Math.round((album.used_bytes / album.quota_bytes) * 100)
   );
+
+  const handleAccessSave = () => {
+    setAccessError("");
+    setAccessMessage("");
+    try {
+      studioStore.updateAlbumAccess(album.id, {
+        isPrivate: accessMode === "private",
+        pin: accessPin || undefined,
+      });
+      setAccessMessage(accessMode === "private" ? "Private viewing enabled." : "Public viewing enabled.");
+      setRefreshTrigger((current) => current + 1);
+    } catch (error) {
+      setAccessError(error instanceof Error ? error.message : "Unable to update album access.");
+    }
+  };
 
   // File handling
   const handleFilesChosen = (files: FileList | null) => {
@@ -169,25 +191,23 @@ export default function AlbumDetailsPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="mx-auto max-w-[1100px] space-y-4">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link
             href="/albums"
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-500 hover:text-amber-600 mb-2"
+            className="mb-2 inline-flex items-center space-x-1.5 text-[10px] font-medium text-slate-500 hover:text-[#e31b23]"
           >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to All Albums</span>
+            <ArrowLeft className="h-3 w-3" />
+            <span>Back to albums</span>
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-[25px] font-semibold tracking-tight text-slate-900">
             {album.title}
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Client: <strong>{album.customer_name}</strong> • Token:{" "}
-            <span className="font-mono text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-              /a/{album.token}
-            </span>
+          <p className="mt-1 text-[11px] text-slate-500">
+            {album.customer_name} <span className="mx-1 text-slate-300">•</span> Event date{" "}
+            {formatCalendarPair(album.event_date).gregorian}
           </p>
         </div>
 
@@ -197,24 +217,63 @@ export default function AlbumDetailsPage() {
             variant="outline"
             size="sm"
             onClick={() => setQrDialogOpen(true)}
-            className="border-slate-300"
+            className="h-8 border-slate-200 text-[11px]"
           >
-            <QrCode className="h-4 w-4 mr-1.5 text-amber-600" />
-            Client QR & Share
+            <QrCode className="mr-1.5 h-3.5 w-3.5 text-[#e31b23]" />
+            Copy Link
           </Button>
 
           {/* Direct Public Gallery Link */}
           <Link href={`/a/${album.token}`} target="_blank">
-            <Button variant="gold" size="sm">
-              <ExternalLink className="h-4 w-4 mr-1.5" />
-              Open Gallery
+            <Button className="h-8 bg-[#e31b23] text-[11px] hover:bg-[#c9151c]">
+              <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+              Preview Gallery
             </Button>
           </Link>
         </div>
       </div>
 
+      <Card className="border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-slate-800">Guest access</h2>
+            <p className="mt-1 text-[11px] text-slate-500">Guests can view photos only. Downloads are disabled for every gallery.</p>
+          </div>
+          <div className="flex rounded-md border border-slate-200 p-0.5">
+            <button type="button" onClick={() => setAccessMode("public")} className={`rounded px-3 py-1.5 text-[10px] font-semibold ${accessMode === "public" ? "bg-red-50 text-red-600" : "text-slate-500"}`}>Public</button>
+            <button type="button" onClick={() => setAccessMode("private")} className={`rounded px-3 py-1.5 text-[10px] font-semibold ${accessMode === "private" ? "bg-red-50 text-red-600" : "text-slate-500"}`}>Private</button>
+          </div>
+        </div>
+        {accessMode === "private" && (
+          <div className="mt-3 max-w-xs">
+            <label className="grid gap-1 text-[10px] font-semibold text-slate-600">Gallery password / PIN<input value={accessPin} onChange={(event) => setAccessPin(event.target.value)} inputMode="numeric" maxLength={6} placeholder="4–6 digits" className="h-8 rounded-md border border-slate-200 px-2 text-xs font-normal" /></label>
+          </div>
+        )}
+        {(accessError || accessMessage) && <p className={`mt-3 text-[10px] font-semibold ${accessError ? "text-red-600" : "text-emerald-600"}`}>{accessError || accessMessage}</p>}
+        <Button type="button" onClick={handleAccessSave} className="mt-3 h-8 bg-red-600 text-[10px] text-white hover:bg-red-700">Save access settings</Button>
+      </Card>
+
+      <section className="relative h-[235px] overflow-hidden rounded-lg bg-slate-900 shadow-sm">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={album.cover_image_url || "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1400&q=85"}
+          alt={album.title}
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/25 to-transparent" />
+        <div className="absolute bottom-6 left-6 text-white">
+          <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-white/70">
+            Wedding collection
+          </p>
+          <h2 className="mt-2 text-[22px] font-medium">{album.title.split("—")[0].trim()}</h2>
+          <p className="mt-1 text-[10px] text-white/80">
+            {formatCalendarPair(album.event_date).gregorian} <span className="mx-1">•</span> Addis Ababa
+          </p>
+        </div>
+      </section>
+
       {/* Quota Visualizer Card */}
-      <Card className="border border-slate-200 bg-white p-5 shadow-sm">
+      <Card className="border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
@@ -253,7 +312,7 @@ export default function AlbumDetailsPage() {
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
+        className={`flex cursor-pointer items-center justify-between border border-dashed p-4 text-left transition-colors ${
           dragOver
             ? "border-amber-500 bg-amber-50/50"
             : "border-slate-300 hover:border-amber-400 bg-slate-50/40"
@@ -268,19 +327,23 @@ export default function AlbumDetailsPage() {
           className="hidden"
         />
 
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 mb-3">
+        <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-[#e31b23]">
           <UploadCloud className="h-8 w-8" />
         </div>
 
-        <h3 className="text-sm font-bold text-slate-900">
+        <div>
+        <h3 className="text-xs font-bold text-slate-900">
           {t.albums.upload_dropzone_title}
         </h3>
-        <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+        <p className="mt-1 max-w-md text-[10px] text-slate-500">
           {t.albums.upload_dropzone_subtitle}
         </p>
-        <p className="text-[11px] text-amber-700 font-semibold mt-2">
-          ⚡ 3 Parallel Workers • Automatic 5MB Chunking • Auto-Resume on Network Drop
-        </p>
+        </div>
+        </div>
+        <Button type="button" variant="outline" className="h-8 text-[11px]">
+          Choose Files
+        </Button>
       </Card>
 
       {/* Active Chunked Uploads Progress */}
@@ -349,8 +412,8 @@ export default function AlbumDetailsPage() {
 
       {/* Uploaded Media Files Grid */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold text-slate-900">
-          Album Photos & Videos ({mediaFiles.length})
+        <h3 className="text-sm font-semibold text-slate-900">
+          Media <span className="ml-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-500">{mediaFiles.length} photos</span>
         </h3>
 
         {mediaFiles.length === 0 ? (

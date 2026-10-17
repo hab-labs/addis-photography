@@ -16,32 +16,44 @@ import {
   HardDrive,
   Settings,
   ShieldAlert,
+  Bell,
+  ChevronRight,
+  HelpCircle,
+  Menu,
+  X,
   LogOut,
-  ChevronDown,
+  UserCircle,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const navOperations = [
-  { title: "Overview / Ledger", href: "/today", icon: CalendarDays },
-  { title: "New Walk-In", href: "/orders/new", icon: PlusCircle },
-  { title: "Production Requests", href: "/requests", icon: KanbanSquare },
+  { title: "Today", href: "/today", icon: CalendarDays },
   { title: "Customers", href: "/customers", icon: Users },
-  { title: "Client Albums", href: "/albums", icon: ImageIcon },
+  { title: "Requests", href: "/requests", icon: KanbanSquare },
+  { title: "Albums", href: "/albums", icon: ImageIcon },
 ];
 
 const navAdmin = [
-  { title: "Sales Reports", href: "/reports", icon: BarChart3 },
+  { title: "Reports", href: "/reports", icon: BarChart3 },
   { title: "Price List", href: "/admin/prices", icon: Tags },
-  { title: "Staff Users", href: "/admin/users", icon: UserCheck },
-  { title: "Disk Storage", href: "/admin/storage", icon: HardDrive },
-  { title: "Studio Settings", href: "/admin/settings", icon: Settings },
+  { title: "Users", href: "/admin/users", icon: UserCheck },
+  { title: "Settings", href: "/admin/settings", icon: Settings },
+  { title: "Storage", href: "/admin/storage", icon: HardDrive },
   { title: "Audit Log", href: "/admin/audit", icon: ShieldAlert },
 ];
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = React.useState(false);
+  const visibleAdminNav = isAdmin ? navAdmin : [];
+  const mobileNavItems = [
+    ...navOperations,
+    ...visibleAdminNav,
+    { title: "New Order", href: "/orders/new", icon: PlusCircle },
+  ];
   const userName = user?.name ?? "Studio Staff";
   const userInitials = userName
     .split(" ")
@@ -51,67 +63,67 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     .toUpperCase();
   const userRole = user?.role === "admin" ? "Administrator" : "Staff";
 
+  React.useEffect(() => {
+    setMobileMenuOpen(false);
+    setAccountMenuOpen(false);
+  }, [pathname]);
+
   return (
-    <div className="flex min-h-screen w-full bg-black font-sans selection:bg-red-600 selection:text-white sm:p-2 md:p-3">
-      {/* Deep Navy Sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col justify-between py-4 px-3 text-slate-300 md:flex">
+    <div className="flex min-h-screen w-full bg-[#f5f5f5] font-sans selection:bg-red-600 selection:text-white">
+      <aside className="hidden w-[200px] shrink-0 flex-col justify-between bg-[#101010] px-3 py-4 text-slate-300 md:flex">
         <div>
-          {/* Logo */}
-          <div className="flex items-center gap-3 px-3 py-2">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-1 shadow-lg shadow-red-600/20">
-            <img
-              src="/addis-photography-logo.png"
-              alt="Addis Photography logo"
-              className="h-full w-full object-contain"
-            />
+          <div className="flex items-center gap-3 border-b border-[#262626] px-2 pb-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#0b0b0b] p-1 shadow-[0_0_0_2px_rgba(255,255,255,0.03)]">
+              <img
+                src="/addis-photography-logo.png"
+                alt="Addis Photography logo"
+                className="h-full w-full object-contain"
+              />
             </div>
-            <div>
-            <h2 className="text-sm font-bold leading-tight tracking-tight text-white">Addis Photography</h2>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-red-500">Management</p>
+            <div className="leading-none">
+              <h2 className="text-[1.05rem] font-black tracking-[-0.04em] text-white">Addis</h2>
+              <p className="mt-1 text-[7px] font-semibold uppercase tracking-[0.22em] text-slate-400">PHOTOGRAPHY STUDIO</p>
             </div>
           </div>
 
           {/* Navigation */}
-          <div className="mt-8 space-y-6">
+          <div className="mt-5">
             <div>
-              <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Menu
-              </p>
-              <nav className="mt-2.5 space-y-1">
+              <nav className="space-y-1">
                 {navOperations.map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <Link
                       key={item.title}
                       href={item.href}
-                      className={`group flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-xs font-semibold transition-all duration-200 ${
+                      className={`group flex h-10 items-center gap-3 rounded-md px-3.5 text-xs font-semibold transition-all duration-200 ${
                         isActive
-                          ? "bg-red-600 text-white shadow-md shadow-red-600/30"
+                          ? "bg-[#e21b23] text-white"
                           : "text-slate-400 hover:bg-white/5 hover:text-white"
                       }`}
                     >
                       <item.icon className={`h-4 w-4 transition-transform group-hover:scale-110 ${isActive ? "text-white" : "text-slate-400"}`} />
                       <span>{item.title}</span>
+                      {item.title === "Requests" && (
+                        <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[9px] ${isActive ? "bg-white/20 text-white" : "bg-[#343434] text-slate-300"}`}>7</span>
+                      )}
                     </Link>
                   );
                 })}
               </nav>
             </div>
 
-            <div>
-              <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Admin Settings
-              </p>
-              <nav className="mt-2.5 space-y-1">
-                {navAdmin.map((item) => {
+            {isAdmin && (
+              <nav className="mt-2 space-y-1">
+                {visibleAdminNav.map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <Link
                       key={item.title}
                       href={item.href}
-                      className={`group flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-xs font-semibold transition-all duration-200 ${
+                      className={`group flex h-10 items-center gap-3 rounded-md px-3.5 text-xs font-semibold transition-all duration-200 ${
                         isActive
-                          ? "bg-red-600 text-white shadow-md shadow-red-600/30"
+                          ? "bg-[#e21b23] text-white"
                           : "text-slate-400 hover:bg-white/5 hover:text-white"
                       }`}
                     >
@@ -121,82 +133,161 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                   );
                 })}
               </nav>
-            </div>
+            )}
           </div>
+
+          <Link
+            href="/orders/new"
+            className="mt-4 flex h-9 items-center justify-center gap-2 rounded-md bg-[#e21b23] px-3 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(226,27,35,0.18)] transition-colors hover:bg-red-700"
+          >
+            <PlusCircle className="h-3.5 w-3.5" />
+            New Order
+          </Link>
         </div>
 
-        {/* User Card */}
-        <div className="rounded-2xl bg-white/5 p-2.5 backdrop-blur-sm border border-white/5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Avatar className="h-8 w-8 rounded-xl ring-2 ring-indigo-500/30">
-              <AvatarFallback className="rounded-xl bg-red-600 text-xs font-bold text-white">
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="leading-tight">
-              <p className="text-xs font-semibold text-white">{userName}</p>
-              <p className="text-[10px] text-red-300">{userRole}</p>
+        <div className="space-y-4">
+          <div className="rounded-lg bg-[#1b1b1b] p-3">
+            <div className="flex items-center justify-between text-[10px] font-medium text-slate-300">
+              <span>Storage</span>
+              <span className="text-white">62%</span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#363636]">
+              <div className="h-full w-[62%] rounded-full bg-[#e21b23]" />
+            </div>
+            <p className="mt-2 text-[10px] text-slate-500">124 GB of 200 GB used</p>
+          </div>
+          <div className="flex items-center gap-2 px-1 text-[10px] text-slate-400">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1f1f1f] text-slate-300">
+              <HelpCircle className="h-3.5 w-3.5" />
+            </div>
+            <div>
+              <div className="font-semibold text-white">Need help?</div>
+              <div>View studio guide</div>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={logout}
-            aria-label="Log out"
-            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/5 hover:text-rose-400"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-          </button>
         </div>
       </aside>
 
       {/* Main Island Window */}
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-hidden rounded-none border border-white/40 bg-white shadow-2xl sm:min-h-0 sm:rounded-3xl">
-        <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-slate-200/60 bg-white/80 px-4 py-3 backdrop-blur-md sm:flex-nowrap sm:px-6 md:px-8">
-          <div className="flex min-w-0 items-center gap-1.5 text-sm font-bold text-slate-800">
-            <span className="truncate">Studio Operations</span>
-            <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700">
-              Demo
-            </span>
-            <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-[#f5f5f5]">
+        <header className="relative z-30 flex min-h-[61px] flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:flex-nowrap sm:px-6">
+          <div className="min-w-0">
+            <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">Workspace / {(pathname.split("/").filter(Boolean).pop()?.replace("admin-", "") ?? "Today").replace(/^\w/, c => c.toUpperCase())}</p>
+            <p className="mt-0.5 text-[1.05rem] font-bold tracking-[-0.04em] text-slate-900">{pathname === "/today" ? "Today" : pathname.includes("admin/") ? pathname.split("/").pop()?.replace(/^\w/, c => c.toUpperCase()) : pathname.slice(1).replace(/^\w/, c => c.toUpperCase())}</p>
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-slate-200/50 bg-slate-100 px-2.5 py-1.5 sm:px-3">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />
-              <span className="hidden text-xs font-semibold text-slate-600 sm:inline">Jimma (UTC+3)</span>
-            </div>
-            {/* Standard Link element avoids Slot ref warnings */}
-            <Link
-              href="/orders/new"
-              className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-2 text-xs font-medium text-white shadow-sm shadow-red-600/25 transition-all hover:bg-red-700 sm:px-4"
+            <button
+              type="button"
+              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation-links"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm md:hidden"
             >
-              <PlusCircle className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Add Order</span>
-            </Link>
+              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
+            <button aria-label="Notifications" className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm">
+              <Bell className="h-4 w-4" />
+            </button>
+
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Open account menu"
+                aria-expanded={accountMenuOpen}
+                onClick={() => setAccountMenuOpen((open) => !open)}
+                className="flex items-center gap-2 rounded-md px-1.5 py-1 text-left hover:bg-slate-50"
+              >
+                <Avatar className="h-8 w-8"><AvatarFallback className="bg-[#f3d7d7] text-[10px] font-bold text-[#b82727]">{userInitials}</AvatarFallback></Avatar>
+                <div className="hidden leading-tight sm:block">
+                  <div className="text-xs font-semibold text-slate-900">{userName}</div>
+                  <div className="text-[10px] text-slate-500">{userRole}</div>
+                </div>
+                <ChevronRight className={`h-4 w-4 text-slate-500 transition-transform ${accountMenuOpen ? "rotate-90" : ""}`} />
+              </button>
+
+              {accountMenuOpen && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Close account menu"
+                    onClick={() => setAccountMenuOpen(false)}
+                    className="fixed inset-0 z-40 cursor-default"
+                  />
+                  <div className="absolute right-0 top-11 z-50 w-60 rounded-lg border border-slate-200 bg-white p-2 text-left shadow-[0_8px_24px_rgba(15,23,42,0.16)]">
+                    <div className="flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2.5">
+                      <Avatar className="h-9 w-9"><AvatarFallback className="bg-[#f3d7d7] text-xs font-bold text-[#b82727]">{userInitials}</AvatarFallback></Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-bold text-slate-900">{userName}</p>
+                        <p className="text-[10px] text-slate-500">{userRole}</p>
+                        <p className="truncate text-[10px] text-slate-400">{user?.username || "Signed-in account"}</p>
+                      </div>
+                    </div>
+                    <div className="my-1 border-t border-slate-100" />
+                    <Link href="/profile" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                      <UserCircle className="h-4 w-4" />
+                      Account overview
+                    </Link>
+                    {isAdmin && (
+                      <Link href="/admin/settings" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                        <Settings className="h-4 w-4" />
+                        Account settings
+                      </Link>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => logout()}
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-5 pb-6 sm:p-6 md:p-8">
+        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-5 pb-6 sm:p-6 md:p-6">
           {children}
         </main>
 
-        <nav aria-label="Mobile navigation" className="sticky bottom-0 z-20 grid shrink-0 grid-cols-5 gap-1 border-t border-slate-200 bg-white/95 px-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] pt-1.5 backdrop-blur md:hidden">
-          {navOperations.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.title}
-                href={item.href}
-                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold ${
-                  isActive ? "bg-red-50 text-red-600" : "text-slate-500"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                <span className="truncate">{item.title.split(" ")[0]}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        {mobileMenuOpen && (
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            onClick={() => setMobileMenuOpen(false)}
+            className="fixed inset-0 z-40 bg-black/30 md:hidden"
+          />
+        )}
+
+        {mobileMenuOpen && (
+          <nav
+            id="mobile-navigation-links"
+            aria-label="Mobile navigation"
+            className="fixed right-3 top-[66px] z-50 w-[min(280px,calc(100vw-1.5rem))] rounded-lg border border-slate-200 bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.16)] md:hidden"
+          >
+            <div className="grid grid-cols-2 gap-1.5">
+              {mobileNavItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.title}
+                    href={item.href}
+                    className={`flex min-h-10 items-center gap-2 rounded-md px-3 text-xs font-semibold ${
+                      isActive ? "bg-red-50 text-red-600" : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{item.title}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        )}
       </div>
     </div>
   );

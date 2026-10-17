@@ -37,6 +37,7 @@ export const config = {
     "/customers/:path*",
     "/orders/:path*",
     "/albums/:path*",
+    "/profile/:path*",
     "/admin/:path*",
     "/reports/:path*",
   ],

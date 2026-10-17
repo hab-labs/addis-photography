@@ -23,14 +23,14 @@ export default function SalesReportsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 ">
-              Sales & Financial Reports
+              Reports
             </h1>
             <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700  border border-indigo-500/20">
               <Sparkles className="h-3 w-3" /> Real-time
             </span>
           </div>
           <p className="text-xs font-medium text-slate-400 mt-1">
-            Studio revenue analytics, payment channels, and daily transaction audit.
+            Review studio activity by booking date or payment date.
           </p>
         </div>
 
