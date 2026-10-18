@@ -76,4 +76,12 @@ class RateLimiter {
   }
 }
 
-export const rateLimiter = new RateLimiter();
+const globalForRateLimiter = globalThis as unknown as {
+  __addis_rate_limiter__?: RateLimiter;
+};
+
+export const rateLimiter = globalForRateLimiter.__addis_rate_limiter__ || new RateLimiter();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForRateLimiter.__addis_rate_limiter__ = rateLimiter;
+}

@@ -52,7 +52,11 @@ export async function POST(request: Request) {
       details: { changed_by_admin: targetUserId !== user.id },
     });
 
-    return NextResponse.json({ success: true, message: "Password updated successfully." });
+    const response = NextResponse.json({ success: true, message: "Password updated successfully." });
+    if (targetUserId === user.id) {
+      response.cookies.delete("addis_must_change_pw");
+    }
+    return response;
   } catch (error) {
     return handleAuthError(error);
   }

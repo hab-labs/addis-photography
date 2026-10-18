@@ -15,22 +15,46 @@ export interface TransactionClient {
 class DatabaseManager {
   private pool: Pool | null = null;
   private isConnected = false;
-  private memoryStore: Map<string, any[]> = new Map();
+  private memoryStore: Map<string, any[]>;
   private isMemoryMode = false;
   private initialized = false;
 
   constructor() {
     const connectionString = process.env.DATABASE_URL;
     if (connectionString) {
-      this.pool = new Pool({
-        connectionString,
-        max: 10,
-        idleTimeoutMillis: 30000,
-      });
+      const globalAny = globalThis as any;
+      if (!globalAny.__addis_pg_pool__) {
+        globalAny.__addis_pg_pool__ = new Pool({
+          connectionString,
+          max: 10,
+          idleTimeoutMillis: 30000,
+        });
+      }
+      this.pool = globalAny.__addis_pg_pool__;
       this.isMemoryMode = false;
+      this.memoryStore = new Map();
     } else {
+      const isBuild = process.env.NEXT_PHASE === "phase-production-build" || process.env.npm_lifecycle_event === "build";
+      if (process.env.NODE_ENV === "production" && !isBuild) {
+        throw new Error(
+          "FATAL: DATABASE_URL environment variable is required in production. In-memory storage is not permitted in production."
+        );
+      }
       this.isMemoryMode = true;
-      this.initMemoryStore();
+      const globalAny = globalThis as any;
+      if (!globalAny.__addis_memory_store__) {
+        globalAny.__addis_memory_store__ = new Map<string, any[]>();
+        this.memoryStore = globalAny.__addis_memory_store__;
+        this.initMemoryStore();
+        if (!isBuild) {
+          console.warn(
+            "[DEVELOPMENT WARNING] Running with temporary local store because DATABASE_URL is not set. Data will not persist across server restarts."
+          );
+        }
+      } else {
+        this.memoryStore = globalAny.__addis_memory_store__;
+        this.initialized = true;
+      }
     }
   }
 
@@ -68,10 +92,11 @@ class DatabaseManager {
           const sql = fs.readFileSync(schemaPath, "utf-8");
           await this.pool.query(sql);
         }
-      } catch (err) {
-        console.warn("Postgres connection failed, falling back to ACID in-process store:", err);
-        this.isMemoryMode = true;
-        this.initMemoryStore();
+      } catch (err: any) {
+        console.error("FATAL: PostgreSQL connection or schema initialization failed:", err);
+        throw new Error(
+          `Database initialization failed: ${err?.message || err}. PostgreSQL must be running and accessible at DATABASE_URL.`
+        );
       }
     }
 
@@ -91,52 +116,73 @@ class DatabaseManager {
       ]);
     }
 
-    // 2. Default Users (hashed with bcrypt)
+    // 2. Users (No predictable demo accounts in production)
     const users = await this.query("SELECT * FROM users");
     if (users.rows.length === 0) {
-      const yonasHash = await bcrypt.hash("yonas123", 10);
-      const selamHash = await bcrypt.hash("selam123", 10);
-      const dawitHash = await bcrypt.hash("dawit123", 10);
+      if (process.env.NODE_ENV === "production") {
+        if (process.env.INITIAL_ADMIN_EMAIL && process.env.INITIAL_ADMIN_PASSWORD) {
+          const adminHash = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD, 10);
+          await this.query(
+            `INSERT INTO users (id, name, username, email, phone, password_hash, role_id, active, must_change_pw)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [
+              "usr-admin",
+              process.env.INITIAL_ADMIN_NAME || "Administrator",
+              process.env.INITIAL_ADMIN_USERNAME || "admin",
+              process.env.INITIAL_ADMIN_EMAIL,
+              process.env.INITIAL_ADMIN_PHONE || "+251911000000",
+              adminHash,
+              "role-admin",
+              true,
+              true,
+            ]
+          );
+        }
+      } else {
+        const yonasHash = await bcrypt.hash("yonas123", 10);
+        const selamHash = await bcrypt.hash("selam123", 10);
+        const dawitHash = await bcrypt.hash("dawit123", 10);
 
-      await this.query(
-        `INSERT INTO users (id, name, username, email, phone, password_hash, role_id, active, must_change_pw)
-         VALUES 
-         ($1, $2, $3, $4, $5, $6, $7, $8, $9),
-         ($10, $11, $12, $13, $14, $15, $16, $17, $18),
-         ($19, $20, $21, $22, $23, $24, $25, $26, $27)`,
-        [
-          "usr-1",
-          "Yonas Mekonnen",
-          "yonas",
-          "yonas@addisphoto.et",
-          "+251911421806",
-          yonasHash,
-          "role-admin",
-          true,
-          false,
-          "usr-2",
-          "Selamawit Tadesse",
-          "selam",
-          "selam@addisphoto.et",
-          "+251922334455",
-          selamHash,
-          "role-staff",
-          true,
-          false,
-          "usr-3",
-          "Dawit Girma",
-          "dawit",
-          "dawit@addisphoto.et",
-          "+251933445566",
-          dawitHash,
-          "role-staff",
-          true,
-          false,
-        ]
-      );
+        await this.query(
+          `INSERT INTO users (id, name, username, email, phone, password_hash, role_id, active, must_change_pw)
+           VALUES 
+           ($1, $2, $3, $4, $5, $6, $7, $8, $9),
+           ($10, $11, $12, $13, $14, $15, $16, $17, $18),
+           ($19, $20, $21, $22, $23, $24, $25, $26, $27)`,
+          [
+            "usr-1",
+            "Yonas Mekonnen",
+            "yonas",
+            "yonas@addisphoto.et",
+            "+251911421806",
+            yonasHash,
+            "role-admin",
+            true,
+            false,
+            "usr-2",
+            "Selamawit Tadesse",
+            "selam",
+            "selam@addisphoto.et",
+            "+251922334455",
+            selamHash,
+            "role-staff",
+            true,
+            false,
+            "usr-3",
+            "Dawit Girma",
+            "dawit",
+            "dawit@addisphoto.et",
+            "+251933445566",
+            dawitHash,
+            "role-staff",
+            true,
+            false,
+          ]
+        );
+      }
     }
 
-    // 3. Six Standard Photo Types (Specification Section 2.1 & 8.2)
+    // 3. Six Standard Photo Types (Specification Section 2.1 & 8.2) - Unconfigured prices (null) initially
     const photoTypes = await this.query("SELECT * FROM photo_types");
     if (photoTypes.rows.length === 0) {
       await this.query(
@@ -151,37 +197,37 @@ class DatabaseManager {
         [
           "pt-1",
           "3x4",
-          "350.00",
+          null,
           true,
           0,
           "Standard Passport / Visa (4 Copies)",
           "pt-2",
           "10x15",
-          "150.00",
+          null,
           true,
           0,
           "Instant Glossy Print (10x15 cm)",
           "pt-3",
           "30x45",
-          "1200.00",
+          null,
           true,
           3,
           "Premium Wall Frame / Poster (30x45 cm)",
           "pt-4",
           "13x18",
-          "250.00",
+          null,
           true,
           1,
           "Medium Tabletop Portrait (13x18 cm)",
           "pt-5",
           "20x25",
-          "500.00",
+          null,
           true,
           2,
           "Large Fine Art Studio Print (20x25 cm)",
           "pt-6",
           "Other",
-          null, // Unconfigured price representation explicitly allowed for custom orders
+          null,
           true,
           2,
           "Custom Photography / Framing Service",
@@ -680,4 +726,12 @@ class DatabaseManager {
   }
 }
 
-export const db = new DatabaseManager();
+const globalForDb = globalThis as unknown as {
+  __addis_db__?: DatabaseManager;
+};
+
+export const db = globalForDb.__addis_db__ || new DatabaseManager();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForDb.__addis_db__ = db;
+}

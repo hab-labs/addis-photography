@@ -18,6 +18,9 @@ import path from "path";
 
 import { createCustomer } from "../services/customer.service";
 import { POST as loginHandler } from "@/app/api/auth/login/route";
+import { POST as changePasswordHandler } from "@/app/api/auth/change-password/route";
+import { middleware } from "@/middleware";
+import { NextRequest } from "next/server";
 
 describe("Addis Photography - Specification Acceptance Tests (Section 15)", () => {
   const adminActor = { id: "usr-1", name: "Yonas Mekonnen", role: "admin" };
@@ -600,7 +603,7 @@ describe("Addis Photography - Specification Acceptance Tests (Section 15)", () =
     expect(fetchedGrace).toBeDefined();
   });
 
-  it("authenticates seeded users (yonas, selam, dawit) and creates session", async () => {
+  it("authenticates seeded users and sets both addis_session_id and addis_auth_role cookies", async () => {
     // 1. Admin login with username
     const reqYonas = new Request("http://localhost:3000/api/auth/login", {
       method: "POST",
@@ -613,6 +616,10 @@ describe("Addis Photography - Specification Acceptance Tests (Section 15)", () =
     expect(dataYonas.user.username).toBe("yonas");
     expect(dataYonas.user.role).toBe("admin");
 
+    const cookieHeader = resYonas.headers.get("set-cookie") || "";
+    expect(cookieHeader).toContain("addis_session_id=");
+    expect(cookieHeader).toContain("addis_auth_role=admin");
+
     // 2. Staff login with username
     const reqSelam = new Request("http://localhost:3000/api/auth/login", {
       method: "POST",
@@ -624,6 +631,10 @@ describe("Addis Photography - Specification Acceptance Tests (Section 15)", () =
     const dataSelam = await resSelam.json();
     expect(dataSelam.user.username).toBe("selam");
     expect(dataSelam.user.role).toBe("staff");
+
+    const staffCookies = resSelam.headers.get("set-cookie") || "";
+    expect(staffCookies).toContain("addis_session_id=");
+    expect(staffCookies).toContain("addis_auth_role=staff");
 
     // 3. Login with email
     const reqEmail = new Request("http://localhost:3000/api/auth/login", {
@@ -642,6 +653,135 @@ describe("Addis Photography - Specification Acceptance Tests (Section 15)", () =
     });
     const resBad = await loginHandler(reqBad);
     expect(resBad.status).toBe(401);
+  });
+
+  it("locks account after 5 failed login attempts for 15 minutes (HTTP 429)", async () => {
+    const testUser = "dawit";
+    for (let i = 0; i < 4; i++) {
+      const req = new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: testUser, password: "wrongpassword" }),
+      });
+      const res = await loginHandler(req);
+      expect(res.status).toBe(401);
+      const data = await res.json();
+      expect(data.error).toMatch(/attempt.*remaining/i);
+    }
+
+    // 5th failed attempt triggers 15-minute lockout (HTTP 429)
+    const req5 = new Request("http://localhost:3000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: testUser, password: "wrongpassword" }),
+    });
+    const res5 = await loginHandler(req5);
+    expect(res5.status).toBe(429);
+    const data5 = await res5.json();
+    expect(data5.error).toMatch(/locked for 15 minutes/i);
+
+    // Subsequent attempt is blocked immediately even with the correct password
+    const reqBlocked = new Request("http://localhost:3000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: testUser, password: "dawit123" }),
+    });
+    const resBlocked = await loginHandler(reqBlocked);
+    expect(resBlocked.status).toBe(429);
+  });
+
+  it("enforces first-time login password change requirement and cookie lifecycle", async () => {
+    // 1. Mark user as needing password change
+    await db.query("UPDATE users SET must_change_pw = TRUE WHERE username = 'selam'");
+
+    // 2. Login returns must_change_pw: true and sets addis_must_change_pw cookie
+    const req = new Request("http://localhost:3000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "selam", password: "selam123" }),
+    });
+    const res = await loginHandler(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.user.must_change_pw).toBe(true);
+
+    const cookies = res.headers.get("set-cookie") || "";
+    expect(cookies).toContain("addis_must_change_pw=true");
+
+    const sessionMatch = cookies.match(/addis_session_id=([^;]+)/);
+    const sessionId = sessionMatch ? sessionMatch[1] : "";
+
+    // 3. User updates their password
+    const changeReq = new Request("http://localhost:3000/api/auth/change-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: `addis_session_id=${sessionId}`,
+      },
+      body: JSON.stringify({
+        current_password: "selam123",
+        new_password: "selamNewPassword2026",
+      }),
+    });
+    const changeRes = await changePasswordHandler(changeReq);
+    expect(changeRes.status).toBe(200);
+
+    // 4. Verify in DB that must_change_pw is now FALSE
+    const dbUser = await db.query("SELECT must_change_pw FROM users WHERE username = 'selam'");
+    expect(dbUser.rows[0].must_change_pw).toBe(false);
+
+    // 5. User can now log in with their new password
+    const newLoginReq = new Request("http://localhost:3000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "selam", password: "selamNewPassword2026" }),
+    });
+    const newLoginRes = await loginHandler(newLoginReq);
+    expect(newLoginRes.status).toBe(200);
+    const newLoginData = await newLoginRes.json();
+    expect(newLoginData.user.must_change_pw).toBe(false);
+  });
+
+  it("middleware enforces route protection and role-based redirects", () => {
+    // Unauthenticated request to /today -> redirects to /login?next=/today
+    const unauthReq = new NextRequest("http://localhost:3000/today");
+    const unauthRes = middleware(unauthReq);
+    expect(unauthRes.headers.get("location")).toBe("http://localhost:3000/login?next=%2Ftoday");
+
+    // Authenticated request to /today -> allowed
+    const authStaffReq = new NextRequest("http://localhost:3000/today", {
+      headers: { cookie: "addis_session_id=valid-sess; addis_auth_role=staff" },
+    });
+    const authStaffRes = middleware(authStaffReq);
+    expect(authStaffRes.headers.get("location")).toBeNull();
+
+    // Staff visiting /admin/users -> redirected to /today
+    const staffAdminReq = new NextRequest("http://localhost:3000/admin/users", {
+      headers: { cookie: "addis_session_id=valid-sess; addis_auth_role=staff" },
+    });
+    const staffAdminRes = middleware(staffAdminReq);
+    expect(staffAdminRes.headers.get("location")).toBe("http://localhost:3000/today");
+
+    // Admin visiting /admin/users -> allowed
+    const adminReq = new NextRequest("http://localhost:3000/admin/users", {
+      headers: { cookie: "addis_session_id=valid-sess; addis_auth_role=admin" },
+    });
+    const adminRes = middleware(adminReq);
+    expect(adminRes.headers.get("location")).toBeNull();
+
+    // Already-authenticated user visiting /login -> redirected to /today
+    const loginReq = new NextRequest("http://localhost:3000/login", {
+      headers: { cookie: "addis_session_id=valid-sess; addis_auth_role=staff" },
+    });
+    const loginRes = middleware(loginReq);
+    expect(loginRes.headers.get("location")).toBe("http://localhost:3000/today");
+
+    // User with must_change_pw attempting to visit /today -> redirected to /login?change_password=1
+    const mustChangeReq = new NextRequest("http://localhost:3000/today", {
+      headers: { cookie: "addis_session_id=valid-sess; addis_auth_role=staff; addis_must_change_pw=true" },
+    });
+    const mustChangeRes = middleware(mustChangeReq);
+    expect(mustChangeRes.headers.get("location")).toContain("change_password=1");
   });
 
   // Test Case 21: Dedicated Phase 8 Specification Test Fixture (12/08/2026 - 13/08/2026)

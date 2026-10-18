@@ -41,7 +41,13 @@ export async function POST(request: Request) {
   );
 
   if (res.rows.length === 0) {
-    rateLimiter.recordFailure(rateKey);
+    const failRes = rateLimiter.recordFailure(rateKey);
+    if (failRes.locked) {
+      return NextResponse.json(
+        { error: "Too many failed login attempts. Account locked for 15 minutes. Please try again later." },
+        { status: 429 }
+      );
+    }
     return NextResponse.json(
       { error: "Invalid username or password" },
       { status: 401 }
@@ -60,9 +66,15 @@ export async function POST(request: Request) {
   // 3. Bcrypt password verification
   const isValid = await verifyPassword(password, userRow.password_hash);
   if (!isValid) {
-    rateLimiter.recordFailure(rateKey);
+    const failRes = rateLimiter.recordFailure(rateKey);
+    if (failRes.locked) {
+      return NextResponse.json(
+        { error: "Too many failed login attempts. Account locked for 15 minutes. Please try again later." },
+        { status: 429 }
+      );
+    }
     return NextResponse.json(
-      { error: "Invalid username or password" },
+      { error: `Invalid username or password. ${failRes.remainingAttempts} attempt(s) remaining.` },
       { status: 401 }
     );
   }
@@ -96,7 +108,7 @@ export async function POST(request: Request) {
   });
 
   const response = NextResponse.json({ user: authUser });
-  setSessionCookie(response, sessionId);
+  setSessionCookie(response, sessionId, authUser.role, authUser.must_change_pw);
 
   return response;
 }

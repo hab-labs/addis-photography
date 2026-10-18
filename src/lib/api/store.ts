@@ -120,6 +120,9 @@ function mapBackendOrder(o: any): Order {
   };
 }
 
+let isSyncing = false;
+let lastSyncTime = 0;
+
 export const studioStore = {
   // --- Customers ---
   getCustomers: (query?: string): Customer[] => {
@@ -967,16 +970,26 @@ export const studioStore = {
   },
 
   // --- Complete Synchronizer ---
-  async syncWithServer(): Promise<void> {
-    await Promise.allSettled([
-      studioStore.syncCustomers(),
-      studioStore.syncPrices(),
-      studioStore.syncOrders(),
-      studioStore.syncRequests(),
-      studioStore.syncAlbums(),
-      studioStore.syncSettings(),
-      studioStore.syncUsers(),
-      studioStore.syncAuditLogs(),
-    ]);
+  async syncWithServer(role?: string): Promise<void> {
+    const now = Date.now();
+    if (isSyncing || now - lastSyncTime < 2000) return;
+    isSyncing = true;
+    lastSyncTime = now;
+    try {
+      const promises: Promise<unknown>[] = [
+        studioStore.syncCustomers(),
+        studioStore.syncPrices(),
+        studioStore.syncOrders(),
+        studioStore.syncRequests(),
+        studioStore.syncAlbums(),
+        studioStore.syncSettings(),
+      ];
+      if (role === "admin") {
+        promises.push(studioStore.syncUsers(), studioStore.syncAuditLogs());
+      }
+      await Promise.allSettled(promises);
+    } finally {
+      isSyncing = false;
+    }
   },
 };

@@ -7,8 +7,10 @@ export interface User {
   email: string;
   phone: string;
   role: UserRole;
-  is_active: boolean;
-  created_at: string;
+  is_active?: boolean;
+  active?: boolean;
+  must_change_pw?: boolean;
+  created_at?: string;
 }
 
 export interface Customer {

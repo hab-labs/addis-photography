@@ -28,6 +28,7 @@ import {
 
 import { useI18n } from "@/lib/i18n/context";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { studioStore } from "@/lib/api/store";
 
 const navOperations = [
   { title: "Today", href: "/today", icon: CalendarDays },
@@ -65,10 +66,33 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     .slice(0, 2)
     .toUpperCase();
   const userRole = user?.role === "admin" ? "Administrator" : "Staff";
+  const [pendingRequests, setPendingRequests] = React.useState(0);
+  const [storageInfo, setStorageInfo] = React.useState({
+    percent: 0,
+    text: "0.0 GB of 100 GB used",
+  });
 
   React.useEffect(() => {
     setMobileMenuOpen(false);
     setAccountMenuOpen(false);
+    try {
+      const reqs = studioStore.getRequests();
+      setPendingRequests(reqs.filter((r) => r.status !== "delivered").length);
+
+      const albums = studioStore.getAlbums();
+      let usedBytes = 0;
+      albums.forEach((a) => {
+        usedBytes += Number(a.used_bytes || 0);
+      });
+      const totalGb = 100;
+      const totalBytes = totalGb * 1024 * 1024 * 1024;
+      const pct = Math.min(100, Math.round((usedBytes / totalBytes) * 100));
+      const usedGb = (usedBytes / (1024 * 1024 * 1024)).toFixed(1);
+      setStorageInfo({
+        percent: pct,
+        text: `${usedGb} GB of ${totalGb} GB used`,
+      });
+    } catch {}
   }, [pathname]);
 
   return (
@@ -107,8 +131,10 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                     >
                       <item.icon className={`h-4 w-4 transition-transform group-hover:scale-110 ${isActive ? "text-white" : "text-slate-400"}`} />
                       <span>{item.title}</span>
-                      {item.title === "Requests" && (
-                        <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[9px] ${isActive ? "bg-white/20 text-white" : "bg-[#343434] text-slate-300"}`}>7</span>
+                      {item.title === "Requests" && pendingRequests > 0 && (
+                        <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[9px] ${isActive ? "bg-white/20 text-white" : "bg-[#343434] text-slate-300"}`}>
+                          {pendingRequests}
+                        </span>
                       )}
                     </Link>
                   );
@@ -152,12 +178,15 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
           <div className="rounded-lg bg-[#1b1b1b] p-3">
             <div className="flex items-center justify-between text-[10px] font-medium text-slate-300">
               <span>Storage</span>
-              <span className="text-white">62%</span>
+              <span className="text-white">{storageInfo.percent}%</span>
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#363636]">
-              <div className="h-full w-[62%] rounded-full bg-[#e21b23]" />
+              <div
+                className="h-full rounded-full bg-[#e21b23] transition-all"
+                style={{ width: `${Math.max(storageInfo.percent, 2)}%` }}
+              />
             </div>
-            <p className="mt-2 text-[10px] text-slate-500">124 GB of 200 GB used</p>
+            <p className="mt-2 text-[10px] text-slate-500">{storageInfo.text}</p>
           </div>
           <div className="flex items-center gap-2 px-1 text-[10px] text-slate-400">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1f1f1f] text-slate-300">

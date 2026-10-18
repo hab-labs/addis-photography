@@ -85,7 +85,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data?.user) {
           const activeUser = data.user as User;
           setUser(activeUser);
-          studioStore.syncWithServer().catch(() => {});
+          studioStore.syncWithServer(activeUser.role).catch(() => {});
+        } else {
+          setUser(null);
+          persistUser(null, false);
+          if (
+            typeof window !== "undefined" &&
+            !window.location.pathname.startsWith("/login") &&
+            !window.location.pathname.startsWith("/a/")
+          ) {
+            void fetch("/api/auth/logout", { method: "POST", headers: { "X-Requested-With": "studio" } }).finally(() => {
+              window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+            });
+          }
         }
       })
       .catch(() => {})
@@ -111,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const nextUser = data.user as User;
       setUser(nextUser);
       persistUser(nextUser, rememberMe);
-      studioStore.syncWithServer().catch(() => {});
+      studioStore.syncWithServer(nextUser.role).catch(() => {});
       return { success: true, user: nextUser };
     }
 

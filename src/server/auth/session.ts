@@ -83,16 +83,27 @@ export async function destroySession(sessionId: string): Promise<void> {
 
 export function getSessionIdFromRequest(request: Request): string | null {
   const cookieHeader = request.headers.get("cookie") || "";
-  const match = cookieHeader
-    .split(";")
-    .map((c) => c.trim())
-    .find((c) => c.startsWith(`${SESSION_COOKIE_NAME}=`));
-
-  if (!match) return null;
-  return match.split("=")[1] || null;
+  if (!cookieHeader) return null;
+  const cookies = cookieHeader.split(";").map((c) => c.trim());
+  for (const c of cookies) {
+    const eqIdx = c.indexOf("=");
+    if (eqIdx !== -1) {
+      const name = c.substring(0, eqIdx).trim();
+      const value = c.substring(eqIdx + 1).trim();
+      if (name === SESSION_COOKIE_NAME) {
+        return decodeURIComponent(value);
+      }
+    }
+  }
+  return null;
 }
 
-export function setSessionCookie(response: NextResponse, sessionId: string): void {
+export function setSessionCookie(
+  response: NextResponse,
+  sessionId: string,
+  role?: string,
+  mustChangePw?: boolean
+): void {
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: sessionId,
@@ -102,8 +113,56 @@ export function setSessionCookie(response: NextResponse, sessionId: string): voi
     path: "/",
     maxAge: SESSION_TTL_SECONDS,
   });
+
+  if (role) {
+    response.cookies.set({
+      name: "addis_auth_role",
+      value: role,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: SESSION_TTL_SECONDS,
+    });
+  }
+
+  if (mustChangePw) {
+    response.cookies.set({
+      name: "addis_must_change_pw",
+      value: "true",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: SESSION_TTL_SECONDS,
+    });
+  } else {
+    response.cookies.set({
+      name: "addis_must_change_pw",
+      value: "",
+      path: "/",
+      maxAge: 0,
+    });
+  }
 }
 
 export function clearSessionCookie(response: NextResponse): void {
-  response.cookies.delete(SESSION_COOKIE_NAME);
+  response.cookies.set({
+    name: SESSION_COOKIE_NAME,
+    value: "",
+    path: "/",
+    maxAge: 0,
+  });
+  response.cookies.set({
+    name: "addis_auth_role",
+    value: "",
+    path: "/",
+    maxAge: 0,
+  });
+  response.cookies.set({
+    name: "addis_must_change_pw",
+    value: "",
+    path: "/",
+    maxAge: 0,
+  });
 }
