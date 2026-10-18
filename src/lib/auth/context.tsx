@@ -111,23 +111,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (username: string, password: string, rememberMe = false) => {
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Requested-With": "studio" },
-      body: JSON.stringify({ username, password }),
-      credentials: "include",
-    });
-    const data = await response.json();
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "studio" },
+        body: JSON.stringify({ username, password }),
+        credentials: "include",
+      });
+      const data = await response.json().catch(() => null);
 
-    if (response.ok) {
-      const nextUser = data.user as User;
-      setUser(nextUser);
-      persistUser(nextUser, rememberMe);
-      studioStore.syncWithServer(nextUser.role).catch(() => {});
-      return { success: true, user: nextUser };
+      if (response.ok && data?.user) {
+        const nextUser = data.user as User;
+        setUser(nextUser);
+        persistUser(nextUser, rememberMe);
+        studioStore.syncWithServer(nextUser.role).catch(() => {});
+        return { success: true, user: nextUser };
+      }
+
+      const errorMsg =
+        data?.error?.message ||
+        data?.error ||
+        (response.status === 500
+          ? "Database connection failed. Please ensure DATABASE_URL is configured in your Vercel project settings."
+          : "Invalid username or password");
+
+      return { success: false, error: errorMsg };
+    } catch {
+      return { success: false, error: "Unable to connect to the authentication server." };
     }
-
-    return { success: false, error: data.error?.message || data.error || "Invalid username or password" };
   };
 
   const logout = () => {

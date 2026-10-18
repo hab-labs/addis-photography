@@ -20,14 +20,24 @@ class DatabaseManager {
   private initialized = false;
 
   constructor() {
-    const connectionString = process.env.DATABASE_URL;
+    const connectionString =
+      process.env.DATABASE_URL ||
+      process.env.POSTGRES_URL ||
+      process.env.STORAGE_URL ||
+      process.env.STORAGE_DATABASE_URL ||
+      process.env.STORAGE_POSTGRES_URL ||
+      process.env.POSTGRES_PRISMA_URL ||
+      process.env.POSTGRES_URL_NON_POOLING;
+
     if (connectionString) {
       const globalAny = globalThis as any;
       if (!globalAny.__addis_pg_pool__) {
+        const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
         globalAny.__addis_pg_pool__ = new Pool({
           connectionString,
           max: 10,
           idleTimeoutMillis: 30000,
+          ssl: isLocal ? false : { rejectUnauthorized: false },
         });
       }
       this.pool = globalAny.__addis_pg_pool__;
@@ -119,7 +129,7 @@ class DatabaseManager {
     // 2. Users (No predictable demo accounts in production)
     const users = await this.query("SELECT * FROM users");
     if (users.rows.length === 0) {
-      if (process.env.NODE_ENV === "production") {
+      if (process.env.NODE_ENV === "production" && process.env.SEED_DEMO_DATA !== "true") {
         if (process.env.INITIAL_ADMIN_EMAIL && process.env.INITIAL_ADMIN_PASSWORD) {
           const adminHash = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD, 10);
           await this.query(
