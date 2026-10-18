@@ -20,14 +20,22 @@ class DatabaseManager {
   private initialized = false;
 
   constructor() {
+    const candidates = [
+      process.env.POSTGRES_URL,
+      process.env.DATABASE_URL,
+      process.env.STORAGE_URL,
+      process.env.STORAGE_DATABASE_URL,
+      process.env.STORAGE_POSTGRES_URL,
+      process.env.POSTGRES_PRISMA_URL,
+      process.env.POSTGRES_URL_NON_POOLING,
+    ];
+
     const connectionString =
-      process.env.DATABASE_URL ||
-      process.env.POSTGRES_URL ||
-      process.env.STORAGE_URL ||
-      process.env.STORAGE_DATABASE_URL ||
-      process.env.STORAGE_POSTGRES_URL ||
-      process.env.POSTGRES_PRISMA_URL ||
-      process.env.POSTGRES_URL_NON_POOLING;
+      candidates.find(
+        (c) =>
+          typeof c === "string" &&
+          (c.startsWith("postgres://") || c.startsWith("postgresql://"))
+      ) || candidates.find((c) => Boolean(c && typeof c === "string" && c.trim()));
 
     if (connectionString) {
       const globalAny = globalThis as any;
