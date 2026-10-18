@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import fs from "node:fs";
 import path from "node:path";
 
+import { SCHEMA_SQL } from "./schema-sql";
+
 export interface QueryResult<T = any> {
   rows: T[];
   rowCount: number;
@@ -105,11 +107,12 @@ class DatabaseManager {
 
     if (!this.isMemoryMode && this.pool) {
       try {
+        let sql = SCHEMA_SQL;
         const schemaPath = path.join(process.cwd(), "src/server/db/schema.sql");
         if (fs.existsSync(schemaPath)) {
-          const sql = fs.readFileSync(schemaPath, "utf-8");
-          await this.pool.query(sql);
+          sql = fs.readFileSync(schemaPath, "utf-8");
         }
+        await this.pool.query(sql);
       } catch (err: any) {
         console.error("FATAL: PostgreSQL connection or schema initialization failed:", err);
         throw new Error(
