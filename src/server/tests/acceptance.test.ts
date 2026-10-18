@@ -643,5 +643,107 @@ describe("Addis Photography - Specification Acceptance Tests (Section 15)", () =
     const resBad = await loginHandler(reqBad);
     expect(resBad.status).toBe(401);
   });
+
+  // Test Case 21: Dedicated Phase 8 Specification Test Fixture (12/08/2026 - 13/08/2026)
+  it("Test Case 21 (Spec Phase 8 Fixture): 12/08/2026 orders 1-3, cash collections, debt payment on 13/08/2026, and overpayment rejection", async () => {
+    const day1 = "2026-08-12";
+    const day2 = "2026-08-13";
+
+    // Order 1: 3x4 Qty 4 @ 50 = 200, paid 200 Cash
+    const order1 = await createOrder(
+      {
+        customer_name: "Customer Order One",
+        customer_phone: "0911000001",
+        order_date: day1,
+        items: [{ photo_type_name: "3x4", quantity: 4, unit_price: "50.00" }],
+        payment: { amount: "200.00", method: "Cash" },
+      },
+      adminActor
+    );
+
+    // Order 2: 10x15 Qty 3 @ 80 = 240, paid 160 Telebirr
+    const order2 = await createOrder(
+      {
+        customer_name: "Customer Order Two",
+        customer_phone: "0911000002",
+        order_date: day1,
+        items: [{ photo_type_name: "10x15", quantity: 3, unit_price: "80.00" }],
+        payment: { amount: "160.00", method: "Telebirr" },
+      },
+      adminActor
+    );
+
+    // Order 3: 30x45 Qty 1 @ 250 = 250, paid 100 Cash
+    const order3 = await createOrder(
+      {
+        customer_name: "Customer Order Three",
+        customer_phone: "0911000003",
+        order_date: day1,
+        items: [{ photo_type_name: "30x45", quantity: 1, unit_price: "250.00" }],
+        payment: { amount: "100.00", method: "Cash" },
+      },
+      adminActor
+    );
+
+    expect(order1.booking_no).toBe(1);
+    expect(order2.booking_no).toBe(2);
+    expect(order3.booking_no).toBe(3);
+
+    // Day 1 Totals: 3 bookings, order value 690, paid 460, balance 230, cash 300, telebirr 160
+    const reportDay1 = await getDailyReport(day1);
+    expect(reportDay1.bookings_count).toBe(3);
+    expect(reportDay1.total_value).toBe("690.00");
+    expect(reportDay1.total_paid).toBe("460.00");
+    expect(reportDay1.total_due).toBe("230.00");
+    expect(reportDay1.cash_received_today).toBe("460.00");
+    expect(reportDay1.paid_by_method["Cash"]).toBe("300.00");
+    expect(reportDay1.paid_by_method["Telebirr"]).toBe("160.00");
+    expect(reportDay1.quantity_by_photo_type["3x4"]).toBe(4);
+    expect(reportDay1.quantity_by_photo_type["10x15"]).toBe(3);
+    expect(reportDay1.quantity_by_photo_type["30x45"]).toBe(1);
+
+    // 13/08/2026: Payment of 80 to Order 2
+    const updatedOrder2 = await recordPayment(
+      {
+        order_id: order2.id,
+        amount: "80.00",
+        method: "Cash",
+        payment_date: day2,
+      },
+      staffActor
+    );
+
+    // Order 2 now has balance 0, total paid 240
+    expect(updatedOrder2.paid_amount).toBe("240.00");
+    expect(updatedOrder2.balance_amount).toBe("0.00");
+
+    // Check payment report for 13/08/2026 (0 bookings, cash received today = 80)
+    const reportDay2 = await getDailyReport(day2);
+    expect(reportDay2.bookings_count).toBe(0);
+    expect(reportDay2.total_value).toBe("0.00");
+    expect(reportDay2.cash_received_today).toBe("80.00");
+
+    // Combined Range Report (12/08/2026 to 13/08/2026)
+    // 3 bookings, total value 690, total paid 540, outstanding balance 150, cash collected 540
+    const rangeReport = await getRangeReport(day1, day2);
+    expect(rangeReport.bookings_count).toBe(3);
+    expect(rangeReport.total_value).toBe("690.00");
+    expect(rangeReport.total_paid).toBe("540.00");
+    expect(rangeReport.total_due).toBe("150.00");
+    expect(rangeReport.cash_collected_in_period).toBe("540.00");
+
+    // Overpayment rejection: attempting to pay 10.00 on fully paid Order 2 must throw error
+    await expect(
+      recordPayment(
+        {
+          order_id: order2.id,
+          amount: "10.00",
+          method: "Cash",
+        },
+        staffActor
+      )
+    ).rejects.toThrow(/overpayment rejected/i);
+  });
 });
+
 

@@ -221,7 +221,7 @@ export async function migrateExcelBookings(
         order_date: first.date,
         items,
         notes: group.map((g) => g.notes).filter(Boolean).join("; ") || undefined,
-        payment: totalPaid.isPositive()
+        payment: totalPaid.greaterThan(0)
           ? {
               amount: totalPaid.toFixed(2),
               method: primaryMethod,
@@ -235,7 +235,7 @@ export async function migrateExcelBookings(
 
     summary.orders_created++;
     summary.items_created += items.length;
-    if (totalPaid.isPositive()) {
+    if (totalPaid.greaterThan(0)) {
       summary.payments_created++;
     }
   }

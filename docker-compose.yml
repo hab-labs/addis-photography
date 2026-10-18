@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: addis_photography_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://addis_admin:addis_secure_password@postgres:5432/addis_photography
+      - MEDIA_STORAGE_PATH=/app/data/media
+      - CHUNK_UPLOAD_DIR=/app/data/chunks
+      - CRON_SECRET=addis_retention_cron_secret_key_2026
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    volumes:
+      - addis_media:/app/data/media
+      - addis_chunks:/app/data/chunks
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: addis_photography_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=addis_admin
+      - POSTGRES_PASSWORD=addis_secure_password
+      - POSTGRES_DB=addis_photography
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/server/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U addis_admin -d addis_photography"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  addis_media:
+    driver: local
+  addis_chunks:
+    driver: local

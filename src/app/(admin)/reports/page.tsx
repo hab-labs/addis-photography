@@ -58,7 +58,7 @@ export default function SalesReportsPage() {
       gross = gross.plus(new Decimal(o.total_amount || 0));
       collected = collected.plus(new Decimal(o.paid_amount || 0));
       const bal = new Decimal(o.balance_amount || 0);
-      if (bal.isPositive()) {
+      if (bal.greaterThan(0)) {
         due = due.plus(bal);
       }
 

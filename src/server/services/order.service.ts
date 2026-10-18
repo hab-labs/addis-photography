@@ -221,7 +221,7 @@ export async function createOrder(
     }
 
     // Insert Payment if present
-    if (initialPaid.isPositive() && paymentInput) {
+    if (initialPaid.greaterThan(0) && paymentInput) {
       const payId = `pay-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
       await txClient.query(
         `INSERT INTO payments (id, order_id, amount, method, paid_at, payment_date, reference_no, note, created_by, voided, created_at)
@@ -424,7 +424,7 @@ export async function updateOrderStatus(
 
   if (newStatus === "Delivered") {
     const balance = new Decimal(order.balance_amount);
-    if (balance.isPositive() && !confirmationAcknowledgeBalance) {
+    if (balance.greaterThan(0) && !confirmationAcknowledgeBalance) {
       throw new Error(
         `Warning: This order has an outstanding balance of ETB ${balance.toFixed(2)}. Delivery requires explicit balance confirmation.`
       );

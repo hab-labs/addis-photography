@@ -99,7 +99,7 @@ export async function getDailyReport(dateInput?: string): Promise<DailyReportDat
     const balance = Decimal.max(0, orderTotal.minus(orderPaid));
     const bookingRef = `${date.replace(/-/g, "")}-${String(o.booking_no).padStart(3, "0")}`;
 
-    if (balance.isPositive()) {
+    if (balance.greaterThan(0)) {
       unpaidOrders.push({
         id: o.id,
         booking_no: o.booking_no,
@@ -193,7 +193,7 @@ export async function getRangeReport(fromDate: string, toDate: string): Promise<
     const dateStr = typeof o.order_date === "string" ? o.order_date.split("T")[0] : fromDate;
     const bookingRef = `${dateStr.replace(/-/g, "")}-${String(o.booking_no).padStart(3, "0")}`;
 
-    if (balance.isPositive()) {
+    if (balance.greaterThan(0)) {
       unpaidOrders.push({
         id: o.id,
         booking_no: o.booking_no,

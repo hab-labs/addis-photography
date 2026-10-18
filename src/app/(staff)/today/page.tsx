@@ -76,7 +76,7 @@ export default function TodayLedgerPage() {
       const total = new Decimal(order.total_amount || 0);
       const paid = new Decimal(order.paid_amount || 0);
       const diff = total.minus(paid);
-      if (diff.isPositive()) {
+      if (diff.greaterThan(0)) {
         balance = balance.plus(diff);
       }
     });
@@ -141,7 +141,7 @@ export default function TodayLedgerPage() {
     const balances = new Map<string, { name: string; orderNumber: string; balance: Decimal }>();
     orders.forEach((order) => {
       const balance = new Decimal(order.balance_amount || 0);
-      if (!balance.isPositive()) return;
+      if (!balance.greaterThan(0)) return;
       const customerId = order.customer_id || order.customer?.id || order.id;
       const current = balances.get(customerId);
       balances.set(customerId, {
@@ -371,7 +371,7 @@ export default function TodayLedgerPage() {
                       <TableCell className="text-[9px] tabular-nums text-slate-600">
                         ETB {paid.toFixed(2)}
                       </TableCell>
-                      <TableCell className={`text-[9px] tabular-nums ${bal.isPositive() && !bal.isZero() ? "font-bold text-[#e21b23]" : "text-slate-500"}`}>
+                      <TableCell className={`text-[9px] tabular-nums ${bal.greaterThan(0) ? "font-bold text-[#e21b23]" : "text-slate-500"}`}>
                         ETB {bal.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-[9px] text-slate-500">
