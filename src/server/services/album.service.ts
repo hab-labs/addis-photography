@@ -29,18 +29,28 @@ export interface AlbumRecord {
 }
 
 export async function listAlbums(): Promise<AlbumRecord[]> {
+  // Use simple single-table query — the in-memory SQL engine does not support
+  // table aliases or JOINs (except for the hardcoded sessions+users join).
   const res = await db.query(
-    `SELECT a.*, COALESCE(c.name, 'Customer') as customer_name
-     FROM albums a
-     LEFT JOIN customers c ON a.customer_id = c.id
-     WHERE a.status != 'Deleted'
-     ORDER BY a.created_at DESC`
+    `SELECT * FROM albums WHERE status != 'Deleted' ORDER BY created_at DESC`
   );
 
   const now = Date.now();
 
   const albums: AlbumRecord[] = await Promise.all(
     res.rows.map(async (row) => {
+      // Resolve customer name (simple lookup, no JOIN)
+      let customer_name = row.customer_name || "Customer";
+      if (!customer_name || customer_name === "Customer") {
+        const custRes = await db.query(
+          `SELECT name FROM customers WHERE id = $1 LIMIT 1`,
+          [row.customer_id]
+        );
+        if (custRes.rows.length > 0 && custRes.rows[0].name) {
+          customer_name = custRes.rows[0].name;
+        }
+      }
+
       // Calculate media usage
       const mediaRes = await db.query(
         `SELECT COUNT(*) as count, COALESCE(SUM(size_bytes), 0) as used_bytes
@@ -68,7 +78,7 @@ export async function listAlbums(): Promise<AlbumRecord[]> {
       return {
         id: row.id,
         customer_id: row.customer_id,
-        customer_name: row.customer_name,
+        customer_name,
         title: row.title,
         occasion: row.occasion || "General",
         event_date: typeof row.event_date === "string" ? row.event_date.split("T")[0] : row.event_date,
@@ -93,17 +103,43 @@ export async function listAlbums(): Promise<AlbumRecord[]> {
   return albums;
 }
 
+
+
 export async function getAlbumById(idOrToken: string): Promise<AlbumRecord | null> {
-  const direct = await db.query(
-    `SELECT a.*, COALESCE(c.name, 'Customer') as customer_name
-     FROM albums a
-     LEFT JOIN customers c ON a.customer_id = c.id
-     WHERE (a.id = $1 OR a.token = $1) AND a.status != 'Deleted'
-     LIMIT 1`,
+  // Use simple single-table queries compatible with the in-memory SQL engine.
+  // The engine's regex-based parser does not support table aliases in FROM clauses.
+  // Try by id first, then by token.
+  let row: any = null;
+
+  const byId = await db.query(
+    `SELECT * FROM albums WHERE id = $1 AND status != 'Deleted' LIMIT 1`,
     [idOrToken]
   );
-  if (direct.rows.length > 0) {
-    const row = direct.rows[0];
+  if (byId.rows.length > 0) {
+    row = byId.rows[0];
+  } else {
+    const byToken = await db.query(
+      `SELECT * FROM albums WHERE token = $1 AND status != 'Deleted' LIMIT 1`,
+      [idOrToken]
+    );
+    if (byToken.rows.length > 0) {
+      row = byToken.rows[0];
+    }
+  }
+
+  if (row) {
+    // Resolve customer name separately (simple query, no JOIN needed)
+    let customer_name = row.customer_name || "Customer";
+    if (!customer_name || customer_name === "Customer") {
+      const custRes = await db.query(
+        `SELECT name FROM customers WHERE id = $1 LIMIT 1`,
+        [row.customer_id]
+      );
+      if (custRes.rows.length > 0 && custRes.rows[0].name) {
+        customer_name = custRes.rows[0].name;
+      }
+    }
+
     const mediaRes = await db.query(
       `SELECT COUNT(*) as count, COALESCE(SUM(size_bytes), 0) as used_bytes
        FROM media WHERE album_id = $1 AND status != 'failed'`,
@@ -124,7 +160,7 @@ export async function getAlbumById(idOrToken: string): Promise<AlbumRecord | nul
     return {
       id: row.id,
       customer_id: row.customer_id,
-      customer_name: row.customer_name,
+      customer_name,
       title: row.title,
       occasion: row.occasion || "General",
       event_date: typeof row.event_date === "string" ? row.event_date.split("T")[0] : row.event_date,
@@ -145,6 +181,7 @@ export async function getAlbumById(idOrToken: string): Promise<AlbumRecord | nul
     };
   }
 
+  // Fallback: scan all albums (covers edge cases where memory store indexing differs)
   const albums = await listAlbums();
   return albums.find((a) => a.id === idOrToken || a.token === idOrToken) || null;
 }

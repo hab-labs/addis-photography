@@ -386,16 +386,21 @@ class DatabaseManager {
 
       // Simple WHERE filter simulation
       if (upper.includes("WHERE")) {
-        const whereClause = trimmed.substring(upper.indexOf("WHERE") + 6);
+        let whereClause = trimmed.substring(upper.indexOf("WHERE") + 6);
+        // Strip ORDER BY, GROUP BY, HAVING, LIMIT suffixes that follow the WHERE clause
+        whereClause = whereClause.replace(/\s+(ORDER\s+BY|GROUP\s+BY|HAVING|LIMIT)\s+.*/i, "").trim();
         results = results.filter((row) => {
           return this.matchesWhere(row, whereClause, params);
         });
       }
 
+
       // ORDER BY simulation
       if (upper.includes("ORDER BY")) {
         const orderPart = trimmed.substring(upper.indexOf("ORDER BY") + 8).split(/LIMIT/i)[0];
-        const [col, dir] = orderPart.trim().split(/\s+/);
+        const [colRaw, dir] = orderPart.trim().split(/\s+/);
+        // Strip table alias prefix (e.g. "a.created_at" → "created_at")
+        const col = colRaw.includes(".") ? colRaw.split(".").pop()! : colRaw;
         const isDesc = dir && dir.toUpperCase() === "DESC";
         results.sort((a, b) => {
           const valA = a[col] ?? "";
@@ -405,6 +410,7 @@ class DatabaseManager {
           return 0;
         });
       }
+
 
       // Aggregate projection simulation
       if (/SUM\(|COUNT\(|MAX\(|MIN\(/i.test(upper)) {
