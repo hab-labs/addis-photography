@@ -57,29 +57,14 @@ export async function GET(
 
   const media = mediaRes.rows[0];
 
-  const MEDIA_STORAGE_DIR =
-    process.env.MEDIA_STORAGE_PATH || path.join(process.cwd(), "data/media");
-
-  let diskPath = media.storage_path;
-  if (!diskPath || !fs.existsSync(diskPath)) {
-    const ext = path.extname(media.original_name || "") || (media.type === "video" ? ".mp4" : ".jpg");
-    const candidatePath = path.join(MEDIA_STORAGE_DIR, album.id, `${media.id}${ext}`);
-    if (fs.existsSync(candidatePath)) {
-      diskPath = candidatePath;
-    } else {
-      const albumDir = path.join(MEDIA_STORAGE_DIR, album.id);
-      if (fs.existsSync(albumDir)) {
-        const matches = fs.readdirSync(albumDir).filter((f) => f.startsWith(media.id));
-        if (matches.length > 0) {
-          diskPath = path.join(albumDir, matches[0]);
-        }
-      }
-    }
-  }
+  const ext = path.extname(media.original_name || "") || (media.type === "video" ? ".mp4" : ".jpg");
+  const { findMediaFilePath } = await import("@/server/storage");
+  const diskPath = findMediaFilePath(album.id, media.id, ext);
 
   if (!diskPath || !fs.existsSync(diskPath)) {
     return NextResponse.json({ error: "Media file not found on disk." }, { status: 404 });
   }
+
 
   const fileStream = fs.createReadStream(diskPath);
   const stat = fs.statSync(diskPath);

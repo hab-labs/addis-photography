@@ -4,6 +4,12 @@ import crypto from "node:crypto";
 import { db } from "../db/client";
 import { getAlbumById } from "./album.service";
 import { logAudit } from "./audit.service";
+import {
+  getMediaStorageDir,
+  getTempUploadsDir,
+  ensureStorageDirs as ensureDirs,
+  findMediaFilePath,
+} from "../storage";
 
 export interface MediaRecord {
   id: string;
@@ -21,16 +27,8 @@ export interface MediaRecord {
   created_at: string;
 }
 
-const MEDIA_STORAGE_DIR = process.env.MEDIA_STORAGE_PATH || path.join(process.cwd(), "data/media");
-const TEMP_UPLOADS_DIR = path.join(process.cwd(), "data/uploads/temp");
-
 export function ensureStorageDirs(): void {
-  if (!fs.existsSync(MEDIA_STORAGE_DIR)) {
-    fs.mkdirSync(MEDIA_STORAGE_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(TEMP_UPLOADS_DIR)) {
-    fs.mkdirSync(TEMP_UPLOADS_DIR, { recursive: true });
-  }
+  ensureDirs();
 }
 
 export async function listMediaForAlbum(albumId: string): Promise<MediaRecord[]> {
@@ -49,7 +47,8 @@ export async function handleChunkUpload(
   chunkBuffer: Buffer
 ): Promise<void> {
   ensureStorageDirs();
-  const uploadDir = path.join(TEMP_UPLOADS_DIR, uploadId);
+  const tempDir = getTempUploadsDir();
+  const uploadDir = path.join(tempDir, uploadId);
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
@@ -57,6 +56,7 @@ export async function handleChunkUpload(
   const chunkPath = path.join(uploadDir, `chunk_${chunkIndex}`);
   fs.writeFileSync(chunkPath, chunkBuffer);
 }
+
 
 export async function finalizeChunkedUpload(
   albumId: string,
@@ -103,8 +103,10 @@ export async function finalizeChunkedUpload(
   }
 
   // Merge chunks
-  const uploadDir = path.join(TEMP_UPLOADS_DIR, uploadId);
-  const albumDir = path.join(MEDIA_STORAGE_DIR, album.id);
+  const tempDir = getTempUploadsDir();
+  const mediaDir = getMediaStorageDir();
+  const uploadDir = path.join(tempDir, uploadId);
+  const albumDir = path.join(mediaDir, album.id);
   if (!fs.existsSync(albumDir)) {
     fs.mkdirSync(albumDir, { recursive: true });
   }
@@ -112,6 +114,7 @@ export async function finalizeChunkedUpload(
   const mediaId = `med-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   const ext = path.extname(filename).toLowerCase() || (isVideo ? ".mp4" : ".jpg");
   const destinationPath = path.join(albumDir, `${mediaId}${ext}`);
+
 
   fs.writeFileSync(destinationPath, Buffer.alloc(0));
   for (let i = 0; i < totalChunks; i++) {
@@ -172,20 +175,23 @@ export async function deleteMedia(
   const media = res.rows[0];
 
   // Remove physical file from disk
-  const albumDir = path.join(MEDIA_STORAGE_DIR, media.album_id);
+  const mediaDir = getMediaStorageDir();
   const ext = path.extname(media.original_name);
-  const filePath = path.join(albumDir, `${mediaId}${ext}`);
-  if (fs.existsSync(filePath)) {
+  const foundFile = findMediaFilePath(media.album_id, mediaId, ext);
+  if (foundFile && fs.existsSync(foundFile)) {
     try {
-      fs.unlinkSync(filePath);
+      fs.unlinkSync(foundFile);
     } catch {}
-  } else if (fs.existsSync(albumDir)) {
-    try {
-      const matches = fs.readdirSync(albumDir).filter((f) => f.startsWith(mediaId));
-      for (const m of matches) {
-        fs.unlinkSync(path.join(albumDir, m));
-      }
-    } catch {}
+  } else {
+    const albumDir = path.join(mediaDir, media.album_id);
+    if (fs.existsSync(albumDir)) {
+      try {
+        const matches = fs.readdirSync(albumDir).filter((f) => f.startsWith(mediaId));
+        for (const m of matches) {
+          fs.unlinkSync(path.join(albumDir, m));
+        }
+      } catch {}
+    }
   }
 
   await db.query(`DELETE FROM media WHERE id = $1`, [mediaId]);
@@ -197,8 +203,11 @@ export async function deleteMedia(
 }
 
 export function getMediaFilePath(albumId: string, mediaId: string, ext: string): string {
-  return path.join(MEDIA_STORAGE_DIR, albumId, `${mediaId}${ext}`);
+  const found = findMediaFilePath(albumId, mediaId, ext);
+  if (found) return found;
+  return path.join(getMediaStorageDir(), albumId, `${mediaId}${ext}`);
 }
+
 
 export const mediaService = {
   getAlbumMedia: listMediaForAlbum,
@@ -218,7 +227,7 @@ export const mediaService = {
   }) => {
     await handleChunkUpload(params.file_id, params.chunk_index, params.chunk_buffer);
 
-    const uploadDir = path.join(TEMP_UPLOADS_DIR, params.file_id);
+    const uploadDir = path.join(getTempUploadsDir(), params.file_id);
     const files = fs.existsSync(uploadDir)
       ? fs.readdirSync(uploadDir).filter((f) => f.startsWith("chunk_"))
       : [];

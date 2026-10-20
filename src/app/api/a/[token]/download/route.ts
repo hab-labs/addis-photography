@@ -93,24 +93,16 @@ export async function GET(
 
     // Resolve physical storage location
     let fileBuffer: Buffer | null = null;
-    const directPath = path.join(MEDIA_STORAGE_DIR, album.id, `${media.id}${ext}`);
-
-    if (fs.existsSync(directPath)) {
-      fileBuffer = fs.readFileSync(directPath);
-    } else {
-      // Check if folder contains media.id with any extension
-      const albumDir = path.join(MEDIA_STORAGE_DIR, album.id);
-      if (fs.existsSync(albumDir)) {
-        const matches = fs.readdirSync(albumDir).filter((f) => f.startsWith(media.id));
-        if (matches.length > 0) {
-          fileBuffer = fs.readFileSync(path.join(albumDir, matches[0]));
-        }
-      }
+    const { findMediaFilePath } = await import("@/server/storage");
+    const foundPath = findMediaFilePath(album.id, media.id, ext);
+    if (foundPath && fs.existsSync(foundPath)) {
+      fileBuffer = fs.readFileSync(foundPath);
     }
 
     if (!fileBuffer) {
       continue;
     }
+
 
     // Deduplicate / sanitize file name inside ZIP
     let rawName = path.basename(media.original_name || `photo_${i + 1}${ext}`);

@@ -676,40 +676,45 @@ export default function AlbumDetailsPage() {
               Live Upload Queue ({activeUploads.length})
             </p>
             {activeUploads.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs"
-              >
-                <div className="flex items-center gap-2 truncate max-w-sm">
-                  <span className="font-semibold text-slate-800 truncate">{item.filename}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    ({(item.totalSize / (1024 * 1024)).toFixed(1)} MB)
-                  </span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                  <div className="flex flex-col gap-0.5 truncate max-w-sm">
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="font-semibold text-slate-800 truncate">{item.filename}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        ({(item.totalSize / (1024 * 1024)).toFixed(1)} MB)
+                      </span>
+                    </div>
+                    {item.status === "error" && item.errorMessage && (
+                      <span className="text-[10px] text-red-500 font-medium truncate" title={item.errorMessage}>
+                        {item.errorMessage}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 w-full sm:w-72">
+                    <Progress value={item.progressPercent} className="h-2 flex-1" />
+                    <span className={`text-[11px] font-mono font-semibold shrink-0 ${item.status === "error" ? "text-red-600" : ""}`}>
+                      {item.status === "completed"
+                        ? "done"
+                        : `${item.progressPercent}% (${item.status})`}
+                    </span>
+                    {item.status === "error" && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-[10px] font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          uploaderRef.current?.retryUpload(item.id);
+                        }}
+                      >
+                        Retry
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-72">
-                  <Progress value={item.progressPercent} className="h-2 flex-1" />
-                  <span className={`text-[11px] font-mono font-semibold shrink-0 ${item.status === "error" ? "text-red-600" : ""}`}>
-                    {item.status === "completed"
-                      ? "done"
-                      : `${item.progressPercent}% (${item.status})`}
-                  </span>
-                  {item.status === "error" && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-6 px-2 text-[10px] font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        uploaderRef.current?.retryUpload(item.id);
-                      }}
-                    >
-                      Retry
-                    </Button>
-                  )}
-                </div>
-              </div>
             ))}
           </div>
         )}

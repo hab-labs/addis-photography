@@ -25,7 +25,7 @@ export interface UploadItem {
   startTime?: number;
 }
 
-export const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB slices
+export const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB slices (Spec FR-25)
 export const MAX_PARALLEL_UPLOADS = 3;
 export const MAX_RETRIES = 3;
 

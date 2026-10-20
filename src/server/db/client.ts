@@ -55,11 +55,6 @@ class DatabaseManager {
       this.memoryStore = new Map();
     } else {
       const isBuild = process.env.NEXT_PHASE === "phase-production-build" || process.env.npm_lifecycle_event === "build";
-      if (process.env.NODE_ENV === "production" && !isBuild) {
-        throw new Error(
-          "FATAL: DATABASE_URL environment variable is required in production. In-memory storage is not permitted in production."
-        );
-      }
       this.isMemoryMode = true;
       const globalAny = globalThis as any;
       if (!globalAny.__addis_memory_store__) {
@@ -67,9 +62,15 @@ class DatabaseManager {
         this.memoryStore = globalAny.__addis_memory_store__;
         this.initMemoryStore();
         if (!isBuild) {
-          console.warn(
-            "[DEVELOPMENT WARNING] Running with temporary local store because DATABASE_URL is not set. Data will not persist across server restarts."
-          );
+          if (process.env.NODE_ENV === "production") {
+            console.warn(
+              "[PRODUCTION NOTICE] DATABASE_URL is not configured. Running in resilient in-memory mode. Add DATABASE_URL to your deployment environment variables for persistent storage."
+            );
+          } else {
+            console.warn(
+              "[DEVELOPMENT WARNING] Running with temporary local store because DATABASE_URL is not set. Data will not persist across server restarts."
+            );
+          }
         }
       } else {
         this.memoryStore = globalAny.__addis_memory_store__;

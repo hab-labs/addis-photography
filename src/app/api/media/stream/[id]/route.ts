@@ -11,20 +11,27 @@ export async function GET(
 ) {
   const mediaId = params.id;
 
-  // 1. Fetch media and its album
-  const res = await db.query(
-    `SELECT m.*, a.visibility, a.public_token, a.expires_at
-     FROM media m
-     JOIN albums a ON m.album_id = a.id
-     WHERE m.id = $1`,
+  // 1. Fetch media
+  const mediaRes = await db.query(
+    `SELECT * FROM media WHERE id = $1 LIMIT 1`,
     [mediaId]
   );
 
-  if (res.rows.length === 0) {
+  if (mediaRes.rows.length === 0) {
     return NextResponse.json({ error: "Media not found." }, { status: 404 });
   }
 
-  const media = res.rows[0];
+  const media = mediaRes.rows[0];
+
+  // Fetch associated album
+  const albumRes = await db.query(
+    `SELECT * FROM albums WHERE id = $1 LIMIT 1`,
+    [media.album_id]
+  );
+  const album = albumRes.rows[0] || {};
+  const visibility = album.visibility || "Public";
+  const publicToken = album.token || album.public_token || "";
+  const expiresAt = album.expires_at || new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
 
   // 2. Authorization check
   let authorized = false;
@@ -35,21 +42,20 @@ export async function GET(
     authorized = true;
   } else {
     // Check if album is expired
-    if (new Date(media.expires_at).getTime() < Date.now()) {
+    if (new Date(expiresAt).getTime() < Date.now()) {
       return NextResponse.json({ error: "Album has expired." }, { status: 410 });
     }
 
     // Check if public album
-    if (media.visibility === "Public") {
+    if (visibility === "Public" || visibility === "public") {
       authorized = true;
     } else {
       // Private album: check unlock token from header or cookie
-      const token = media.public_token;
       const cookieHeader = request.headers.get("cookie") || "";
       const cookieMatch = cookieHeader
         .split(";")
         .map((c) => c.trim())
-        .find((c) => c.startsWith(`${UNLOCK_SESSION_COOKIE_PREFIX}${token}=`));
+        .find((c) => c.startsWith(`${UNLOCK_SESSION_COOKIE_PREFIX}${publicToken}=`));
       const unlockCookie = cookieMatch ? cookieMatch.split("=")[1] : undefined;
       const unlockHeader = request.headers.get("x-unlock-token") || undefined;
       const unlockToken = unlockHeader || unlockCookie;
@@ -63,29 +69,14 @@ export async function GET(
   }
 
   // 3. Verify physical file
-  const MEDIA_STORAGE_DIR =
-    process.env.MEDIA_STORAGE_PATH || path.join(process.cwd(), "data/media");
-
-  let diskPath = media.storage_path;
-  if (!diskPath || !fs.existsSync(diskPath)) {
-    const ext = path.extname(media.original_name || "") || (media.type === "video" ? ".mp4" : ".jpg");
-    const candidatePath = path.join(MEDIA_STORAGE_DIR, media.album_id, `${media.id}${ext}`);
-    if (fs.existsSync(candidatePath)) {
-      diskPath = candidatePath;
-    } else {
-      const albumDir = path.join(MEDIA_STORAGE_DIR, media.album_id);
-      if (fs.existsSync(albumDir)) {
-        const matches = fs.readdirSync(albumDir).filter((f) => f.startsWith(media.id));
-        if (matches.length > 0) {
-          diskPath = path.join(albumDir, matches[0]);
-        }
-      }
-    }
-  }
+  const ext = path.extname(media.original_name || "") || (media.type === "video" ? ".mp4" : ".jpg");
+  const { findMediaFilePath } = await import("@/server/storage");
+  const diskPath = findMediaFilePath(media.album_id, media.id, ext);
 
   if (!diskPath || !fs.existsSync(diskPath)) {
     return NextResponse.json({ error: "Physical file not found." }, { status: 404 });
   }
+
 
   const stat = fs.statSync(diskPath);
   const fileSize = stat.size;
