@@ -748,6 +748,24 @@ export const studioStore = {
     return updated.find((a) => a.id === id)!;
   },
 
+  deleteAlbum: async (id: string): Promise<boolean> => {
+    const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
+    const updated = albums.filter((a) => a.id !== id);
+    setStored("albums", updated);
+
+    if (isBrowser()) {
+      try {
+        await api.delete(`/api/albums/${id}`);
+        await studioStore.syncAlbums().catch(() => {});
+        return true;
+      } catch (err) {
+        console.error("Delete album failed:", err);
+        return false;
+      }
+    }
+    return true;
+  },
+
   createAlbum: (data: {
     title: string;
     token: string;

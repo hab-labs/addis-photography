@@ -14,6 +14,14 @@ import {
   Search,
   Loader2,
   FolderPlus,
+  Copy,
+  Check,
+  ExternalLink,
+  QrCode,
+  FolderOpen,
+  Trash2,
+  Printer,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +34,14 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { generateQrPng, downloadFile, printBrandedFlyer } from "@/lib/qr";
 import { studioStore } from "@/lib/api/store";
 import { formatCalendarPair } from "@/lib/date";
 import type { Album as StoreAlbum, Customer } from "@/types";
@@ -57,6 +73,63 @@ export default function ClientAlbumsPage() {
   const [pin, setPin] = React.useState("");
   const [dialogError, setDialogError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
+
+  // Album actions state
+  const [copiedToken, setCopiedToken] = React.useState<string | null>(null);
+  const [qrAlbum, setQrAlbum] = React.useState<ClientAlbum | null>(null);
+  const [qrDataUrl, setQrDataUrl] = React.useState<string>("");
+  const [deleteTargetAlbum, setDeleteTargetAlbum] = React.useState<ClientAlbum | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [actionNotice, setActionNotice] = React.useState<string | null>(null);
+
+  const handleCopyLink = async (album: ClientAlbum) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const publicUrl = `${origin}/a/${album.token}`;
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setCopiedToken(album.token);
+      setActionNotice(`Copied public gallery link for "${album.title}"`);
+      setTimeout(() => setCopiedToken(null), 2500);
+      setTimeout(() => setActionNotice(null), 3500);
+    } catch {
+      // Fallback
+    }
+  };
+
+  const handleOpenQr = async (album: ClientAlbum) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const publicUrl = `${origin}/a/${album.token}`;
+    try {
+      const url = await generateQrPng(publicUrl);
+      setQrDataUrl(url);
+      setQrAlbum(album);
+    } catch (err) {
+      console.error("QR generation error:", err);
+    }
+  };
+
+  const handleExtendRetention = (album: ClientAlbum) => {
+    studioStore.extendAlbumRetention(album.id, 30);
+    loadAlbums();
+    setActionNotice(`Extended retention for "${album.title}" by 30 days.`);
+    setTimeout(() => setActionNotice(null), 3500);
+  };
+
+  const handleDeleteAlbum = async () => {
+    if (!deleteTargetAlbum) return;
+    setIsDeleting(true);
+    try {
+      await studioStore.deleteAlbum(deleteTargetAlbum.id);
+      loadAlbums();
+      setActionNotice(`Album "${deleteTargetAlbum.title}" has been deleted.`);
+      setTimeout(() => setActionNotice(null), 3500);
+      setDeleteTargetAlbum(null);
+    } catch (err) {
+      console.error("Failed to delete album:", err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const loadAlbums = React.useCallback(() => {
     const refreshData = () => {
@@ -229,21 +302,23 @@ export default function ClientAlbumsPage() {
           const published = album.file_count > 0;
           const eventDateStr = formatCalendarPair(album.event_date).gregorian;
           return (
-            <Link
+            <div
               key={album.id}
-              href={`/albums/${album.id}`}
-              className="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="group relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               <div className="relative h-[154px] overflow-hidden bg-slate-100">
-                <Image
-                  src={album.coverUrl}
-                  alt={album.title}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover transition duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/10" />
-                <div className="absolute left-2.5 top-2.5 flex items-center gap-1.5">
+                <Link href={`/albums/${album.id}`} className="block h-full w-full">
+                  <Image
+                    src={album.coverUrl}
+                    alt={album.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/10" />
+                </Link>
+
+                <div className="pointer-events-none absolute left-2.5 top-2.5 flex items-center gap-1.5">
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                       published
@@ -262,12 +337,86 @@ export default function ClientAlbumsPage() {
                     </span>
                   )}
                 </div>
-                <span className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-md bg-black/45 text-white backdrop-blur-sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </span>
+
+                <div className="absolute right-2.5 top-2.5 z-10">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Album actions"
+                        className="flex h-7 w-7 items-center justify-center rounded-md bg-black/60 hover:bg-black/85 text-white backdrop-blur-sm transition-colors shadow-sm focus:outline-none"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48 bg-white shadow-xl border border-slate-100 rounded-lg p-1 text-xs">
+                      <DropdownMenuItem
+                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 text-slate-700"
+                        onClick={() => handleCopyLink(album)}
+                      >
+                        {copiedToken === album.token ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 text-emerald-600" />
+                            <span className="text-emerald-600 font-medium">Link Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5 text-slate-500" />
+                            <span>Copy Public Link</span>
+                          </>
+                        )}
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 text-slate-700"
+                        onClick={() => window.open(`/a/${album.token}`, "_blank")}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                        <span>Open Public Gallery</span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 text-slate-700"
+                        onClick={() => handleOpenQr(album)}
+                      >
+                        <QrCode className="h-3.5 w-3.5 text-slate-500" />
+                        <span>QR Code & Flyer</span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href={`/albums/${album.id}`}
+                          className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 text-slate-700"
+                        >
+                          <FolderOpen className="h-3.5 w-3.5 text-slate-500" />
+                          <span>Manage & Upload</span>
+                        </Link>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 text-slate-700"
+                        onClick={() => handleExtendRetention(album)}
+                      >
+                        <Clock3 className="h-3.5 w-3.5 text-amber-500" />
+                        <span>Extend (+30 Days)</span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuSeparator className="my-1 border-t border-slate-100" />
+
+                      <DropdownMenuItem
+                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-red-50 text-red-600"
+                        onClick={() => setDeleteTargetAlbum(album)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        <span>Delete Album</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
-              <div className="p-2.5">
-                <h2 className="truncate text-[11px] font-semibold text-slate-800">
+
+              <Link href={`/albums/${album.id}`} className="block p-2.5">
+                <h2 className="truncate text-[11px] font-semibold text-slate-800 hover:text-[#e31b23] transition-colors">
                   {album.title}
                 </h2>
                 <p className="mt-1 truncate text-[9px] text-slate-400">{album.clientName}</p>
@@ -286,8 +435,8 @@ export default function ClientAlbumsPage() {
                     {eventDateStr}
                   </span>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </div>
           );
         })}
       </section>
@@ -451,6 +600,151 @@ export default function ClientAlbumsPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Action Notification Banner */}
+      {actionNotice && (
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-medium text-white shadow-xl animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <Check className="h-4 w-4 text-emerald-400" />
+          <span>{actionNotice}</span>
+        </div>
+      )}
+
+      {/* QR Code Dialog */}
+      <Dialog open={Boolean(qrAlbum)} onOpenChange={(open) => !open && setQrAlbum(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900">
+              Client Gallery QR Code
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Share with {qrAlbum?.clientName} to access the online album.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center justify-center space-y-4 py-3">
+            {qrDataUrl && (
+              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <Image
+                  src={qrDataUrl}
+                  alt="Album QR Code"
+                  width={220}
+                  height={220}
+                  className="rounded-lg"
+                />
+              </div>
+            )}
+
+            <div className="w-full space-y-1">
+              <Label className="text-[11px] text-slate-500">Public Gallery Link</Label>
+              <div className="flex items-center gap-1.5">
+                <Input
+                  readOnly
+                  value={
+                    typeof window !== "undefined" && qrAlbum
+                      ? `${window.location.origin}/a/${qrAlbum.token}`
+                      : ""
+                  }
+                  className="font-mono text-xs"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => qrAlbum && handleCopyLink(qrAlbum)}
+                >
+                  {copiedToken === qrAlbum?.token ? (
+                    <Check className="h-4 w-4 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-row justify-between sm:justify-between">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (qrDataUrl && qrAlbum) {
+                    downloadFile(qrDataUrl, `${qrAlbum.token}-qr.png`);
+                  }
+                }}
+              >
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+                Download PNG
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (qrAlbum) {
+                    printBrandedFlyer({
+                      title: qrAlbum.title,
+                      token: qrAlbum.token,
+                      customer_name: qrAlbum.clientName,
+                      event_date: qrAlbum.createdDate,
+                      pin_set: qrAlbum.pin_set,
+                    });
+                  }
+                }}
+              >
+                <Printer className="mr-1.5 h-3.5 w-3.5" />
+                Print Flyer
+              </Button>
+            </div>
+            <Button size="sm" onClick={() => setQrAlbum(null)}>
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={Boolean(deleteTargetAlbum)}
+        onOpenChange={(open) => !open && setDeleteTargetAlbum(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-red-600">
+              Delete Album
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Are you sure you want to delete <span className="font-semibold text-slate-800">"{deleteTargetAlbum?.title}"</span>? This will permanently remove the album record and any associated uploaded media.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteTargetAlbum(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleDeleteAlbum}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                "Delete Album"
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
