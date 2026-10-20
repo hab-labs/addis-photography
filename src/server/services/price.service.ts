@@ -27,7 +27,15 @@ export async function getPhotoTypeById(id: string): Promise<PhotoTypeRecord | nu
 }
 
 export async function getPhotoTypeByName(name: string): Promise<PhotoTypeRecord | null> {
-  const res = await db.query<PhotoTypeRecord>(`SELECT * FROM photo_types WHERE name = $1`, [name]);
+  const clean = name.trim();
+  const res = await db.query<PhotoTypeRecord>(
+    `SELECT * FROM photo_types 
+     WHERE LOWER(name) = LOWER($1) 
+        OR LOWER(description) = LOWER($1) 
+        OR LOWER(id) = LOWER($1) 
+     LIMIT 1`,
+    [clean]
+  );
   return res.rows[0] || null;
 }
 

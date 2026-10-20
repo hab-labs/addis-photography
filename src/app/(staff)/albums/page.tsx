@@ -128,7 +128,7 @@ export default function ClientAlbumsPage() {
       studioStore.createAlbum({
         title: cleanTitle,
         token,
-        customer_id: customerId || `cust-${Date.now()}`,
+        customer_id: customerId || undefined,
         customer_name: cleanCustomerName,
         event_date: new Date(eventDate).toISOString(),
         pin: requirePin ? pin : undefined,

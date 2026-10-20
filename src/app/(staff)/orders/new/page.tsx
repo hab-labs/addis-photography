@@ -33,17 +33,18 @@ import type { PaymentMethod, Customer } from "@/types";
 interface OrderItem {
   id: string;
   name: string;
+  photo_type_name?: string;
   price: number;
   quantity: number;
   locked: boolean;
 }
 
 const PRESET_SERVICES = [
-  { id: "pass-4", name: "Standard Passport / Visa (4 Copies)", price: 350 },
-  { id: "pass-8", name: "Standard Passport / Visa (8 Copies)", price: 600 },
-  { id: "port-std", name: "Studio Portrait Session (Digital)", price: 1200 },
-  { id: "print-a4", name: "Glossy Frame Print (A4)", price: 850 },
-  { id: "grad-pkg", name: "Graduation Express Mini-Shoot", price: 2500 },
+  { id: "pt-1", name: "3x4 Standard Passport / Visa (4 Copies)", photo_type_name: "3x4", price: 350 },
+  { id: "pt-2", name: "10x15 Instant Glossy Print (4x6)", photo_type_name: "10x15", price: 600 },
+  { id: "pt-4", name: "20x25 Studio Portrait Session", photo_type_name: "20x25", price: 1200 },
+  { id: "pt-5", name: "30x45 Glossy Frame Print (A4)", photo_type_name: "30x45", price: 850 },
+  { id: "pt-6", name: "Other / Graduation Express Mini-Shoot", photo_type_name: "Other", price: 2500 },
 ];
 
 const PAYMENT_METHODS = [
@@ -138,6 +139,7 @@ function NewWalkInOrderForm() {
         {
           id: `${preset.id}-${Date.now()}`,
           name: preset.name,
+          photo_type_name: preset.photo_type_name,
           price: preset.price,
           quantity: 1,
           locked: true,
@@ -148,7 +150,8 @@ function NewWalkInOrderForm() {
         ...prev,
         {
           id: `custom-${Date.now()}`,
-          name: "Studio Custom Service",
+          name: "Other / Studio Custom Service",
+          photo_type_name: "Other",
           price: 500,
           quantity: 1,
           locked: false,
@@ -177,8 +180,9 @@ function NewWalkInOrderForm() {
     setPaymentMethod("telebirr");
     setItems([
       {
-        id: "pass-4",
-        name: "Standard Passport / Visa (4 Copies)",
+        id: "pt-1",
+        name: "3x4 Standard Passport / Visa (4 Copies)",
+        photo_type_name: "3x4",
         price: 350,
         quantity: 1,
         locked: true,
@@ -221,12 +225,13 @@ function NewWalkInOrderForm() {
         customer_name: customerName.trim(),
         customer_phone: normalizedPhone,
         items: items.map((item) => {
-          const catalogItem = prices.find((price) => price.name === item.name);
+          const catalogItem = prices.find((price) => price.name === item.name || price.name === item.photo_type_name);
           return {
-            price_item_id: catalogItem?.id || item.id,
-            photo_type_name: item.name.trim(),
+            price_item_id: catalogItem?.id || item.photo_type_name || item.id,
+            photo_type_name: item.photo_type_name || catalogItem?.name || item.name.trim(),
             quantity: item.quantity,
             unit_price: item.price.toFixed(2),
+            notes: item.name !== item.photo_type_name ? item.name : undefined,
           };
         }),
         payment_method: paymentMethod as PaymentMethod,

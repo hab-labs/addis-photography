@@ -129,9 +129,36 @@ export async function createOrder(
       throw new Error("Item quantity must be a positive integer greater than zero.");
     }
 
-    const photoType = item.photo_type_id
+    let photoType = item.photo_type_id
       ? await getPhotoTypeById(item.photo_type_id)
       : (item.photo_type_name ? await getPhotoTypeByName(item.photo_type_name) : null);
+
+    if (!photoType && (item.photo_type_name || item.photo_type_id)) {
+      const searchName = item.photo_type_name || item.photo_type_id || "";
+      photoType = await getPhotoTypeByName(searchName);
+    }
+
+    if (!photoType) {
+      const name = (item.photo_type_name || item.photo_type_id || "").toLowerCase();
+      if (name.includes("3x4") || name.includes("pass") || name.includes("visa")) {
+        photoType = await getPhotoTypeByName("3x4");
+      } else if (name.includes("10x15") || name.includes("4x6")) {
+        photoType = await getPhotoTypeByName("10x15");
+      } else if (name.includes("13x18") || name.includes("5x7")) {
+        photoType = await getPhotoTypeByName("13x18");
+      } else if (name.includes("20x25") || name.includes("8x10") || name.includes("portrait")) {
+        photoType = await getPhotoTypeByName("20x25");
+      } else if (name.includes("30x45") || name.includes("poster") || name.includes("frame") || name.includes("print-a4") || name.includes("a4")) {
+        photoType = await getPhotoTypeByName("30x45");
+      } else {
+        photoType = await getPhotoTypeByName("Other");
+      }
+    }
+
+    if (!photoType) {
+      photoType = (await getPhotoTypeByName("Other")) || (await getPhotoTypeByName("3x4"));
+    }
+
     if (!photoType) throw new Error(`Invalid photo type: ${item.photo_type_id || item.photo_type_name}`);
     if (!photoType.active) throw new Error(`Photo type "${photoType.name}" is deactivated and cannot be selected for new orders.`);
 

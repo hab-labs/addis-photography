@@ -31,16 +31,18 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null);
 
     const title = typeof body?.title === "string" ? body.title.trim() : "";
-    const orderId = typeof body?.order_id === "string" ? body.order_id : "";
-    const customerId = typeof body?.customer_id === "string" ? body.customer_id : undefined;
+    const orderId = typeof body?.order_id === "string" && body.order_id.trim() ? body.order_id : `ord-${Date.now()}`;
+    const customerId = typeof body?.customer_id === "string" && body.customer_id.trim() ? body.customer_id.trim() : undefined;
+    const customerName = typeof body?.customer_name === "string" && body.customer_name.trim() ? body.customer_name.trim() : undefined;
+    const eventDate = typeof body?.event_date === "string" ? body.event_date : undefined;
     const visibility = body?.visibility === "public" ? "public" : "private";
     const pin = typeof body?.pin === "string" && body.pin.trim() ? body.pin.trim() : undefined;
     const allowDownload = typeof body?.allow_download === "boolean" ? body.allow_download : true;
     const expiresAt = typeof body?.expires_at === "string" ? body.expires_at : undefined;
 
-    if (!title || !orderId) {
+    if (!title) {
       return NextResponse.json(
-        { error: "Album title and order_id are required." },
+        { error: "Album title is required." },
         { status: 400 }
       );
     }
@@ -56,13 +58,15 @@ export async function POST(request: Request) {
       {
         order_id: orderId,
         customer_id: customerId,
+        customer_name: customerName,
+        event_date: eventDate,
         title,
         visibility,
         pin,
         allow_download: allowDownload,
         expires_at: expiresAt,
       },
-      user.id
+      user
     );
 
     return NextResponse.json({ album }, { status: 201 });

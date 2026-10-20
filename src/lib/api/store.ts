@@ -751,7 +751,7 @@ export const studioStore = {
   createAlbum: (data: {
     title: string;
     token: string;
-    customer_id: string;
+    customer_id?: string;
     customer_name: string;
     event_date: string;
     pin?: string;
@@ -764,7 +764,7 @@ export const studioStore = {
       id: `alb-${Date.now()}`,
       title: data.title,
       token: data.token.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-      customer_id: data.customer_id,
+      customer_id: data.customer_id || "",
       customer_name: data.customer_name,
       event_date: data.event_date,
       is_locked: !!data.pin,
@@ -787,6 +787,8 @@ export const studioStore = {
         title: data.title,
         order_id: newAlb.token,
         customer_id: data.customer_id,
+        customer_name: data.customer_name,
+        event_date: data.event_date,
         visibility: data.pin ? "private" : "public",
         pin: data.pin,
       })

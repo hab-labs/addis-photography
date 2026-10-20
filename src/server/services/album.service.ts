@@ -3,7 +3,7 @@ import path from "node:path";
 import { db } from "../db/client";
 import { logAudit } from "./audit.service";
 import { generateRandomToken, hashPin } from "../auth/crypto";
-import { getCustomerById } from "./customer.service";
+import { getCustomerById, createCustomer, searchCustomers } from "./customer.service";
 
 export interface AlbumRecord {
   id: string;
@@ -105,26 +105,54 @@ export async function getAlbumByToken(token: string): Promise<AlbumRecord | null
 
 export async function createAlbum(
   input: {
-    customer_id: string;
+    customer_id?: string;
+    customer_name?: string;
+    order_id?: string;
     title: string;
     occasion?: string;
-    event_date: string;
-    visibility?: "Public" | "Private";
+    event_date?: string;
+    visibility?: "Public" | "Private" | string;
     pin?: string;
     allow_download?: boolean;
     allow_zip?: boolean;
     quota_mb?: number;
     retention_days?: number;
+    expires_at?: string;
   },
-  actor: { id: string; name: string }
+  actor: { id: string; name?: string } | string
 ): Promise<AlbumRecord> {
-  const customer = await getCustomerById(input.customer_id);
-  if (!customer) throw new Error("Customer not found.");
+  const actorObj: { id: string; name: string } =
+    typeof actor === "string"
+      ? { id: actor, name: "Staff" }
+      : { id: actor?.id || "system", name: actor?.name || "Staff" };
+
+  let customerId = input.customer_id;
+  let customer = customerId ? await getCustomerById(customerId) : null;
+  if (!customer && input.customer_name) {
+    const custRes = await createCustomer(
+      { name: input.customer_name },
+      actorObj as any,
+      true
+    );
+    customerId = custRes.customer.id;
+    customer = custRes.customer as any;
+  }
+  if (!customer) {
+    const customers = await searchCustomers();
+    if (customers.length > 0) {
+      customerId = customers[0].id;
+      customer = customers[0] as any;
+    } else {
+      const custRes = await createCustomer({ name: input.customer_name || "Studio Client" }, actorObj as any, true);
+      customerId = custRes.customer.id;
+      customer = custRes.customer as any;
+    }
+  }
 
   const cleanTitle = input.title.trim();
   if (!cleanTitle) throw new Error("Album title is required.");
 
-  const isPrivate = input.visibility === "Private" || Boolean(input.pin);
+  const isPrivate = input.visibility === "Private" || input.visibility === "private" || Boolean(input.pin);
   let pinHash: string | null = null;
 
   if (isPrivate) {
@@ -138,17 +166,18 @@ export async function createAlbum(
   const token = generateRandomToken(32);
   const albumId = `alb-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   const retentionDays = input.retention_days || 180; // Default 6 months
-  const expiresAt = new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = input.expires_at || new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000).toISOString();
+  const eventDate = input.event_date ? new Date(input.event_date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
 
   await db.query(
     `INSERT INTO albums (id, customer_id, title, occasion, event_date, visibility, pin_hash, token, allow_download, allow_zip, expires_at, quota_mb, status, created_by, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'Draft', $13, NOW(), NOW())`,
     [
       albumId,
-      input.customer_id,
+      customerId,
       cleanTitle,
       input.occasion || "General",
-      input.event_date,
+      eventDate,
       isPrivate ? "Private" : "Public",
       pinHash,
       token,
@@ -156,13 +185,13 @@ export async function createAlbum(
       Boolean(input.allow_zip),
       expiresAt,
       input.quota_mb || 1024,
-      actor.id,
+      actorObj.id,
     ]
   );
 
-  await logAudit(actor, "ALBUM_CREATED", "Album", albumId, {
+  await logAudit(actorObj, "ALBUM_CREATED", "Album", albumId, {
     title: cleanTitle,
-    customer: customer.name,
+    customer: customer?.name || "Customer",
     visibility: isPrivate ? "Private" : "Public",
     token,
   });
