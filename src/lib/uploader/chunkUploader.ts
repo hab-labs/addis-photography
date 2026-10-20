@@ -12,6 +12,7 @@ export interface UploadItem {
   id: string;
   file: File;
   albumId: string;
+  albumMetadata?: { title?: string; token?: string; customer_name?: string };
   filename: string;
   totalSize: number;
   uploadedBytes: number;
@@ -61,7 +62,11 @@ export class ChunkUploader {
     this.onUpdateCallback = callback;
   }
 
-  public addFiles(files: File[], albumId: string): UploadItem[] {
+  public addFiles(
+    files: File[],
+    albumId: string,
+    albumMetadata?: { title?: string; token?: string; customer_name?: string }
+  ): UploadItem[] {
     const newItems: UploadItem[] = files.map((file) => {
       const chunksTotal = Math.ceil(file.size / CHUNK_SIZE);
       const savedChunks = this.getSavedChunks(albumId, file.name, file.size);
@@ -73,6 +78,7 @@ export class ChunkUploader {
         id: `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         file,
         albumId,
+        albumMetadata,
         filename: file.name,
         totalSize: file.size,
         uploadedBytes,
@@ -97,6 +103,17 @@ export class ChunkUploader {
       item.status = "error";
       item.errorMessage = "Upload cancelled";
       this.notify();
+    }
+  }
+
+  public retryUpload(id: string) {
+    this.abortedFiles.delete(id);
+    const item = this.queue.find((i) => i.id === id);
+    if (item && item.status === "error") {
+      item.status = "queued";
+      item.errorMessage = undefined;
+      this.notify();
+      this.processQueue();
     }
   }
 
@@ -170,7 +187,8 @@ export class ChunkUploader {
             chunkIdx,
             totalChunks,
             chunkBlob,
-            item.id
+            item.id,
+            item.albumMetadata
           );
           if (res?.media) {
             serverMediaResult = res.media;
@@ -220,7 +238,8 @@ export class ChunkUploader {
     chunkIndex: number,
     totalChunks: number,
     chunk: Blob,
-    fileId?: string
+    fileId?: string,
+    albumMetadata?: { title?: string; token?: string; customer_name?: string }
   ): Promise<any> {
     const formData = new FormData();
     formData.append("album_id", albumId);
@@ -234,6 +253,9 @@ export class ChunkUploader {
       chunk.type || (filename.toLowerCase().endsWith(".mp4") ? "video/mp4" : "image/jpeg")
     );
     formData.append("chunk", chunk, filename);
+    if (albumMetadata?.title) formData.append("album_title", albumMetadata.title);
+    if (albumMetadata?.token) formData.append("album_token", albumMetadata.token);
+    if (albumMetadata?.customer_name) formData.append("customer_name", albumMetadata.customer_name);
 
     try {
       // 1. Post to actual album media upload endpoint

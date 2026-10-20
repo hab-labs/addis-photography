@@ -318,7 +318,11 @@ export default function AlbumDetailsPage() {
     }
 
     if (fileArray.length > 0) {
-      uploaderRef.current.addFiles(fileArray, album.id);
+      uploaderRef.current.addFiles(fileArray, album.id, {
+        title: album.title,
+        token: album.token,
+        customer_name: album.customer_name,
+      });
     }
   };
 
@@ -683,13 +687,27 @@ export default function AlbumDetailsPage() {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-64">
+                <div className="flex items-center gap-3 w-full sm:w-72">
                   <Progress value={item.progressPercent} className="h-2 flex-1" />
-                  <span className="text-[11px] font-mono font-semibold shrink-0">
+                  <span className={`text-[11px] font-mono font-semibold shrink-0 ${item.status === "error" ? "text-red-600" : ""}`}>
                     {item.status === "completed"
                       ? "done"
                       : `${item.progressPercent}% (${item.status})`}
                   </span>
+                  {item.status === "error" && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-[10px] font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        uploaderRef.current?.retryUpload(item.id);
+                      }}
+                    >
+                      Retry
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

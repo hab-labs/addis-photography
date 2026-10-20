@@ -869,6 +869,20 @@ export const studioStore = {
         for (const local of currentAlbums) {
           if (!merged.some((m) => m.id === local.id || m.token === local.token)) {
             merged.push(local);
+            if (isBrowser()) {
+              api.post("/api/albums", {
+                id: local.id,
+                token: local.token,
+                title: local.title,
+                customer_id: local.customer_id,
+                customer_name: local.customer_name,
+                event_date: local.event_date,
+                visibility: local.is_locked ? "private" : "public",
+                allow_download: local.allow_download,
+                allow_zip: local.allow_zip,
+                expires_at: local.expires_at,
+              }).catch(() => {});
+            }
           }
         }
 

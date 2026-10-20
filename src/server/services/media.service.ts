@@ -65,12 +65,25 @@ export async function finalizeChunkedUpload(
   filename: string,
   totalSize: number,
   mimeType: string,
-  actor: { id: string; name: string }
+  actor: { id: string; name: string },
+  metadata?: { album_title?: string; album_token?: string; customer_name?: string }
 ): Promise<MediaRecord> {
   ensureStorageDirs();
 
-  const album = await getAlbumById(albumId);
-  if (!album) throw new Error("Album not found.");
+  let album = await getAlbumById(albumId);
+  if (!album) {
+    const { createAlbum } = await import("./album.service");
+    album = await createAlbum(
+      {
+        id: albumId,
+        title: metadata?.album_title || `Album ${albumId.replace(/^alb-/, "")}`,
+        token: metadata?.album_token || albumId,
+        customer_name: metadata?.customer_name || "Customer",
+        visibility: "Public",
+      },
+      actor
+    );
+  }
 
   // Check Quota
   const maxQuotaBytes = (album.quota_mb || 1024) * 1024 * 1024;
@@ -199,6 +212,9 @@ export const mediaService = {
     chunk_buffer: Buffer;
     mime_type: string;
     user_id: string;
+    album_title?: string;
+    album_token?: string;
+    customer_name?: string;
   }) => {
     await handleChunkUpload(params.file_id, params.chunk_index, params.chunk_buffer);
 
@@ -220,7 +236,12 @@ export const mediaService = {
         params.original_filename,
         totalSize,
         params.mime_type,
-        { id: params.user_id, name: "Staff" }
+        { id: params.user_id, name: "Staff" },
+        {
+          album_title: params.album_title,
+          album_token: params.album_token,
+          customer_name: params.customer_name,
+        }
       );
 
       return { chunk_received: true, assembled: true, media };

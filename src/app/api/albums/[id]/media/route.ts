@@ -56,6 +56,9 @@ export async function POST(
       (chunkFile as File).name ||
       "uploaded_file";
     const mimeType = (formData.get("mime_type") as string) || chunkFile.type || "application/octet-stream";
+    const albumTitle = (formData.get("album_title") as string) || undefined;
+    const albumToken = (formData.get("album_token") as string) || undefined;
+    const customerName = (formData.get("customer_name") as string) || undefined;
 
     const arrayBuffer = await chunkFile.arrayBuffer();
     const chunkBuffer = Buffer.from(arrayBuffer);
@@ -69,6 +72,9 @@ export async function POST(
       chunk_buffer: chunkBuffer,
       mime_type: mimeType,
       user_id: user.id,
+      album_title: albumTitle,
+      album_token: albumToken,
+      customer_name: customerName,
     });
 
     return NextResponse.json(result);

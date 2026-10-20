@@ -93,14 +93,64 @@ export async function listAlbums(): Promise<AlbumRecord[]> {
   return albums;
 }
 
-export async function getAlbumById(id: string): Promise<AlbumRecord | null> {
+export async function getAlbumById(idOrToken: string): Promise<AlbumRecord | null> {
+  const direct = await db.query(
+    `SELECT a.*, COALESCE(c.name, 'Customer') as customer_name
+     FROM albums a
+     LEFT JOIN customers c ON a.customer_id = c.id
+     WHERE (a.id = $1 OR a.token = $1) AND a.status != 'Deleted'
+     LIMIT 1`,
+    [idOrToken]
+  );
+  if (direct.rows.length > 0) {
+    const row = direct.rows[0];
+    const mediaRes = await db.query(
+      `SELECT COUNT(*) as count, COALESCE(SUM(size_bytes), 0) as used_bytes
+       FROM media WHERE album_id = $1 AND status != 'failed'`,
+      [row.id]
+    );
+    const coverRes = await db.query(
+      `SELECT path_web FROM media WHERE album_id = $1 AND type = 'photo' AND status = 'ready' LIMIT 1`,
+      [row.id]
+    );
+    const expTime = new Date(row.expires_at).getTime();
+    let status = row.status;
+    const now = Date.now();
+    if (status !== "Draft" && status !== "Processing") {
+      if (expTime < now) status = "Expired";
+      else if (expTime - now < 14 * 24 * 60 * 60 * 1000) status = "Expiring";
+      else status = "Active";
+    }
+    return {
+      id: row.id,
+      customer_id: row.customer_id,
+      customer_name: row.customer_name,
+      title: row.title,
+      occasion: row.occasion || "General",
+      event_date: typeof row.event_date === "string" ? row.event_date.split("T")[0] : row.event_date,
+      visibility: row.visibility,
+      pin_set: Boolean(row.pin_hash),
+      token: row.token,
+      allow_download: Boolean(row.allow_download),
+      allow_zip: Boolean(row.allow_zip),
+      expires_at: row.expires_at,
+      quota_mb: row.quota_mb || 1024,
+      used_bytes: Number(mediaRes.rows[0]?.used_bytes || 0),
+      file_count: Number(mediaRes.rows[0]?.count || 0),
+      status,
+      cover_url: coverRes.rows[0]?.path_web || null,
+      created_by: row.created_by,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    };
+  }
+
   const albums = await listAlbums();
-  return albums.find((a) => a.id === id || a.token === id) || null;
+  return albums.find((a) => a.id === idOrToken || a.token === idOrToken) || null;
 }
 
 export async function getAlbumByToken(token: string): Promise<AlbumRecord | null> {
-  const albums = await listAlbums();
-  return albums.find((a) => a.token === token || a.id === token) || null;
+  return getAlbumById(token);
 }
 
 export async function createAlbum(
