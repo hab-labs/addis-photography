@@ -57,15 +57,36 @@ export async function GET(
 
   const media = mediaRes.rows[0];
 
-  if (!fs.existsSync(media.storage_path)) {
+  const MEDIA_STORAGE_DIR =
+    process.env.MEDIA_STORAGE_PATH || path.join(process.cwd(), "data/media");
+
+  let diskPath = media.storage_path;
+  if (!diskPath || !fs.existsSync(diskPath)) {
+    const ext = path.extname(media.original_name || "") || (media.type === "video" ? ".mp4" : ".jpg");
+    const candidatePath = path.join(MEDIA_STORAGE_DIR, album.id, `${media.id}${ext}`);
+    if (fs.existsSync(candidatePath)) {
+      diskPath = candidatePath;
+    } else {
+      const albumDir = path.join(MEDIA_STORAGE_DIR, album.id);
+      if (fs.existsSync(albumDir)) {
+        const matches = fs.readdirSync(albumDir).filter((f) => f.startsWith(media.id));
+        if (matches.length > 0) {
+          diskPath = path.join(albumDir, matches[0]);
+        }
+      }
+    }
+  }
+
+  if (!diskPath || !fs.existsSync(diskPath)) {
     return NextResponse.json({ error: "Media file not found on disk." }, { status: 404 });
   }
 
-  const fileStream = fs.createReadStream(media.storage_path);
-  const stat = fs.statSync(media.storage_path);
+  const fileStream = fs.createReadStream(diskPath);
+  const stat = fs.statSync(diskPath);
+  const fileName = media.original_name || media.original_filename || `${media.id}.jpg`;
+  const safeAscii = fileName.replace(/[^a-zA-Z0-9_.-]/g, "_");
 
   // Return file stream response with download headers
-  // In Next.js App Router, ReadableStream from fs readstream
   const readable = new ReadableStream({
     start(controller) {
       fileStream.on("data", (chunk) => controller.enqueue(chunk));
@@ -79,7 +100,7 @@ export async function GET(
     headers: {
       "Content-Type": media.mime_type || "application/octet-stream",
       "Content-Length": String(stat.size),
-      "Content-Disposition": `attachment; filename="${encodeURIComponent(media.original_filename)}"`,
+      "Content-Disposition": `attachment; filename="${safeAscii}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       "Cache-Control": "private, max-age=3600",
     },
   });

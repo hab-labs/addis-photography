@@ -13,6 +13,7 @@ import { runRetentionCleanupJob } from "../jobs/expiry-cleanup.job";
 import { getAuditLogs } from "../services/audit.service";
 import { rateLimiter } from "../auth/rate-limiter";
 import { hashPin } from "../auth/crypto";
+import { createZipArchive } from "../utils/zip";
 import fs from "fs";
 import path from "path";
 
@@ -883,6 +884,69 @@ describe("Addis Photography - Specification Acceptance Tests (Section 15)", () =
         staffActor
       )
     ).rejects.toThrow(/overpayment rejected/i);
+  });
+
+  // Test Case 22: Section 5.8 Public Album Viewer (FR-31 through FR-34)
+  it("Test Case 22 (Section 5.8 FR-31 to FR-34): Public album viewer, PIN lock, ZIP archive, and expired friendly state", async () => {
+    const customer = await getOrCreateTestCustomer();
+
+    // 1. Create Private Album with ZIP & Download enabled
+    const album = await createAlbum(
+      {
+        customer_id: customer.id,
+        title: "Wedding Highlights Gallery",
+        occasion: "Wedding",
+        event_date: "2026-08-20",
+        visibility: "Private",
+        pin: "2468",
+        allow_download: true,
+        allow_zip: true,
+        retention_days: 30,
+      },
+      staffActor
+    );
+
+    // FR-32: Initial view requires PIN prompt and does not expose media
+    const lockedView = await getPublicAlbumView(album.token);
+    expect(lockedView.status).toBe("locked");
+    expect(lockedView.requiresPin).toBe(true);
+    expect(lockedView.media).toBeUndefined();
+
+    // FR-32: Invalid PIN returns remaining attempts
+    const failedAttempt = await unlockPrivateAlbum(album.token, "9999", "127.0.0.1");
+    expect(failedAttempt.success).toBe(false);
+    expect(failedAttempt.error).toMatch(/4 attempts remaining/i);
+
+    // FR-32: Valid PIN returns unlock token
+    const unlockRes = await unlockPrivateAlbum(album.token, "2468", "127.0.0.1");
+    expect(unlockRes.success).toBe(true);
+    expect(unlockRes.unlockToken).toBeDefined();
+
+    // FR-31: Unlocked view returns active status and album metadata
+    const unlockedView = await getPublicAlbumView(album.token, unlockRes.unlockToken);
+    expect(unlockedView.status).toBe("active");
+    expect(unlockedView.album?.title).toBe("Wedding Highlights Gallery");
+    expect(unlockedView.album?.allow_download).toBe(true);
+    expect(unlockedView.album?.allow_zip).toBe(true);
+
+    // FR-33: ZIP archive generation creates standard ZIP buffer with valid headers
+    const sampleFiles = [
+      { name: "DSC_0001.jpg", content: Buffer.from("simulated-photo-bytes-1") },
+      { name: "DSC_0002.jpg", content: Buffer.from("simulated-photo-bytes-2") },
+    ];
+    const zipBuffer = createZipArchive(sampleFiles);
+    expect(zipBuffer.length).toBeGreaterThan(0);
+    // Standard ZIP signature PK\x03\x04
+    expect(zipBuffer.readUInt32LE(0)).toBe(0x04034b50);
+
+    // FR-34: Expired or disabled album returns status: "expired" with friendly message
+    const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    await db.query(`UPDATE albums SET expires_at = $1 WHERE id = $2`, [pastDate, album.id]);
+
+    const expiredView = await getPublicAlbumView(album.token);
+    expect(expiredView.status).toBe("expired");
+    expect(expiredView.message).toMatch(/expired or is no longer available/i);
+    expect(expiredView.album?.allow_download).toBe(false);
   });
 });
 

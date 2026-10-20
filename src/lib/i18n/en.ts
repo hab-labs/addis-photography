@@ -144,6 +144,9 @@ export const en = {
     download_photo: "Download Photo",
     media_count: "{count} Photos & Videos",
     studio_brand: "Captured with love by Addis Photography Studio",
+    expired_title: "This Gallery is No Longer Available",
+    expired_desc: "This private gallery has reached its retention expiry date or has been archived by Addis Photography Studio.",
+    expired_contact: "If you are the client and need to retrieve your photos or request an extension, please contact our studio desk.",
   },
 };
 

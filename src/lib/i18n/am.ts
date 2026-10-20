@@ -146,5 +146,8 @@ export const am: TranslationKey = {
     download_photo: "ፎቶ አውርድ",
     media_count: "{count} ፎቶዎች እና ቪዲዮዎች",
     studio_brand: "በአዲስ ፎቶግራፊ ስቱዲዮ በፍቅር የተነሳ",
+    expired_title: "ይህ አልበም ከአሁን በኋላ አይገኝም",
+    expired_desc: "ይህ የግል አልበም የሚቆይበት ጊዜ አልቋል ወይም በአዲስ ፎቶግራፊ ስቱዲዮ ተቀምጧል።",
+    expired_contact: "ደንበኛ ከሆኑ እና ፎቶዎችዎን ማግኘት ከፈለጉ ወይም የአልበሙን ጊዜ ለማራዘም ከፈለጉ፣ እባክዎ ወደ ስቱዲዮአችን ይደውሉ።",
   },
 };

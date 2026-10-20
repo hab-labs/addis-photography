@@ -12,16 +12,19 @@ export interface PublicAlbumPayload {
   album?: {
     id: string;
     title: string;
+    token?: string;
     customer_name: string;
     event_date: string;
     visibility: "Public" | "Private";
     allow_download: boolean;
     allow_zip: boolean;
     cover_url: string | null;
+    cover_image_url?: string | null;
     expires_at: string;
     media_count: number;
+    status?: string;
   };
-  media?: MediaRecord[];
+  media?: any[];
   requiresPin?: boolean;
   message?: string;
 }
@@ -36,44 +39,71 @@ export async function getPublicAlbumView(
     return { status: "not_found", message: "Album not found or link is invalid." };
   }
 
-  // Check expiration (Spec 3.10 & FR-34)
-  if (new Date(album.expires_at).getTime() < Date.now()) {
+  // Check expiration or disabled (Spec 3.10 & FR-34)
+  if (
+    album.status === "Expired" ||
+    album.status === "Deleted" ||
+    new Date(album.expires_at).getTime() < Date.now()
+  ) {
     return {
       status: "expired",
-      message: "This private gallery has expired. Please contact Addis Photography Studio for assistance.",
+      message: "This gallery has expired or is no longer available. Please contact Addis Photography Studio for assistance.",
       album: {
         id: album.id,
         title: album.title,
+        token: album.token,
         customer_name: album.customer_name,
         event_date: album.event_date,
         visibility: album.visibility,
         allow_download: false,
         allow_zip: false,
         cover_url: album.cover_url,
+        cover_image_url: album.cover_url,
         expires_at: album.expires_at,
         media_count: album.file_count,
+        status: "Expired",
       },
     };
   }
 
+  const formatMediaList = (mediaList: MediaRecord[]) =>
+    mediaList.map((m) => ({
+      id: m.id,
+      album_id: m.album_id,
+      filename: m.original_name,
+      file_size: Number(m.size_bytes),
+      mime_type: m.mime_type,
+      url: m.path_web,
+      thumbnail_url: m.path_thumb || m.path_web,
+      width: m.width,
+      height: m.height,
+      duration_seconds: m.duration_seconds,
+      upload_status: m.status === "ready" ? ("completed" as const) : ("pending" as const),
+      created_at: m.created_at,
+    }));
+
   // If Public, return full media
   if (album.visibility === "Public") {
-    const media = await listMediaForAlbum(album.id);
+    const rawMedia = await listMediaForAlbum(album.id);
+    const media = formatMediaList(rawMedia);
     return {
       status: "active",
       album: {
         id: album.id,
         title: album.title,
+        token: album.token,
         customer_name: album.customer_name,
         event_date: album.event_date,
         visibility: album.visibility,
         allow_download: album.allow_download,
         allow_zip: album.allow_zip,
         cover_url: album.cover_url,
+        cover_image_url: album.cover_url,
         expires_at: album.expires_at,
         media_count: media.length,
+        status: album.status,
       },
-      media,
+      media: media as any,
       requiresPin: false,
     };
   }
@@ -81,22 +111,26 @@ export async function getPublicAlbumView(
   // Private Album: Check if unlocked via valid 24-hr session
   const isUnlocked = await isAlbumSessionUnlocked(album.id, unlockToken);
   if (isUnlocked) {
-    const media = await listMediaForAlbum(album.id);
+    const rawMedia = await listMediaForAlbum(album.id);
+    const media = formatMediaList(rawMedia);
     return {
       status: "active",
       album: {
         id: album.id,
         title: album.title,
+        token: album.token,
         customer_name: album.customer_name,
         event_date: album.event_date,
         visibility: album.visibility,
         allow_download: album.allow_download,
         allow_zip: album.allow_zip,
         cover_url: album.cover_url,
+        cover_image_url: album.cover_url,
         expires_at: album.expires_at,
         media_count: media.length,
+        status: album.status,
       },
-      media,
+      media: media as any,
       requiresPin: false,
     };
   }
@@ -107,14 +141,17 @@ export async function getPublicAlbumView(
     album: {
       id: album.id,
       title: album.title,
+      token: album.token,
       customer_name: album.customer_name,
       event_date: album.event_date,
       visibility: "Private",
       allow_download: false,
       allow_zip: false,
       cover_url: album.cover_url,
+      cover_image_url: album.cover_url,
       expires_at: album.expires_at,
       media_count: album.file_count,
+      status: album.status,
     },
     requiresPin: true,
   };

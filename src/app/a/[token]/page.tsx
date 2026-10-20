@@ -15,6 +15,8 @@ import {
   Check,
   Globe,
   Download,
+  Phone,
+  MapPin,
 } from "lucide-react";
 import { studioStore } from "@/lib/api/store";
 import { formatCalendarPair } from "@/lib/date";
@@ -52,13 +54,17 @@ export default function PublicAlbumViewerPage() {
       const res = await fetch(`/api/a/${token}`, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
-        if (data.status === "unlocked") {
+        if (data.status === "unlocked" || data.status === "active") {
           setAlbum(data.album);
           setMediaFiles(data.media || []);
           setIsUnlocked(true);
           return;
         } else if (data.status === "locked") {
           setAlbum(data.album);
+          setIsUnlocked(false);
+          return;
+        } else if (data.status === "expired") {
+          setAlbum({ ...(data.album || {}), status: "Expired", is_expired: true });
           setIsUnlocked(false);
           return;
         }
@@ -238,15 +244,68 @@ export default function PublicAlbumViewerPage() {
     );
   }
 
-  if (new Date(album.expires_at).getTime() < Date.now()) {
+  const isExpired =
+    album &&
+    (album.status === "Expired" ||
+      album.status === "Deleted" ||
+      album.is_expired ||
+      (album.expires_at && new Date(album.expires_at).getTime() < Date.now()));
+
+  if (isExpired) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4 text-center text-white">
-        <div className="max-w-sm space-y-3">
-          <ShieldAlert className="mx-auto h-10 w-10 text-amber-500" />
-          <h2 className="text-xl font-bold">Gallery Link Expired</h2>
-          <p className="text-sm text-slate-400">
-            Please contact Addis Photography Studio for a new private gallery link.
-          </p>
+      <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-slate-950 via-slate-900 to-black">
+        <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-2xl backdrop-blur text-center space-y-6">
+          {/* Studio Logo */}
+          <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#0b0b0b] p-2 shadow-xl ring-1 ring-white/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/addis-photography-logo.png"
+              alt="Addis Photography logo"
+              className="h-full w-full object-contain"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-400">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              <span>Gallery Expired</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+              {t.public_viewer?.expired_title || "This Gallery is No Longer Available"}
+            </h2>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              {t.public_viewer?.expired_desc ||
+                "This private gallery has reached its retention expiry date or has been archived by Addis Photography Studio."}
+            </p>
+            <p className="text-xs text-slate-400">
+              {t.public_viewer?.expired_contact ||
+                "If you are the client and need to retrieve your photos or request an extension, please contact our studio desk."}
+            </p>
+          </div>
+
+          {/* Contact Details Card */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-left space-y-3 text-xs">
+            <div className="font-semibold text-slate-300 text-[11px] uppercase tracking-wider">
+              Studio Contact Information
+            </div>
+            <div className="flex items-center gap-2.5 text-slate-300">
+              <Phone className="h-4 w-4 text-amber-500 shrink-0" />
+              <a
+                href="tel:+251973679744"
+                className="font-mono hover:text-amber-400 transition"
+              >
+                +251 973 679 744
+              </a>
+            </div>
+            <div className="flex items-center gap-2.5 text-slate-300">
+              <MapPin className="h-4 w-4 text-amber-500 shrink-0" />
+              <span>Tsinat Building, Jimma, Ethiopia</span>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-500">
+            {t.public_viewer?.studio_brand || "Captured with love by Addis Photography Studio"}
+          </div>
         </div>
       </div>
     );
@@ -408,10 +467,22 @@ export default function PublicAlbumViewerPage() {
           </div>
 
           {album.allow_download ? (
-            <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-950/40 px-3 py-2 text-xs font-semibold text-emerald-300">
-              <Download className="h-4 w-4 text-emerald-400" />
-              Downloads enabled
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {(album.allow_zip ?? true) && (
+                <a
+                  href={`/api/a/${album.token || token}/download`}
+                  download={`${(album.title || "Addis_Photography_Album").replace(/[^a-zA-Z0-9_\-]/g, "_")}.zip`}
+                  className="inline-flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 text-xs sm:text-sm shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>{t.public_viewer?.download_all_zip || "Download All Photos (ZIP)"}</span>
+                </a>
+              )}
+              <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-950/40 px-3 py-2 text-xs font-semibold text-emerald-300">
+                <Check className="h-4 w-4 text-emerald-400" />
+                {album.allow_zip ? "Downloads enabled" : "Single photo downloads enabled"}
+              </span>
+            </div>
           ) : (
             <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-slate-300">
               <Eye className="h-4 w-4 text-amber-400" />
@@ -457,9 +528,25 @@ export default function PublicAlbumViewerPage() {
                     </div>
                   )}
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3 text-xs">
-                    <span className="truncate text-slate-200">{media.filename}</span>
-                    <Eye className="h-4 w-4 text-amber-400 shrink-0 ml-1" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3 text-xs">
+                    <span className="truncate text-slate-200 max-w-[65%]">{media.filename}</span>
+                    <div className="flex items-center gap-1.5">
+                      {album.allow_download && (
+                        <a
+                          href={`/api/a/${album.token || token}/media/${media.id}/download`}
+                          download={media.filename}
+                          onClick={(e) => e.stopPropagation()}
+                          title="Download photo"
+                          className="p-1.5 rounded-full bg-black/60 hover:bg-emerald-600 text-white transition backdrop-blur shadow"
+                          aria-label={`Download ${media.filename}`}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                      <div className="p-1.5 rounded-full bg-black/60 text-amber-400 backdrop-blur shadow">
+                        <Eye className="h-3.5 w-3.5" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -485,12 +572,12 @@ export default function PublicAlbumViewerPage() {
             <div className="flex items-center space-x-3">
               {album.allow_download && (
                 <a
-                  href={`/api/a/${album.token}/media/${currentMedia.id}/download`}
+                  href={`/api/a/${album.token || token}/media/${currentMedia.id}/download`}
                   download={currentMedia.filename}
-                  className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition inline-flex items-center gap-1.5 text-xs font-semibold"
+                  className="px-3.5 py-1.5 rounded-full bg-emerald-600/90 hover:bg-emerald-500 text-white transition inline-flex items-center gap-1.5 text-xs font-semibold shadow-lg shadow-emerald-950/40"
                   aria-label="Download media"
                 >
-                  <Download className="h-4 w-4 text-emerald-400" />
+                  <Download className="h-4 w-4 text-white" />
                   <span className="hidden sm:inline">Download</span>
                 </a>
               )}
