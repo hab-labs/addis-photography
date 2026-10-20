@@ -233,6 +233,15 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
               <Bell className="h-4 w-4" />
             </button>
 
+            {/* Top Navbar [+ New Order] button near account name per Section 6.4 */}
+            <Link
+              href="/orders/new"
+              className="flex items-center gap-1.5 rounded-md bg-[#e21b23] hover:bg-[#c9151c] text-white px-3 py-1.5 text-xs font-semibold shadow-sm transition-all hover:shadow active:scale-95"
+            >
+              <PlusCircle className="h-3.5 w-3.5 shrink-0" />
+              <span>+ New Order</span>
+            </Link>
+
             <div className="relative">
               <button
                 type="button"

@@ -257,14 +257,19 @@ export default function PublicAlbumViewerPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-slate-950 via-slate-900 to-black">
         <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-2xl backdrop-blur text-center space-y-5">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/30">
-            <Lock className="h-7 w-7" />
+          {/* Wireframe 6.10: [Studio logo] */}
+          <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#0b0b0b] p-2 shadow-xl ring-1 ring-white/10">
+            <img
+              src="/addis-photography-logo.png"
+              alt="Addis Photography logo"
+              className="h-full w-full object-contain"
+            />
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-white">{album.title}</h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Protected Private Album for {album.customer_name}
+            <h2 className="text-xl font-bold tracking-tight text-white">{album.title}</h2>
+            <p className="mt-1 text-xs font-medium text-slate-400">
+              This album is private
             </p>
           </div>
 
@@ -287,19 +292,16 @@ export default function PublicAlbumViewerPage() {
           ) : (
             <form onSubmit={handlePinSubmit} className="space-y-4">
               <div className="space-y-1.5 text-left">
-                <label htmlFor="pin-input" className="text-xs font-semibold text-slate-300">
-                  Enter 4–6 Digit PIN Code
-                </label>
                 <Input
                   id="pin-input"
                   type="password"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   maxLength={6}
-                  placeholder="••••"
+                  placeholder="Enter PIN"
                   value={pinInput}
                   onChange={(e) => setPinInput(e.target.value)}
-                  className="text-center font-mono text-xl tracking-widest bg-slate-950 border-slate-700 text-white focus-visible:ring-amber-500"
+                  className="text-center font-mono text-lg tracking-widest bg-slate-950/80 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-[#e21b23] focus-visible:border-[#e21b23] h-11"
                   autoFocus
                   required
                 />
@@ -307,14 +309,14 @@ export default function PublicAlbumViewerPage() {
 
               <Button
                 type="submit"
-                className="w-full font-bold bg-amber-600 hover:bg-amber-700 text-white"
+                className="w-full h-11 font-bold bg-[#e21b23] hover:bg-[#c9151c] text-white shadow-lg transition-all active:scale-[0.98]"
               >
-                Unlock Album
+                Open
               </Button>
             </form>
           )}
 
-          <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-800">
+          <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-800/80">
             PIN provided by Addis Photography Studio.
           </div>
         </div>

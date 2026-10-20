@@ -686,19 +686,28 @@ export const studioStore = {
     return albums.find((a) => a.id === id);
   },
 
-  updateAlbumAccess: (id: string, access: { isPrivate: boolean; pin?: string }): Album => {
-    if (access.isPrivate && (!access.pin || !/^\d{4,6}$/.test(access.pin))) {
-      throw new Error("A private album requires a 4 to 6 digit PIN.");
-    }
+  updateAlbumAccess: (
+    id: string,
+    access: { isPrivate: boolean; pin?: string; allow_download?: boolean }
+  ): Album => {
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
     const album = albums.find((item) => item.id === id);
     if (!album) throw new Error("Album not found.");
+
+    if (access.isPrivate && access.pin && !/^\d{4,6}$/.test(access.pin)) {
+      throw new Error("A private album requires a 4 to 6 digit PIN.");
+    }
+    if (access.isPrivate && !album.pin_set && !access.pin) {
+      throw new Error("A private album requires a 4 to 6 digit PIN.");
+    }
+
     const updated = albums.map((item) =>
       item.id === id
         ? {
             ...item,
             is_locked: access.isPrivate,
-            pin_set: access.isPrivate,
+            pin_set: access.isPrivate ? (access.pin ? true : item.pin_set) : false,
+            allow_download: access.allow_download !== undefined ? access.allow_download : item.allow_download,
           }
         : item
     );
@@ -707,7 +716,7 @@ export const studioStore = {
       if (typeof window !== "undefined") {
         localStorage.setItem(`addis_album_pin_${updatedAlbum.token}`, access.pin);
       }
-    } else {
+    } else if (!access.isPrivate) {
       if (typeof window !== "undefined") {
         localStorage.removeItem(`addis_album_pin_${updatedAlbum.token}`);
       }
@@ -718,6 +727,7 @@ export const studioStore = {
       api.patch(`/api/albums/${id}`, {
         visibility: access.isPrivate ? "private" : "public",
         pin: access.pin,
+        allow_download: access.allow_download,
       })
         .then(() => studioStore.syncAlbums().catch(() => {}))
         .catch(console.error);
@@ -740,7 +750,7 @@ export const studioStore = {
     setStored("albums", updated);
 
     if (isBrowser()) {
-      api.post(`/api/albums/${id}/retention`, { extension_days: days })
+      api.post(`/api/albums/${id}/retention`, { days, extension_days: days })
         .then(() => studioStore.syncAlbums().catch(() => {}))
         .catch(console.error);
     }
@@ -872,6 +882,80 @@ export const studioStore = {
       return a;
     });
     setStored("albums", updatedAlbums);
+  },
+
+  deleteMediaFile: async (albumId: string, mediaId: string): Promise<boolean> => {
+    const media = getStored<MediaFile[]>("media", INITIAL_MEDIA);
+    const target = media.find((m) => m.id === mediaId);
+    const updated = media.filter((m) => m.id !== mediaId);
+    setStored("media", updated);
+
+    if (target) {
+      const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
+      const updatedAlbums = albums.map((a) => {
+        if (a.id === albumId) {
+          return {
+            ...a,
+            used_bytes: Math.max(0, a.used_bytes - target.file_size),
+            file_count: Math.max(0, a.file_count - 1),
+            cover_image_url: a.cover_image_url === target.url ? undefined : a.cover_image_url,
+          };
+        }
+        return a;
+      });
+      setStored("albums", updatedAlbums);
+    }
+
+    if (isBrowser()) {
+      try {
+        await api.delete(`/api/albums/${albumId}/media/${mediaId}`);
+        await studioStore.syncAlbums().catch(() => {});
+        return true;
+      } catch (err) {
+        console.error("Delete media file failed:", err);
+        return false;
+      }
+    }
+    return true;
+  },
+
+  setAlbumCover: (albumId: string, coverUrl: string): Album => {
+    const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
+    const updated = albums.map((a) => (a.id === albumId ? { ...a, cover_image_url: coverUrl } : a));
+    setStored("albums", updated);
+
+    if (isBrowser()) {
+      api.patch(`/api/albums/${albumId}`, { cover_image_url: coverUrl })
+        .then(() => studioStore.syncAlbums().catch(() => {}))
+        .catch(console.error);
+    }
+    return updated.find((a) => a.id === albumId)!;
+  },
+
+  async syncMediaFiles(albumId: string): Promise<MediaFile[]> {
+    try {
+      const res = await api.get<{ media: any[] }>(`/api/albums/${albumId}/media`);
+      if (res?.media && Array.isArray(res.media)) {
+        const mapped: MediaFile[] = res.media.map((m) => ({
+          id: m.id,
+          album_id: m.album_id || albumId,
+          filename: m.original_filename || m.filename,
+          file_size: Number(m.file_size_bytes || m.file_size) || 0,
+          mime_type: m.mime_type || "image/jpeg",
+          url: m.url || `/api/media/stream/${m.id}`,
+          thumbnail_url: m.thumbnail_url || m.url || `/api/media/stream/${m.id}`,
+          upload_status: m.upload_status || "completed",
+          created_at: m.created_at || new Date().toISOString(),
+        }));
+        const allMedia = getStored<MediaFile[]>("media", INITIAL_MEDIA);
+        const others = allMedia.filter((item) => item.album_id !== albumId);
+        setStored("media", [...others, ...mapped]);
+        return mapped;
+      }
+    } catch {
+      // Fallback
+    }
+    return studioStore.getMediaFiles(albumId);
   },
 
   // --- Users / Operators ---
