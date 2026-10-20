@@ -301,8 +301,9 @@ export async function deleteAlbum(
   });
 
   // Delete records
-  await db.query(`DELETE FROM albums WHERE id = $1`, [id]);
+  await db.query(`DELETE FROM media WHERE album_id = $1`, [id]);
   await db.query(`DELETE FROM album_unlock_sessions WHERE album_id = $1`, [id]);
+  await db.query(`DELETE FROM albums WHERE id = $1`, [id]);
 
   await logAudit(actor, "ALBUM_DELETED", "Album", id, {
     title: existing.title,

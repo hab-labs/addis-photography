@@ -41,6 +41,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/auth/context";
 import { generateQrPng, downloadFile, printBrandedFlyer } from "@/lib/qr";
 import { studioStore } from "@/lib/api/store";
 import { formatCalendarPair } from "@/lib/date";
@@ -57,6 +58,7 @@ const fallbackCover =
   "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80";
 
 export default function ClientAlbumsPage() {
+  const { isAdmin } = useAuth();
   const [albums, setAlbums] = React.useState<ClientAlbum[]>([]);
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [search, setSearch] = React.useState("");
@@ -119,13 +121,20 @@ export default function ClientAlbumsPage() {
     if (!deleteTargetAlbum) return;
     setIsDeleting(true);
     try {
-      await studioStore.deleteAlbum(deleteTargetAlbum.id);
-      loadAlbums();
-      setActionNotice(`Album "${deleteTargetAlbum.title}" has been deleted.`);
-      setTimeout(() => setActionNotice(null), 3500);
-      setDeleteTargetAlbum(null);
-    } catch (err) {
+      const ok = await studioStore.deleteAlbum(deleteTargetAlbum.id);
+      if (ok) {
+        loadAlbums();
+        setActionNotice(`Album "${deleteTargetAlbum.title}" has been deleted.`);
+        setTimeout(() => setActionNotice(null), 3500);
+        setDeleteTargetAlbum(null);
+      } else {
+        setActionNotice("Could not delete album. Administrator privileges required.");
+        setTimeout(() => setActionNotice(null), 3500);
+      }
+    } catch (err: any) {
       console.error("Failed to delete album:", err);
+      setActionNotice(err?.message || "Failed to delete album.");
+      setTimeout(() => setActionNotice(null), 3500);
     } finally {
       setIsDeleting(false);
     }
@@ -401,15 +410,19 @@ export default function ClientAlbumsPage() {
                         <span>Extend (+30 Days)</span>
                       </DropdownMenuItem>
 
-                      <DropdownMenuSeparator className="my-1 border-t border-slate-100" />
+                      {isAdmin && (
+                        <>
+                          <DropdownMenuSeparator className="my-1 border-t border-slate-100" />
 
-                      <DropdownMenuItem
-                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-red-50 text-red-600"
-                        onClick={() => setDeleteTargetAlbum(album)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                        <span>Delete Album</span>
-                      </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-red-50 text-red-600 font-medium"
+                            onClick={() => setDeleteTargetAlbum(album)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                            <span>Delete Album</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

@@ -965,7 +965,15 @@ export const studioStore = {
 
   updateUser: (id: string, updates: Partial<User>): User => {
     const users = getStored<User[]>("users", INITIAL_USERS);
-    const updated = users.map((u) => (u.id === id ? { ...u, ...updates } : u));
+    const updated = users.map((u) => {
+      if (u.id === id) {
+        const next = { ...u, ...updates };
+        if (updates.active !== undefined) next.is_active = updates.active;
+        if (updates.is_active !== undefined) next.active = updates.is_active;
+        return next;
+      }
+      return u;
+    });
     setStored("users", updated);
 
     if (isBrowser()) {
@@ -988,7 +996,8 @@ export const studioStore = {
           email: u.email || "",
           phone: u.phone || "",
           role: u.role === "admin" ? "admin" : "staff",
-          is_active: u.active !== false,
+          is_active: u.active !== false && u.is_active !== false,
+          active: u.active !== false && u.is_active !== false,
           created_at: u.created_at || new Date().toISOString(),
         }));
         setStored("users", mapped);

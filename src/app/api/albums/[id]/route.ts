@@ -50,7 +50,11 @@ export async function DELETE(
 ) {
   try {
     const user = await requireAdmin(request);
-    const result = await albumService.deleteAlbum(params.id, user.id);
+    const result = await albumService.deleteAlbum(params.id, {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+    });
     return NextResponse.json(result);
   } catch (error) {
     return handleAuthError(error);

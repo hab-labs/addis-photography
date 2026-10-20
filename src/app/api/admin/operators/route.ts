@@ -105,7 +105,19 @@ export async function PUT(request: Request) {
     const username = typeof body?.username === "string" ? body.username.trim() : current.username;
     const email = typeof body?.email === "string" ? body.email.trim() : current.email;
     const phone = typeof body?.phone === "string" ? body.phone.trim() : current.phone;
-    const active = typeof body?.active === "boolean" ? body.active : current.active;
+    const active =
+      typeof body?.active === "boolean"
+        ? body.active
+        : typeof body?.is_active === "boolean"
+        ? body.is_active
+        : current.active;
+
+    if (id === admin.id && active === false) {
+      return NextResponse.json(
+        { error: "You cannot deactivate your own administrative account." },
+        { status: 400 }
+      );
+    }
 
     let roleId = current.role_id;
     if (body?.role) {
@@ -127,10 +139,22 @@ export async function PUT(request: Request) {
       [name, username, email, phone, roleId, pwHash, active, id]
     );
 
+    // If deactivated, revoke all active sessions immediately
+    if (active === false) {
+      await db.query("DELETE FROM sessions WHERE user_id = $1", [id]);
+    }
+
+    const auditAction =
+      current.active !== active
+        ? active
+          ? "USER_REACTIVATED"
+          : "USER_DEACTIVATED"
+        : "USER_UPDATE";
+
     await auditService.log({
       user_id: admin.id,
       user_name: admin.name,
-      action: "USER_UPDATE",
+      action: auditAction,
       entity_type: "user",
       entity_id: id,
       details: { username, active },
@@ -145,6 +169,7 @@ export async function PUT(request: Request) {
       phone,
       role: updatedRole,
       active,
+      is_active: active,
     };
 
     return NextResponse.json({ user });

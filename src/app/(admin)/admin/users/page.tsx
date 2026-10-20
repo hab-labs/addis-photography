@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { UserCheck, Plus, Shield, KeyRound, X, Pencil, Check, AlertCircle } from "lucide-react";
+import { UserCheck, UserX, Plus, Shield, KeyRound, X, Pencil, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useAuth } from "@/lib/auth/context";
 import { studioStore } from "@/lib/api/store";
 import type { User } from "@/types";
 
@@ -25,6 +26,7 @@ function getInputType(field: string) {
 }
 
 export default function StaffUsersPage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = React.useState<User[]>([]);
   const [inviteOpen, setInviteOpen] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -37,7 +39,12 @@ export default function StaffUsersPage() {
     phone: "",
     password: "",
     role: "staff" as User["role"],
+    active: true,
   });
+
+  // Deactivate confirmation dialog state
+  const [deactivateTargetUser, setDeactivateTargetUser] = React.useState<User | null>(null);
+  const [isToggling, setIsToggling] = React.useState(false);
 
   // Reset PIN Dialog State
   const [resetTargetUser, setResetTargetUser] = React.useState<User | null>(null);
@@ -73,8 +80,51 @@ export default function StaffUsersPage() {
       phone: user.phone,
       password: "",
       role: user.role,
+      active: user.active !== false && user.is_active !== false,
     });
     setInviteOpen(true);
+  };
+
+  const handleToggleActive = async (target: User, nextActive: boolean) => {
+    setIsToggling(true);
+    try {
+      const response = await fetch("/api/admin/operators", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: target.id, active: nextActive }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update operator status.");
+      }
+      setUsers((current) =>
+        current.map((u) =>
+          u.id === target.id ? { ...u, active: nextActive, is_active: nextActive } : u
+        )
+      );
+      setSuccessNotice(
+        nextActive
+          ? `Reactivated ${target.name}'s account.`
+          : `Deactivated ${target.name}'s account.`
+      );
+    } catch (err: any) {
+      // Local fallback
+      studioStore.updateUser(target.id, { active: nextActive, is_active: nextActive });
+      setUsers((current) =>
+        current.map((u) =>
+          u.id === target.id ? { ...u, active: nextActive, is_active: nextActive } : u
+        )
+      );
+      setSuccessNotice(
+        nextActive
+          ? `Reactivated ${target.name}'s account.`
+          : `Deactivated ${target.name}'s account.`
+      );
+    } finally {
+      setIsToggling(false);
+      setDeactivateTargetUser(null);
+      setTimeout(() => setSuccessNotice(null), 3000);
+    }
   };
 
   const handleSave = async (event: React.FormEvent) => {
@@ -106,6 +156,8 @@ export default function StaffUsersPage() {
           email: form.email,
           phone: form.phone,
           role: form.role,
+          active: form.active,
+          is_active: form.active,
         });
         setUsers((current) =>
           current.map((u) => (u.id === form.id ? updated : u))
@@ -118,7 +170,7 @@ export default function StaffUsersPage() {
 
     setSuccessNotice(editing ? `Updated ${form.name}` : `Created operator ${form.name}`);
     setTimeout(() => setSuccessNotice(null), 3000);
-    setForm({ id: "", name: "", username: "", email: "", phone: "", password: "", role: "staff" });
+    setForm({ id: "", name: "", username: "", email: "", phone: "", password: "", role: "staff", active: true });
     setInviteOpen(false);
   };
 
@@ -149,7 +201,7 @@ export default function StaffUsersPage() {
           type="button"
           onClick={() => {
             setError("");
-            setForm({ id: "", name: "", username: "", email: "", phone: "", password: "", role: "staff" });
+            setForm({ id: "", name: "", username: "", email: "", phone: "", password: "", role: "staff", active: true });
             setInviteOpen(true);
           }}
           size="sm"
@@ -209,11 +261,21 @@ export default function StaffUsersPage() {
                     {s.role === "admin" ? "Administrator" : "Operator"}
                   </span>
                 </TableCell>
-                <TableCell className="text-xs font-medium text-slate-400">
-                  {s.is_active ? "Active" : "Inactive"}
+                <TableCell>
+                  {s.active !== false && s.is_active !== false ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 border border-slate-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                      Deactivated
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="text-right pr-4">
-                  <div className="flex justify-end gap-3">
+                  <div className="flex justify-end gap-3 items-center">
                     <button
                       type="button"
                       onClick={() => openEdit(s)}
@@ -221,13 +283,34 @@ export default function StaffUsersPage() {
                     >
                       <Pencil className="h-3 w-3" /> Edit
                     </button>
+
+                    {s.id === currentUser?.id ? (
+                      <span className="text-[11px] text-slate-400 italic">Current User</span>
+                    ) : s.active !== false && s.is_active !== false ? (
+                      <button
+                        type="button"
+                        onClick={() => setDeactivateTargetUser(s)}
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline inline-flex items-center gap-1"
+                      >
+                        <UserX className="h-3 w-3" /> Deactivate
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActive(s, true)}
+                        className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline inline-flex items-center gap-1"
+                      >
+                        <UserCheck className="h-3 w-3" /> Reactivate
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => {
                         setResetTargetUser(s);
                         setResetPinSuccess(null);
                       }}
-                      className="text-xs font-semibold text-indigo-600 hover:underline inline-flex items-center gap-1"
+                      className="text-xs font-semibold text-slate-600 hover:text-indigo-600 hover:underline inline-flex items-center gap-1"
                     >
                       <KeyRound className="h-3 w-3" /> Reset PIN
                     </button>
@@ -356,6 +439,29 @@ export default function StaffUsersPage() {
                   className="text-xs font-mono"
                 />
               </div>
+
+              {form.id && (
+                <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div>
+                    <Label htmlFor="usr-active" className="text-xs font-semibold text-slate-800 cursor-pointer">
+                      Account Status
+                    </Label>
+                    <p className="text-[10px] text-slate-500">
+                      {form.active
+                        ? "Active (Operator can sign in to studio)"
+                        : "Deactivated (Sign-in access revoked)"}
+                    </p>
+                  </div>
+                  <input
+                    id="usr-active"
+                    type="checkbox"
+                    checked={form.active}
+                    disabled={form.id === currentUser?.id}
+                    onChange={(e) => setForm((c) => ({ ...c, active: e.target.checked }))}
+                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                </div>
+              )}
             </div>
 
             <DialogFooter className="pt-2">
@@ -376,6 +482,50 @@ export default function StaffUsersPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deactivate User Confirmation Dialog */}
+      <Dialog
+        open={Boolean(deactivateTargetUser)}
+        onOpenChange={(open) => !open && setDeactivateTargetUser(null)}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600">
+              <UserX className="h-5 w-5" /> Deactivate Account
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 pt-1">
+              Are you sure you want to deactivate <strong className="text-slate-800">{deactivateTargetUser?.name}</strong> (@{deactivateTargetUser?.username})?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 text-xs text-slate-600 space-y-2">
+            <p>
+              This user will immediately be logged out of all active sessions and prevented from signing in until an administrator reactivates their account.
+            </p>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeactivateTargetUser(null)}
+              disabled={isToggling}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => deactivateTargetUser && handleToggleActive(deactivateTargetUser, false)}
+              disabled={isToggling}
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              {isToggling ? "Deactivating…" : "Deactivate Account"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

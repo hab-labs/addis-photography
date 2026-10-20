@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -24,6 +24,7 @@ import {
   Loader2,
   X,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth/context";
 import { studioStore } from "@/lib/api/store";
 import { formatCalendarPair } from "@/lib/date";
 import {
@@ -48,7 +49,9 @@ import {
 } from "@/components/ui/dialog";
 
 export default function AlbumDetailsPage() {
+  const router = useRouter();
   const params = useParams();
+  const { isAdmin } = useAuth();
   const albumId = (params?.id as string) || "";
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -56,6 +59,10 @@ export default function AlbumDetailsPage() {
   const [qrPngUrl, setQrPngUrl] = useState<string>("");
   const [copiedLink, setCopiedLink] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+
+  // Album Deletion State for Admins
+  const [deleteAlbumModalOpen, setDeleteAlbumModalOpen] = useState(false);
+  const [isDeletingAlbum, setIsDeletingAlbum] = useState(false);
 
   // Access & sharing state
   const [accessMode, setAccessMode] = useState<"public" | "private">("public");
@@ -176,6 +183,23 @@ export default function AlbumDetailsPage() {
   const videoCount = mediaFiles.filter((m) => m.mime_type.startsWith("video")).length;
 
   // Handlers
+  const handleDeleteAlbum = async () => {
+    setIsDeletingAlbum(true);
+    try {
+      const ok = await studioStore.deleteAlbum(album.id);
+      if (ok) {
+        router.push("/albums");
+      } else {
+        showNotification("Failed to delete album. Please ensure administrator privileges.");
+      }
+    } catch (err: any) {
+      showNotification(err.message || "Failed to delete album.");
+    } finally {
+      setIsDeletingAlbum(false);
+      setDeleteAlbumModalOpen(false);
+    }
+  };
+
   const handleExtendRetention = async () => {
     setIsExtending(true);
     try {
@@ -416,6 +440,18 @@ export default function AlbumDetailsPage() {
               <CalendarPlus className="mr-1 h-3.5 w-3.5 text-[#e21b23]" />
               {isExtending ? "Extending…" : "[Extend]"}
             </Button>
+
+            {isAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setDeleteAlbumModalOpen(true)}
+                className="h-7 px-2.5 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Delete Album
+              </Button>
+            )}
           </div>
         </div>
       </Card>
@@ -916,6 +952,58 @@ export default function AlbumDetailsPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Album Modal Dialog for Admins */}
+      <Dialog open={deleteAlbumModalOpen} onOpenChange={setDeleteAlbumModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-rose-600 flex items-center gap-2">
+              <Trash2 className="h-4 w-4" />
+              <span>Delete Album</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 pt-1">
+              Are you sure you want to delete <strong className="text-slate-800">"{album.title}"</strong>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 text-xs text-slate-600 space-y-2">
+            <p>
+              This will permanently remove the album record, unlock sessions, and all associated media files ({mediaFiles.length} uploaded files).
+            </p>
+            <p className="font-semibold text-rose-600">
+              This action cannot be undone.
+            </p>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteAlbumModalOpen(false)}
+              disabled={isDeletingAlbum}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleDeleteAlbum}
+              disabled={isDeletingAlbum}
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              {isDeletingAlbum ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                "Delete Album"
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
