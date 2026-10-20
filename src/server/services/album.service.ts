@@ -425,23 +425,33 @@ export const albumService = {
       typeof userIdOrActor === "string"
         ? { id: userIdOrActor, name: "Staff" }
         : userIdOrActor || { id: "system", name: "Staff" };
+    // Normalize visibility: accept 'public'/'Public', default to 'Private'
+    const visibilityNorm =
+      typeof input.visibility === "string" && input.visibility.toLowerCase() === "public"
+        ? "Public"
+        : "Private";
     const a = await createAlbum(
       {
+        id: input.id,
+        token: input.token,
         customer_id: input.customer_id,
+        customer_name: input.customer_name,
         title: input.title,
         occasion: input.occasion,
         event_date: input.event_date || new Date().toISOString(),
-        visibility: input.visibility === "public" ? "Public" : "Private",
+        visibility: visibilityNorm,
         pin: input.pin,
         allow_download: input.allow_download,
         allow_zip: input.allow_zip,
         quota_mb: input.quota_mb,
         retention_days: input.retention_days,
+        expires_at: input.expires_at,
       },
       actor
     );
     return { ...a, public_token: a.token };
   },
+
   updateAlbum: async (id: string, input: any, userIdOrActor?: string | { id: string; name: string }) => {
     const actor =
       typeof userIdOrActor === "string"

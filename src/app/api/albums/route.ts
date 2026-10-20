@@ -37,7 +37,8 @@ export async function POST(request: Request) {
     const customerId = typeof body?.customer_id === "string" && body.customer_id.trim() ? body.customer_id.trim() : undefined;
     const customerName = typeof body?.customer_name === "string" && body.customer_name.trim() ? body.customer_name.trim() : undefined;
     const eventDate = typeof body?.event_date === "string" ? body.event_date : undefined;
-    const visibility = body?.visibility === "public" ? "public" : "private";
+    const visibilityRaw = typeof body?.visibility === "string" ? body.visibility.trim() : "";
+    const visibility = visibilityRaw.toLowerCase() === "public" ? "Public" : "Private";
     const pin = typeof body?.pin === "string" && body.pin.trim() ? body.pin.trim() : undefined;
     const allowDownload = typeof body?.allow_download === "boolean" ? body.allow_download : true;
     const expiresAt = typeof body?.expires_at === "string" ? body.expires_at : undefined;
@@ -49,12 +50,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (visibility === "private" && (!pin || pin.length < 4)) {
+    if (visibility === "Private" && (!pin || pin.length < 4)) {
       return NextResponse.json(
         { error: "A PIN of at least 4 digits is required for private albums." },
         { status: 400 }
       );
     }
+
 
     const album = await albumService.createAlbum(
       {
