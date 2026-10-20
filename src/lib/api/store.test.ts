@@ -156,4 +156,32 @@ describe("Studio Store API & State Operations", () => {
     const reRead = studioStore.getSettings();
     expect(reRead.studio_name).toBe("Addis Photography Flagship Studio");
   });
+
+  it("persists media files and merges them safely during synchronization", async () => {
+    const testAlbumId = "alb-test-sync-1";
+    const mediaItem = {
+      id: "med-test-1",
+      album_id: testAlbumId,
+      filename: "test_portrait.jpg",
+      file_size: 1024 * 500,
+      mime_type: "image/jpeg",
+      url: "/api/media/stream/med-test-1",
+      thumbnail_url: "/api/media/stream/med-test-1",
+      upload_status: "completed" as const,
+      created_at: new Date().toISOString(),
+    };
+
+    studioStore.addMediaFile(testAlbumId, mediaItem);
+    const storedBefore = studioStore.getMediaFiles(testAlbumId);
+    expect(storedBefore).toHaveLength(1);
+    expect(storedBefore[0].filename).toBe("test_portrait.jpg");
+
+    // Calling syncMediaFiles with network/mock failure should retain the file and not vanish it
+    const synced = await studioStore.syncMediaFiles(testAlbumId);
+    expect(synced.some((m) => m.filename === "test_portrait.jpg")).toBe(true);
+
+    const storedAfter = studioStore.getMediaFiles(testAlbumId);
+    expect(storedAfter.some((m) => m.filename === "test_portrait.jpg")).toBe(true);
+  });
 });
+

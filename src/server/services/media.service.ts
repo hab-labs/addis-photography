@@ -34,9 +34,11 @@ export function ensureStorageDirs(): void {
 }
 
 export async function listMediaForAlbum(albumId: string): Promise<MediaRecord[]> {
+  const album = await getAlbumById(albumId);
+  const targetId = album ? album.id : albumId;
   const res = await db.query<MediaRecord>(
     `SELECT * FROM media WHERE album_id = $1 ORDER BY created_at ASC`,
-    [albumId]
+    [targetId]
   );
   return res.rows;
 }
@@ -89,7 +91,7 @@ export async function finalizeChunkedUpload(
 
   // Merge chunks
   const uploadDir = path.join(TEMP_UPLOADS_DIR, uploadId);
-  const albumDir = path.join(MEDIA_STORAGE_DIR, albumId);
+  const albumDir = path.join(MEDIA_STORAGE_DIR, album.id);
   if (!fs.existsSync(albumDir)) {
     fs.mkdirSync(albumDir, { recursive: true });
   }
@@ -98,25 +100,22 @@ export async function finalizeChunkedUpload(
   const ext = path.extname(filename).toLowerCase() || (isVideo ? ".mp4" : ".jpg");
   const destinationPath = path.join(albumDir, `${mediaId}${ext}`);
 
-  const writeStream = fs.createWriteStream(destinationPath);
-
+  fs.writeFileSync(destinationPath, Buffer.alloc(0));
   for (let i = 0; i < totalChunks; i++) {
     const chunkFile = path.join(uploadDir, `chunk_${i}`);
     if (!fs.existsSync(chunkFile)) {
       throw new Error(`Missing upload chunk ${i} of ${totalChunks}. Please retry upload.`);
     }
     const chunkData = fs.readFileSync(chunkFile);
-    writeStream.write(chunkData);
+    fs.appendFileSync(destinationPath, chunkData);
   }
-
-  writeStream.end();
 
   // Clean up temp chunks
   try {
     fs.rmSync(uploadDir, { recursive: true, force: true });
   } catch {}
 
-  const webUrl = `/api/albums/${albumId}/media/${mediaId}/stream`;
+  const webUrl = `/api/media/stream/${mediaId}`;
   const thumbUrl = isVideo ? null : webUrl;
 
   await db.query(
@@ -124,7 +123,7 @@ export async function finalizeChunkedUpload(
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'ready', NOW())`,
     [
       mediaId,
-      albumId,
+      album.id,
       isVideo ? "video" : "photo",
       filename,
       webUrl,
@@ -137,12 +136,12 @@ export async function finalizeChunkedUpload(
   // Set album to Active if Draft
   if (album.status === "Draft") {
     await db.query(`UPDATE albums SET status = 'Active', updated_at = NOW() WHERE id = $1`, [
-      albumId,
+      album.id,
     ]);
   }
 
   await logAudit(actor, "MEDIA_UPLOADED", "Media", mediaId, {
-    album_id: albumId,
+    album_id: album.id,
     filename,
     size_bytes: totalSize,
   });
@@ -166,6 +165,13 @@ export async function deleteMedia(
   if (fs.existsSync(filePath)) {
     try {
       fs.unlinkSync(filePath);
+    } catch {}
+  } else if (fs.existsSync(albumDir)) {
+    try {
+      const matches = fs.readdirSync(albumDir).filter((f) => f.startsWith(mediaId));
+      for (const m of matches) {
+        fs.unlinkSync(path.join(albumDir, m));
+      }
     } catch {}
   }
 

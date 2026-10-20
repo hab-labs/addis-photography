@@ -3,6 +3,7 @@ import { db } from "@/server/db/client";
 import { getAuthUser } from "@/server/auth/rbac";
 import { isAlbumSessionUnlocked, UNLOCK_SESSION_COOKIE_PREFIX } from "@/server/services/public-viewer.service";
 import fs from "fs";
+import path from "path";
 
 export async function GET(
   request: Request,
@@ -62,11 +63,31 @@ export async function GET(
   }
 
   // 3. Verify physical file
-  if (!fs.existsSync(media.storage_path)) {
+  const MEDIA_STORAGE_DIR =
+    process.env.MEDIA_STORAGE_PATH || path.join(process.cwd(), "data/media");
+
+  let diskPath = media.storage_path;
+  if (!diskPath || !fs.existsSync(diskPath)) {
+    const ext = path.extname(media.original_name || "") || (media.type === "video" ? ".mp4" : ".jpg");
+    const candidatePath = path.join(MEDIA_STORAGE_DIR, media.album_id, `${media.id}${ext}`);
+    if (fs.existsSync(candidatePath)) {
+      diskPath = candidatePath;
+    } else {
+      const albumDir = path.join(MEDIA_STORAGE_DIR, media.album_id);
+      if (fs.existsSync(albumDir)) {
+        const matches = fs.readdirSync(albumDir).filter((f) => f.startsWith(media.id));
+        if (matches.length > 0) {
+          diskPath = path.join(albumDir, matches[0]);
+        }
+      }
+    }
+  }
+
+  if (!diskPath || !fs.existsSync(diskPath)) {
     return NextResponse.json({ error: "Physical file not found." }, { status: 404 });
   }
 
-  const stat = fs.statSync(media.storage_path);
+  const stat = fs.statSync(diskPath);
   const fileSize = stat.size;
   const mimeType = media.mime_type || "application/octet-stream";
 
@@ -86,7 +107,7 @@ export async function GET(
     }
 
     const chunksize = end - start + 1;
-    const fileStream = fs.createReadStream(media.storage_path, { start, end });
+    const fileStream = fs.createReadStream(diskPath, { start, end });
 
     const readable = new ReadableStream({
       start(controller) {
@@ -108,7 +129,7 @@ export async function GET(
   }
 
   // Full file streaming
-  const fileStream = fs.createReadStream(media.storage_path);
+  const fileStream = fs.createReadStream(diskPath);
   const readable = new ReadableStream({
     start(controller) {
       fileStream.on("data", (chunk) => controller.enqueue(chunk));

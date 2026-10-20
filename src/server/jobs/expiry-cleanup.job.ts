@@ -36,21 +36,23 @@ export async function runRetentionCleanupJob(actorId = "system-cron"): Promise<C
   for (const album of eligibleAlbums.rows) {
     // Fetch all media files for this album
     const mediaRes = await db.query(
-      `SELECT id, storage_path, file_size FROM media WHERE album_id = $1`,
+      `SELECT id, size_bytes FROM media WHERE album_id = $1`,
       [album.id]
     );
 
     let albumReclaimedBytes = 0;
-
     for (const file of mediaRes.rows) {
-      if (fs.existsSync(file.storage_path)) {
-        try {
-          fs.unlinkSync(file.storage_path);
-          albumReclaimedBytes += Number(file.file_size) || 0;
-          result.purged_media_files++;
-        } catch (err) {
-          console.error(`Failed to delete media file ${file.storage_path}:`, err);
-        }
+      albumReclaimedBytes += Number(file.size_bytes) || 0;
+      result.purged_media_files++;
+    }
+
+    const MEDIA_STORAGE_DIR = process.env.MEDIA_STORAGE_PATH || path.join(process.cwd(), "data/media");
+    const albumDir = path.join(MEDIA_STORAGE_DIR, album.id);
+    if (fs.existsSync(albumDir)) {
+      try {
+        fs.rmSync(albumDir, { recursive: true, force: true });
+      } catch (err) {
+        console.error(`Failed to delete album directory ${albumDir}:`, err);
       }
     }
 

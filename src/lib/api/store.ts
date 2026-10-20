@@ -812,6 +812,8 @@ export const studioStore = {
 
     if (isBrowser()) {
       api.post("/api/albums", {
+        id: newAlb.id,
+        token: newAlb.token,
         title: data.title,
         order_id: newAlb.token,
         customer_id: data.customer_id,
@@ -849,8 +851,29 @@ export const studioStore = {
           expires_at: a.expires_at || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
           created_at: a.created_at || new Date().toISOString(),
         }));
-        setStored("albums", mapped);
-        return mapped;
+
+        const currentAlbums = getStored<Album[]>("albums", INITIAL_ALBUMS);
+        const merged: Album[] = mapped.map((remote) => {
+          const local = currentAlbums.find((l) => l.id === remote.id || l.token === remote.token);
+          if (local) {
+            return {
+              ...remote,
+              used_bytes: Math.max(Number(remote.used_bytes) || 0, Number(local.used_bytes) || 0),
+              file_count: Math.max(Number(remote.file_count) || 0, Number(local.file_count) || 0),
+              cover_image_url: remote.cover_image_url || local.cover_image_url,
+            };
+          }
+          return remote;
+        });
+
+        for (const local of currentAlbums) {
+          if (!merged.some((m) => m.id === local.id || m.token === local.token)) {
+            merged.push(local);
+          }
+        }
+
+        setStored("albums", merged);
+        return merged;
       }
     } catch {
       // Fallback
@@ -934,23 +957,33 @@ export const studioStore = {
 
   async syncMediaFiles(albumId: string): Promise<MediaFile[]> {
     try {
-      const res = await api.get<{ media: any[] }>(`/api/albums/${albumId}/media`);
+      const res = await api.get<{ media: any[] }>(`/api/albums/${encodeURIComponent(albumId)}/media`);
       if (res?.media && Array.isArray(res.media)) {
         const mapped: MediaFile[] = res.media.map((m) => ({
           id: m.id,
           album_id: m.album_id || albumId,
-          filename: m.original_filename || m.filename,
-          file_size: Number(m.file_size_bytes || m.file_size) || 0,
+          filename: m.original_name || m.original_filename || m.filename,
+          file_size: Number(m.size_bytes || m.file_size_bytes || m.file_size) || 0,
           mime_type: m.mime_type || "image/jpeg",
-          url: m.url || `/api/media/stream/${m.id}`,
-          thumbnail_url: m.thumbnail_url || m.url || `/api/media/stream/${m.id}`,
-          upload_status: m.upload_status || "completed",
+          url: m.path_web || m.url || `/api/media/stream/${m.id}`,
+          thumbnail_url: m.path_thumb || m.thumbnail_url || m.path_web || m.url || `/api/media/stream/${m.id}`,
+          upload_status: "completed" as const,
           created_at: m.created_at || new Date().toISOString(),
         }));
+
         const allMedia = getStored<MediaFile[]>("media", INITIAL_MEDIA);
+        const currentAlbumFiles = allMedia.filter((item) => item.album_id === albumId);
+
+        const mergedFiles: MediaFile[] = [...mapped];
+        for (const local of currentAlbumFiles) {
+          if (!mergedFiles.some((m) => m.id === local.id || m.filename === local.filename)) {
+            mergedFiles.push(local);
+          }
+        }
+
         const others = allMedia.filter((item) => item.album_id !== albumId);
-        setStored("media", [...others, ...mapped]);
-        return mapped;
+        setStored("media", [...others, ...mergedFiles]);
+        return mergedFiles;
       }
     } catch {
       // Fallback

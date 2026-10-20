@@ -30,6 +30,8 @@ export async function POST(request: Request) {
     const user = await requireAuth(request);
     const body = await request.json().catch(() => null);
 
+    const id = typeof body?.id === "string" && body.id.trim() ? body.id.trim() : undefined;
+    const token = typeof body?.token === "string" && body.token.trim() ? body.token.trim() : undefined;
     const title = typeof body?.title === "string" ? body.title.trim() : "";
     const orderId = typeof body?.order_id === "string" && body.order_id.trim() ? body.order_id : `ord-${Date.now()}`;
     const customerId = typeof body?.customer_id === "string" && body.customer_id.trim() ? body.customer_id.trim() : undefined;
@@ -56,6 +58,8 @@ export async function POST(request: Request) {
 
     const album = await albumService.createAlbum(
       {
+        id,
+        token,
         order_id: orderId,
         customer_id: customerId,
         customer_name: customerName,

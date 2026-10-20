@@ -131,30 +131,37 @@ export default function AlbumDetailsPage() {
   useEffect(() => {
     const uploader = new ChunkUploader((items) => {
       setActiveUploads([...items]);
+      const currentFiles = studioStore.getMediaFiles(albumId);
+
       items.forEach((item) => {
-        if (item.status === "completed" && !mediaFiles.some((m) => m.filename === item.filename)) {
+        if (item.status === "completed" && !currentFiles.some((m) => m.filename === item.filename)) {
           const isVideo = item.filename.endsWith(".mp4") || item.filename.endsWith(".mov");
+          const serverMedia = (item as any).serverMedia;
           const newMedia: MediaFile = {
-            id: `med-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            id: serverMedia?.id || `med-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             album_id: albumId,
             filename: item.filename,
             file_size: item.totalSize,
-            mime_type: isVideo ? "video/mp4" : "image/jpeg",
-            url: URL.createObjectURL(item.file),
+            mime_type: item.file.type || (isVideo ? "video/mp4" : "image/jpeg"),
+            url: serverMedia?.path_web || serverMedia?.url || URL.createObjectURL(item.file),
             thumbnail_url: isVideo
-              ? "https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=400&q=80"
-              : URL.createObjectURL(item.file),
+              ? (serverMedia?.path_thumb || serverMedia?.thumbnail_url || "https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=400&q=80")
+              : (serverMedia?.path_thumb || serverMedia?.thumbnail_url || serverMedia?.path_web || serverMedia?.url || URL.createObjectURL(item.file)),
             upload_status: "completed",
             created_at: new Date().toISOString(),
           };
           studioStore.addMediaFile(albumId, newMedia);
           setRefreshTrigger((c) => c + 1);
+
+          // Synchronize album metrics and media from server
+          studioStore.syncAlbums().catch(() => {});
+          studioStore.syncMediaFiles(albumId).catch(() => {});
         }
       });
     });
 
     uploaderRef.current = uploader;
-  }, [albumId, mediaFiles]);
+  }, [albumId]);
 
   if (!album) {
     return (

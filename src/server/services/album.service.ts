@@ -30,9 +30,9 @@ export interface AlbumRecord {
 
 export async function listAlbums(): Promise<AlbumRecord[]> {
   const res = await db.query(
-    `SELECT a.*, c.name as customer_name
+    `SELECT a.*, COALESCE(c.name, 'Customer') as customer_name
      FROM albums a
-     JOIN customers c ON a.customer_id = c.id
+     LEFT JOIN customers c ON a.customer_id = c.id
      WHERE a.status != 'Deleted'
      ORDER BY a.created_at DESC`
   );
@@ -95,16 +95,17 @@ export async function listAlbums(): Promise<AlbumRecord[]> {
 
 export async function getAlbumById(id: string): Promise<AlbumRecord | null> {
   const albums = await listAlbums();
-  return albums.find((a) => a.id === id) || null;
+  return albums.find((a) => a.id === id || a.token === id) || null;
 }
 
 export async function getAlbumByToken(token: string): Promise<AlbumRecord | null> {
   const albums = await listAlbums();
-  return albums.find((a) => a.token === token) || null;
+  return albums.find((a) => a.token === token || a.id === token) || null;
 }
 
 export async function createAlbum(
   input: {
+    id?: string;
     customer_id?: string;
     customer_name?: string;
     order_id?: string;
@@ -113,6 +114,7 @@ export async function createAlbum(
     event_date?: string;
     visibility?: "Public" | "Private" | string;
     pin?: string;
+    token?: string;
     allow_download?: boolean;
     allow_zip?: boolean;
     quota_mb?: number;
@@ -162,9 +164,12 @@ export async function createAlbum(
     pinHash = hashPin(input.pin);
   }
 
-  // Token: Cryptographically secure 32+ characters
-  const token = generateRandomToken(32);
-  const albumId = `alb-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  // Token: Cryptographically secure 32+ characters or provided token
+  const token = input.token && input.token.trim() ? input.token.trim() : generateRandomToken(32);
+  const albumId =
+    input.id && input.id.trim()
+      ? input.id.trim()
+      : `alb-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   const retentionDays = input.retention_days || 180; // Default 6 months
   const expiresAt = input.expires_at || new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000).toISOString();
   const eventDate = input.event_date ? new Date(input.event_date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);

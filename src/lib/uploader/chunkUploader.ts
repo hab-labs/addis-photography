@@ -144,6 +144,7 @@ export class ChunkUploader {
 
     let lastTime = Date.now();
     let lastBytes = item.uploadedBytes;
+    let serverMediaResult: any = null;
 
     for (let chunkIdx = 0; chunkIdx < totalChunks; chunkIdx++) {
       if (this.abortedFiles.has(item.id)) {
@@ -163,11 +164,21 @@ export class ChunkUploader {
       let success = false;
       while (attempts < MAX_RETRIES && !success) {
         try {
-          await this.sendChunkWithMockFallback(item.albumId, file.name, chunkIdx, totalChunks, chunkBlob);
+          const res = await this.sendChunkWithMockFallback(
+            item.albumId,
+            file.name,
+            chunkIdx,
+            totalChunks,
+            chunkBlob,
+            item.id
+          );
+          if (res?.media) {
+            serverMediaResult = res.media;
+          }
           success = true;
           savedChunks.add(chunkIdx);
           this.saveChunk(item.albumId, file.name, file.size, chunkIdx);
-        } catch (err) {
+        } catch (err: any) {
           attempts++;
           if (attempts >= MAX_RETRIES) {
             throw new Error(`Failed to upload chunk ${chunkIdx + 1}/${totalChunks} after ${MAX_RETRIES} attempts`);
@@ -195,6 +206,10 @@ export class ChunkUploader {
       this.notify();
     }
 
+    if (serverMediaResult) {
+      (item as any).serverMedia = serverMediaResult;
+    }
+
     // Clear saved chunks after full file completion
     this.clearSavedChunks(item.albumId, file.name, file.size);
   }
@@ -204,30 +219,62 @@ export class ChunkUploader {
     filename: string,
     chunkIndex: number,
     totalChunks: number,
-    chunk: Blob
-  ): Promise<void> {
+    chunk: Blob,
+    fileId?: string
+  ): Promise<any> {
     const formData = new FormData();
     formData.append("album_id", albumId);
+    formData.append("file_id", fileId || `upload_${Date.now()}`);
     formData.append("filename", filename);
+    formData.append("original_filename", filename);
     formData.append("chunk_index", String(chunkIndex));
     formData.append("total_chunks", String(totalChunks));
-    formData.append("chunk", chunk);
+    formData.append(
+      "mime_type",
+      chunk.type || (filename.toLowerCase().endsWith(".mp4") ? "video/mp4" : "image/jpeg")
+    );
+    formData.append("chunk", chunk, filename);
 
     try {
-      const res = await fetch("/api/v1/albums/upload-chunk", {
+      // 1. Post to actual album media upload endpoint
+      const res = await fetch(`/api/albums/${encodeURIComponent(albumId)}/media`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "X-Requested-With": "studio",
         },
         body: formData,
       });
 
-      if (!res.ok && res.status !== 404) {
-        throw new Error(`Server returned ${res.status}`);
+      if (res.ok) {
+        return await res.json().catch(() => ({}));
       }
-    } catch {
-      // In local/mock mode without active backend server, simulate 150ms network delay per chunk slice
-      await new Promise((r) => setTimeout(r, 120));
+
+      if (res.status === 404) {
+        // Fallback to legacy endpoint if route structure differs
+        const resLegacy = await fetch("/api/v1/albums/upload-chunk", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "X-Requested-With": "studio",
+          },
+          body: formData,
+        });
+
+        if (resLegacy.ok) {
+          return await resLegacy.json().catch(() => ({}));
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson?.error || `Upload failed with status ${res.status}`);
+      }
+    } catch (err: any) {
+      if (err.message && !err.message.includes("fetch") && !(err instanceof TypeError)) {
+        throw err;
+      }
+      // In local offline mode without active server, simulate chunk slice delay
+      await new Promise((r) => setTimeout(r, 80));
+      return { chunk_received: true, assembled: chunkIndex === totalChunks - 1 };
     }
   }
 
