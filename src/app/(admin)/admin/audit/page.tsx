@@ -21,6 +21,7 @@ function formatTimestamp(timestamp: string) {
   };
 }
 
+
 export default function AuditLogPage() {
   const [logs, setLogs] = React.useState<AuditLog[]>([]);
   const [search, setSearch] = React.useState("");
