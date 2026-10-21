@@ -54,3 +54,4 @@ postgres_data/
 /media/
 /chunks/
 /uploads/
+.env*
