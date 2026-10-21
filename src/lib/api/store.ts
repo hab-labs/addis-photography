@@ -845,8 +845,9 @@ export const studioStore = {
           quota_bytes: Number(a.quota_bytes) || 1073741824,
           used_bytes: Number(a.used_bytes) || 0,
           file_count: Number(a.file_count) || 0,
-          cover_image_url: a.cover_image_url || undefined,
+          cover_image_url: a.cover_image_url || a.cover_url || undefined,
           allow_download: !!a.allow_download,
+
           allow_zip: !!a.allow_zip,
           expires_at: a.expires_at || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
           created_at: a.created_at || new Date().toISOString(),
@@ -979,11 +980,13 @@ export const studioStore = {
           filename: m.original_name || m.original_filename || m.filename,
           file_size: Number(m.size_bytes || m.file_size_bytes || m.file_size) || 0,
           mime_type: m.mime_type || "image/jpeg",
-          url: m.path_web || m.url || `/api/media/stream/${m.id}`,
-          thumbnail_url: m.path_thumb || m.thumbnail_url || m.path_web || m.url || `/api/media/stream/${m.id}`,
+          url: m.data_url || m.path_web || m.url || `/api/media/stream/${m.id}`,
+          thumbnail_url: m.data_url || m.path_thumb || m.thumbnail_url || m.path_web || m.url || `/api/media/stream/${m.id}`,
+          data_url: m.data_url,
           upload_status: "completed" as const,
           created_at: m.created_at || new Date().toISOString(),
         }));
+
 
         const allMedia = getStored<MediaFile[]>("media", INITIAL_MEDIA);
         const currentAlbumFiles = allMedia.filter((item) => item.album_id === albumId);

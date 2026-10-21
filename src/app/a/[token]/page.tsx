@@ -25,10 +25,8 @@ import { MediaFile } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const fallbackPhoto =
-  "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80";
-
 export default function PublicAlbumViewerPage() {
+
   const params = useParams();
   const token = (params?.token as string) || "";
   const { locale, setLocale, t } = useI18n();
@@ -397,8 +395,9 @@ export default function PublicAlbumViewerPage() {
             src={album.cover_image_url}
             alt={album.title}
             onError={(e) => {
-              e.currentTarget.src = fallbackPhoto;
+              e.currentTarget.style.display = "none";
             }}
+
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
@@ -515,7 +514,7 @@ export default function PublicAlbumViewerPage() {
                     alt={media.filename}
                     loading="lazy"
                     onError={(e) => {
-                      e.currentTarget.src = fallbackPhoto;
+                      e.currentTarget.style.display = "none";
                     }}
                     className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
@@ -609,7 +608,7 @@ export default function PublicAlbumViewerPage() {
                 src={currentMedia.url}
                 alt={currentMedia.filename}
                 onError={(e) => {
-                  e.currentTarget.src = fallbackPhoto;
+                  e.currentTarget.style.opacity = "0.5";
                 }}
                 className="max-h-full max-w-full object-contain select-none shadow-2xl"
               />

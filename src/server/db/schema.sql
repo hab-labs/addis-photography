@@ -145,6 +145,7 @@ CREATE TABLE IF NOT EXISTS albums (
     expires_at TIMESTAMPTZ NOT NULL,
     quota_mb INT NOT NULL DEFAULT 1024,
     status VARCHAR(32) NOT NULL DEFAULT 'Draft', -- Draft, Processing, Active, Expiring, Expired, Deleted
+    cover_url VARCHAR(512) NULL,
     created_by VARCHAR(64) NOT NULL REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -164,6 +165,7 @@ CREATE TABLE IF NOT EXISTS media (
     size_bytes BIGINT NOT NULL,
     mime_type VARCHAR(128) NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'processing', -- processing, ready, failed
+    data_url TEXT NULL,
     width INT NULL,
     height INT NULL,
     duration_seconds INT NULL,

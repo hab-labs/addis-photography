@@ -22,6 +22,7 @@ import {
   Trash2,
   Printer,
   Download,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,16 +49,14 @@ import { formatCalendarPair } from "@/lib/date";
 import type { Album as StoreAlbum, Customer } from "@/types";
 
 type ClientAlbum = StoreAlbum & {
-  coverUrl: string;
+  coverUrl?: string;
   clientName: string;
   mediaCount: number;
   createdDate: string;
 };
 
-const fallbackCover =
-  "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80";
-
 export default function ClientAlbumsPage() {
+
   const { isAdmin } = useAuth();
   const [albums, setAlbums] = React.useState<ClientAlbum[]>([]);
   const [customers, setCustomers] = React.useState<Customer[]>([]);
@@ -148,8 +147,9 @@ export default function ClientAlbumsPage() {
           return {
             ...album,
             clientName: album.customer_name,
-            coverUrl: album.cover_image_url || fallbackCover,
+            coverUrl: album.cover_image_url || undefined,
             mediaCount: album.file_count,
+
             createdDate: `${date.gregorian}`,
           };
         })
@@ -315,17 +315,27 @@ export default function ClientAlbumsPage() {
               key={album.id}
               className="group relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className="relative h-[154px] overflow-hidden bg-slate-100">
+              <div className="relative h-[154px] overflow-hidden bg-slate-900">
                 <Link href={`/albums/${album.id}`} className="block h-full w-full">
-                  <Image
-                    src={album.coverUrl}
-                    alt={album.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                  />
+                  {album.coverUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={album.coverUrl}
+                      alt={album.title}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 p-4 text-center">
+                      <Camera className="h-8 w-8 text-slate-400 opacity-60 mb-1" />
+                      <span className="text-[10px] font-semibold tracking-wider text-slate-300 uppercase truncate max-w-[180px]">
+                        {album.title}
+                      </span>
+                      <span className="text-[9px] text-slate-500 mt-0.5">No cover photo set</span>
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/10" />
                 </Link>
+
 
                 <div className="pointer-events-none absolute left-2.5 top-2.5 flex items-center gap-1.5">
                   <span

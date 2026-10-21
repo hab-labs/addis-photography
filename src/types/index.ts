@@ -134,12 +134,14 @@ export interface MediaFile {
   mime_type: string;
   url: string;
   thumbnail_url?: string;
+  data_url?: string;
   width?: number;
   height?: number;
   duration_seconds?: number;
   upload_status: "pending" | "uploading" | "completed" | "error";
   created_at: string;
 }
+
 
 export interface AuditLog {
   id: string;

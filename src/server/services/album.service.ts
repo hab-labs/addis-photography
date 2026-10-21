@@ -23,6 +23,7 @@ export interface AlbumRecord {
   file_count: number;
   status: "Draft" | "Processing" | "Active" | "Expiring" | "Expired" | "Deleted";
   cover_url: string | null;
+  cover_image_url?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -75,6 +76,8 @@ export async function listAlbums(): Promise<AlbumRecord[]> {
         }
       }
 
+      const cover = row.cover_url || coverRes.rows[0]?.path_web || null;
+
       return {
         id: row.id,
         customer_id: row.customer_id,
@@ -92,13 +95,15 @@ export async function listAlbums(): Promise<AlbumRecord[]> {
         used_bytes: Number(mediaRes.rows[0]?.used_bytes || 0),
         file_count: Number(mediaRes.rows[0]?.count || 0),
         status,
-        cover_url: coverRes.rows[0]?.path_web || null,
+        cover_url: cover,
+        cover_image_url: cover,
         created_by: row.created_by,
         created_at: row.created_at,
         updated_at: row.updated_at,
       };
     })
   );
+
 
   return albums;
 }
@@ -157,6 +162,7 @@ export async function getAlbumById(idOrToken: string): Promise<AlbumRecord | nul
       else if (expTime - now < 14 * 24 * 60 * 60 * 1000) status = "Expiring";
       else status = "Active";
     }
+    const cover = row.cover_url || coverRes.rows[0]?.path_web || null;
     return {
       id: row.id,
       customer_id: row.customer_id,
@@ -174,11 +180,13 @@ export async function getAlbumById(idOrToken: string): Promise<AlbumRecord | nul
       used_bytes: Number(mediaRes.rows[0]?.used_bytes || 0),
       file_count: Number(mediaRes.rows[0]?.count || 0),
       status,
-      cover_url: coverRes.rows[0]?.path_web || null,
+      cover_url: cover,
+      cover_image_url: cover,
       created_by: row.created_by,
       created_at: row.created_at,
       updated_at: row.updated_at,
     };
+
   }
 
   // Fallback: scan all albums (covers edge cases where memory store indexing differs)
@@ -294,10 +302,12 @@ export async function createAlbum(
 export async function updateAlbumAccess(
   id: string,
   input: {
+    title?: string;
     visibility?: "Public" | "Private";
     pin?: string;
     allow_download?: boolean;
     allow_zip?: boolean;
+    cover_url?: string | null;
   },
   actor: { id: string; name: string }
 ): Promise<AlbumRecord> {
@@ -315,13 +325,18 @@ export async function updateAlbumAccess(
     }
   }
 
+  const title = input.title && input.title.trim() ? input.title.trim() : existing.title;
+  const coverUrl = input.cover_url !== undefined ? input.cover_url : existing.cover_url;
+
   await db.query(
-    `UPDATE albums SET visibility = $1, pin_hash = $2, allow_download = $3, allow_zip = $4, updated_at = NOW() WHERE id = $5`,
+    `UPDATE albums SET title = $1, visibility = $2, pin_hash = $3, allow_download = $4, allow_zip = $5, cover_url = $6, updated_at = NOW() WHERE id = $7`,
     [
-      input.visibility,
+      title,
+      visibility,
       pinHash,
       input.allow_download !== undefined ? input.allow_download : existing.allow_download,
       input.allow_zip !== undefined ? input.allow_zip : existing.allow_zip,
+      coverUrl,
       id,
     ]
   );
@@ -330,13 +345,15 @@ export async function updateAlbumAccess(
   await db.query(`DELETE FROM album_unlock_sessions WHERE album_id = $1`, [id]);
 
   await logAudit(actor, "ALBUM_ACCESS_UPDATED", "Album", id, {
-    visibility: input.visibility,
+    visibility,
+    cover_url: coverUrl,
     pin_changed: Boolean(pinHash),
     allow_download: input.allow_download,
   });
 
   return (await getAlbumById(id))!;
 }
+
 
 export async function extendAlbumRetention(
   id: string,
@@ -457,19 +474,23 @@ export const albumService = {
       typeof userIdOrActor === "string"
         ? { id: userIdOrActor, name: "Staff" }
         : userIdOrActor || { id: "system", name: "Staff" };
+    const coverUrl = input.cover_image_url !== undefined ? input.cover_image_url : input.cover_url;
     const a = await updateAlbumAccess(
       id,
       {
+        title: input.title,
         visibility:
           input.visibility === "public" ? "Public" : input.visibility === "private" ? "Private" : undefined,
         pin: input.pin,
         allow_download: input.allow_download,
         allow_zip: input.allow_zip,
+        cover_url: coverUrl,
       },
       actor
     );
     return { ...a, public_token: a.token };
   },
+
   extendRetention: async (
     id: string,
     days: number = 30,

@@ -114,8 +114,15 @@ class DatabaseManager {
           sql = fs.readFileSync(schemaPath, "utf-8");
         }
         await this.pool.query(sql);
+        try {
+          await this.pool.query(`
+            ALTER TABLE albums ADD COLUMN IF NOT EXISTS cover_url VARCHAR(512) NULL;
+            ALTER TABLE media ADD COLUMN IF NOT EXISTS data_url TEXT NULL;
+          `);
+        } catch {}
       } catch (err: any) {
         console.error("FATAL: PostgreSQL connection or schema initialization failed:", err);
+
         throw new Error(
           `Database initialization failed: ${err?.message || err}. PostgreSQL must be running and accessible at DATABASE_URL.`
         );

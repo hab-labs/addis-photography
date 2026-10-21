@@ -23,11 +23,13 @@ export async function GET(
       url: m.path_web,
       path_thumb: m.path_thumb,
       thumbnail_url: m.path_thumb || m.path_web,
+      data_url: (m as any).data_url || undefined,
       type: m.type,
       status: m.status,
       upload_status: "completed" as const,
       created_at: m.created_at,
     }));
+
     return NextResponse.json({ media });
   } catch (error) {
     return handleAuthError(error);

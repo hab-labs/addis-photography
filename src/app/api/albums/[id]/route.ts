@@ -26,6 +26,13 @@ export async function PATCH(
     const user = await requireAuth(request);
     const body = await request.json().catch(() => null);
 
+    const coverImageUrl =
+      typeof body?.cover_image_url === "string"
+        ? body.cover_image_url.trim()
+        : typeof body?.cover_url === "string"
+        ? body.cover_url.trim()
+        : undefined;
+
     const updated = await albumService.updateAlbum(
       params.id,
       {
@@ -34,9 +41,12 @@ export async function PATCH(
         pin: typeof body?.pin === "string" ? body.pin.trim() : undefined,
         allow_download: typeof body?.allow_download === "boolean" ? body.allow_download : undefined,
         expires_at: typeof body?.expires_at === "string" ? body.expires_at : undefined,
+        cover_image_url: coverImageUrl,
+        cover_url: coverImageUrl,
       },
       user.id
     );
+
 
     return NextResponse.json({ album: updated });
   } catch (error) {

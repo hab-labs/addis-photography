@@ -134,9 +134,17 @@ export async function finalizeChunkedUpload(
   const webUrl = `/api/media/stream/${mediaId}`;
   const thumbUrl = isVideo ? null : webUrl;
 
+  let dataUrl: string | null = null;
+  if (!isVideo && totalSize <= 8 * 1024 * 1024) {
+    try {
+      const fullBuffer = fs.readFileSync(destinationPath);
+      dataUrl = `data:${mimeType};base64,${fullBuffer.toString("base64")}`;
+    } catch {}
+  }
+
   await db.query(
-    `INSERT INTO media (id, album_id, type, original_name, path_web, path_thumb, size_bytes, mime_type, status, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'ready', NOW())`,
+    `INSERT INTO media (id, album_id, type, original_name, path_web, path_thumb, size_bytes, mime_type, status, data_url, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'ready', $9, NOW())`,
     [
       mediaId,
       album.id,
@@ -146,8 +154,10 @@ export async function finalizeChunkedUpload(
       thumbUrl,
       totalSize,
       mimeType,
+      dataUrl,
     ]
   );
+
 
   // Set album to Active if Draft
   if (album.status === "Draft") {

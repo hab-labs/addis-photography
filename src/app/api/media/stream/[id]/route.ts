@@ -70,12 +70,46 @@ export async function GET(
 
   // 3. Verify physical file
   const ext = path.extname(media.original_name || "") || (media.type === "video" ? ".mp4" : ".jpg");
-  const { findMediaFilePath } = await import("@/server/storage");
-  const diskPath = findMediaFilePath(media.album_id, media.id, ext);
+  const { findMediaFilePath, getMediaStorageDir } = await import("@/server/storage");
+  let diskPath = findMediaFilePath(media.album_id, media.id, ext);
 
   if (!diskPath || !fs.existsSync(diskPath)) {
+    // If physical file is missing (e.g. serverless container rebooted or fresh instance on Vercel),
+    // restore it from the stored data_url
+    if (media.data_url && typeof media.data_url === "string" && media.data_url.startsWith("data:")) {
+      try {
+        const commaIdx = media.data_url.indexOf(",");
+        if (commaIdx !== -1) {
+          const base64Data = media.data_url.substring(commaIdx + 1);
+          const buf = Buffer.from(base64Data, "base64");
+          const mediaDir = getMediaStorageDir();
+          const albumDir = path.join(mediaDir, media.album_id);
+          if (!fs.existsSync(albumDir)) {
+            fs.mkdirSync(albumDir, { recursive: true });
+          }
+          const restoredPath = path.join(albumDir, `${media.id}${ext}`);
+          try {
+            fs.writeFileSync(restoredPath, buf);
+            diskPath = restoredPath;
+          } catch {}
+
+          return new Response(buf, {
+            status: 200,
+            headers: {
+              "Content-Length": String(buf.length),
+              "Content-Type": media.mime_type || "image/jpeg",
+              "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+            },
+          });
+        }
+      } catch (err) {
+        console.error("Error restoring media from data_url:", err);
+      }
+    }
+
     return NextResponse.json({ error: "Physical file not found." }, { status: 404 });
   }
+
 
 
   const stat = fs.statSync(diskPath);

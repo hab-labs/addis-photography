@@ -145,7 +145,7 @@ export default function AlbumDetailsPage() {
             mime_type: item.file.type || (isVideo ? "video/mp4" : "image/jpeg"),
             url: serverMedia?.path_web || serverMedia?.url || URL.createObjectURL(item.file),
             thumbnail_url: isVideo
-              ? (serverMedia?.path_thumb || serverMedia?.thumbnail_url || "https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=400&q=80")
+              ? (serverMedia?.path_thumb || serverMedia?.thumbnail_url || undefined)
               : (serverMedia?.path_thumb || serverMedia?.thumbnail_url || serverMedia?.path_web || serverMedia?.url || URL.createObjectURL(item.file)),
             upload_status: "completed",
             created_at: new Date().toISOString(),
@@ -821,6 +821,10 @@ export default function AlbumDetailsPage() {
                     <img
                       src={media.thumbnail_url || media.url}
                       alt={media.filename}
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.style.opacity = "0.3";
+                      }}
                       className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
 
