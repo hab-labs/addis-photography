@@ -120,10 +120,12 @@ export default function AlbumDetailsPage() {
       const publicUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/a/${album.token}`;
       generateQrPng(publicUrl).then(setQrPngUrl);
 
-      if (typeof window !== "undefined") {
-        const stored = localStorage.getItem(`addis_album_pin_${album.token}`);
-        if (stored) setAccessPin(stored);
-      }
+      try {
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem(`addis_album_pin_${album.token}`);
+          if (stored) setAccessPin(stored);
+        }
+      } catch {}
     }
   }, [album]);
 
@@ -177,17 +179,19 @@ export default function AlbumDetailsPage() {
     );
   }
 
-  const publicUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/a/${album.token}`;
-  const usedMB = (album.used_bytes / (1024 * 1024)).toFixed(1);
-  const totalGB = Math.max(1, Math.round(album.quota_bytes / (1024 * 1024 * 1024)));
+  const publicUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/a/${album.token || ""}`;
+  const usedBytes = Number(album.used_bytes) || 0;
+  const quotaBytes = Number(album.quota_bytes) || 1073741824;
+  const usedMB = (usedBytes / (1024 * 1024)).toFixed(1);
+  const totalGB = Math.max(1, Math.round(quotaBytes / (1024 * 1024 * 1024)));
   const percentUsed = Math.min(
     100,
-    Math.round((album.used_bytes / album.quota_bytes) * 100)
+    Math.round((usedBytes / quotaBytes) * 100)
   );
 
-  const isExpired = new Date(album.expires_at).getTime() < Date.now();
-  const photoCount = mediaFiles.filter((m) => !m.mime_type.startsWith("video")).length;
-  const videoCount = mediaFiles.filter((m) => m.mime_type.startsWith("video")).length;
+  const isExpired = album.expires_at ? new Date(album.expires_at).getTime() < Date.now() : false;
+  const photoCount = mediaFiles.filter((m) => !(m?.mime_type || "").startsWith("video")).length;
+  const videoCount = mediaFiles.filter((m) => (m?.mime_type || "").startsWith("video")).length;
 
   // Handlers
   const handleDeleteAlbum = async () => {
@@ -801,10 +805,12 @@ export default function AlbumDetailsPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pt-1">
             {mediaFiles.map((media) => {
-              const isVideo = media.mime_type.startsWith("video");
+              const mime = media?.mime_type || "";
+              const fn = media?.filename || "";
+              const isVideo = mime.startsWith("video") || fn.toLowerCase().endsWith(".mp4") || fn.toLowerCase().endsWith(".mov");
               const isCover = album.cover_image_url === media.url;
               const isSelected = selectedMediaIds.has(media.id);
-              const sizeMB = (media.file_size / (1024 * 1024)).toFixed(1);
+              const sizeMB = ((Number(media.file_size) || 0) / (1024 * 1024)).toFixed(1);
 
               return (
                 <div
@@ -961,7 +967,7 @@ export default function AlbumDetailsPage() {
       <Dialog open={Boolean(previewMedia)} onOpenChange={(open) => !open && setPreviewMedia(null)}>
         <DialogContent className="max-w-3xl p-2 bg-slate-950 border-slate-800 text-white">
           <div className="relative flex flex-col items-center justify-center">
-            {previewMedia?.mime_type.startsWith("video") ? (
+            {previewMedia && (previewMedia.mime_type || "").startsWith("video") ? (
               <video
                 src={previewMedia.url}
                 controls

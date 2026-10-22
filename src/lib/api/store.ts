@@ -899,12 +899,29 @@ export const studioStore = {
   // --- Media Files ---
   getMediaFiles: (albumId: string): MediaFile[] => {
     const media = getStored<MediaFile[]>("media", INITIAL_MEDIA);
-    return media.filter((m) => m.album_id === albumId);
+    return media
+      .filter((m) => m && m.album_id === albumId)
+      .map((m) => {
+        const fn = m.filename || "";
+        const isVideo = fn.toLowerCase().endsWith(".mp4") || fn.toLowerCase().endsWith(".mov");
+        return {
+          ...m,
+          mime_type: m.mime_type || (isVideo ? "video/mp4" : "image/jpeg"),
+          file_size: Number(m.file_size) || 0,
+        };
+      });
   },
 
   addMediaFile: (albumId: string, file: MediaFile): void => {
+    const fn = file.filename || "";
+    const isVideo = fn.toLowerCase().endsWith(".mp4") || fn.toLowerCase().endsWith(".mov");
+    const safeFile: MediaFile = {
+      ...file,
+      mime_type: file.mime_type || (isVideo ? "video/mp4" : "image/jpeg"),
+      file_size: Number(file.file_size) || 0,
+    };
     const media = getStored<MediaFile[]>("media", INITIAL_MEDIA);
-    setStored("media", [...media, file]);
+    setStored("media", [...media, safeFile]);
 
     // Update album stats
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
@@ -912,9 +929,9 @@ export const studioStore = {
       if (a.id === albumId) {
         return {
           ...a,
-          used_bytes: a.used_bytes + file.file_size,
-          file_count: a.file_count + 1,
-          cover_image_url: a.cover_image_url || file.url,
+          used_bytes: (Number(a.used_bytes) || 0) + safeFile.file_size,
+          file_count: (Number(a.file_count) || 0) + 1,
+          cover_image_url: a.cover_image_url || safeFile.url,
         };
       }
       return a;
@@ -994,7 +1011,13 @@ export const studioStore = {
         const mergedFiles: MediaFile[] = [...mapped];
         for (const local of currentAlbumFiles) {
           if (!mergedFiles.some((m) => m.id === local.id || m.filename === local.filename)) {
-            mergedFiles.push(local);
+            const fn = local?.filename || "";
+            const isVideo = fn.toLowerCase().endsWith(".mp4") || fn.toLowerCase().endsWith(".mov");
+            mergedFiles.push({
+              ...local,
+              mime_type: local?.mime_type || (isVideo ? "video/mp4" : "image/jpeg"),
+              file_size: Number(local?.file_size) || 0,
+            });
           }
         }
 

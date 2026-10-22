@@ -500,7 +500,9 @@ export default function PublicAlbumViewerPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {mediaFiles.map((media, idx) => {
-              const isVideo = media.mime_type.startsWith("video");
+              const mime = media?.mime_type || "";
+              const fn = media?.filename || "";
+              const isVideo = mime.startsWith("video") || fn.toLowerCase().endsWith(".mp4") || fn.toLowerCase().endsWith(".mov");
 
               return (
                 <div
@@ -593,7 +595,7 @@ export default function PublicAlbumViewerPage() {
 
           {/* Center Image / Video Viewer */}
           <div className="relative flex-1 flex items-center justify-center overflow-hidden my-2">
-            {currentMedia.mime_type.startsWith("video") ? (
+            {((currentMedia?.mime_type || "")).startsWith("video") || (currentMedia?.filename || "").toLowerCase().endsWith(".mp4") ? (
               <video
                 src={currentMedia.url}
                 controls
