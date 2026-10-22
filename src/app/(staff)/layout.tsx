@@ -101,7 +101,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen w-full bg-[#f5f5f5] dark:bg-[#09090b] text-slate-900 dark:text-slate-100 font-sans selection:bg-red-600 selection:text-white transition-colors duration-150">
-      <aside className="hidden w-[200px] shrink-0 flex-col justify-between bg-[#101010] px-3 py-4 text-slate-300 md:flex">
+      <aside className="sticky top-0 h-screen hidden w-[200px] shrink-0 flex-col justify-between bg-[#101010] px-3 py-4 text-slate-300 md:flex overflow-y-auto z-40">
         <div>
           <div className="flex items-center gap-3 border-b border-[#262626] px-2 pb-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#0b0b0b] p-1 shadow-[0_0_0_2px_rgba(255,255,255,0.03)]">
@@ -206,7 +206,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
 
       {/* Main Island Window */}
       <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-[#f5f5f5] dark:bg-[#09090b]">
-        <header className="relative z-30 flex min-h-[61px] flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] px-4 py-3 sm:flex-nowrap sm:px-6 transition-colors">
+        <header className="sticky top-0 z-30 flex min-h-[61px] flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-[#121214]/95 backdrop-blur-md px-4 py-3 sm:flex-nowrap sm:px-6 transition-colors">
           <div className="min-w-0">
             <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400 dark:text-zinc-500">Workspace / {(pathname.split("/").filter(Boolean).pop()?.replace("admin-", "") ?? "Today").replace(/^\w/, c => c.toUpperCase())}</p>
             <p className="mt-0.5 text-[1.05rem] font-bold tracking-[-0.04em] text-slate-900 dark:text-zinc-100">{pathname === "/today" ? "Today" : pathname.includes("admin/") ? pathname.split("/").pop()?.replace(/^\w/, c => c.toUpperCase()) : pathname.slice(1).replace(/^\w/, c => c.toUpperCase())}</p>
