@@ -186,21 +186,21 @@ export default function ProductionRequestsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#e21b23]">Studio workflow</p>
-          <h1 className="mt-1 text-[25px] font-medium leading-none tracking-[-0.04em] text-slate-900">Requests</h1>
-          <p className="mt-2 text-[11px] text-slate-500">Track customer edits, print work, and delivery requests.</p>
+          <h1 className="mt-1 text-[25px] font-medium leading-none tracking-[-0.04em] text-slate-900 dark:text-zinc-100">Requests</h1>
+          <p className="mt-2 text-[11px] text-slate-500 dark:text-zinc-400">Track customer edits, print work, and delivery requests.</p>
         </div>
 
         {/* View Switcher & Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Segmented Controller (Apple style) */}
-          <div className="flex h-8 items-center rounded-md border border-slate-200 bg-white p-0.5 shadow-sm">
+          <div className="flex h-8 items-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] p-0.5 shadow-sm">
             <button
               type="button"
               onClick={() => setViewMode("kanban")}
               className={`flex h-7 items-center gap-1 rounded px-3 text-[10px] font-semibold transition-all ${
                 viewMode === "kanban"
-                  ? "bg-white text-slate-900 shadow-sm  "
-                  : "text-slate-500 hover:text-slate-900 "
+                  ? "bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-sm"
+                  : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200"
               }`}
             >
               <span>Board</span>
@@ -210,8 +210,8 @@ export default function ProductionRequestsPage() {
               onClick={() => setViewMode("list")}
               className={`flex h-7 items-center gap-1 rounded px-3 text-[10px] font-semibold transition-all ${
                 viewMode === "list"
-                  ? "bg-white text-slate-900 shadow-sm  "
-                  : "text-slate-500 hover:text-slate-900 "
+                  ? "bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-sm"
+                  : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200"
               }`}
             >
               <span>List</span>
@@ -224,11 +224,11 @@ export default function ProductionRequestsPage() {
             onClick={() => setOverdueOnly(!overdueOnly)}
             className={`flex items-center gap-1.5 rounded-md border px-3 py-2 text-[10px] font-semibold transition-all ${
               overdueOnly
-                ? "bg-rose-50 border-rose-300 text-rose-700    shadow-sm"
-                : "border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50   "
+                ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-400 shadow-sm"
+                : "border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-[#121214] text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
             }`}
           >
-            <span className={`h-3 w-3 rounded-sm border ${overdueOnly ? "border-[#e21b23] bg-[#e21b23]" : "border-slate-300"}`} />
+            <span className={`h-3 w-3 rounded-sm border ${overdueOnly ? "border-[#e21b23] bg-[#e21b23]" : "border-slate-300 dark:border-zinc-600"}`} />
             <span>Overdue only</span>
           </button>
 
@@ -249,17 +249,27 @@ export default function ProductionRequestsPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
+      <div className="flex gap-2 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] p-2 shadow-sm">
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-3 w-3 text-slate-400" />
-          <input type="text" placeholder="Search requests" value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 w-40 rounded-md border border-slate-200 pl-8 pr-2 text-[10px] outline-none sm:w-44" />
+          <Search className="absolute left-3 top-2.5 h-3 w-3 text-slate-400 dark:text-zinc-500" />
+          <input
+            type="text"
+            placeholder="Search requests"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 w-40 rounded-md border border-slate-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 pl-8 pr-2 text-[10px] outline-none sm:w-44 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+          />
         </div>
-        <button className="flex h-8 flex-1 items-center justify-between rounded-md border border-slate-200 px-3 text-[10px] font-semibold text-slate-700">Open requests <span className="text-slate-400">⌄</span></button>
-        <button className="hidden h-8 flex-1 items-center justify-between rounded-md border border-slate-200 px-3 text-[10px] font-semibold text-slate-700 sm:flex">All assignees <span className="text-slate-400">⌄</span></button>
+        <button className="flex h-8 flex-1 items-center justify-between rounded-md border border-slate-200 dark:border-zinc-700 dark:bg-zinc-900 px-3 text-[10px] font-semibold text-slate-700 dark:text-zinc-200">
+          Open requests <span className="text-slate-400 dark:text-zinc-500">⌄</span>
+        </button>
+        <button className="hidden h-8 flex-1 items-center justify-between rounded-md border border-slate-200 dark:border-zinc-700 dark:bg-zinc-900 px-3 text-[10px] font-semibold text-slate-700 dark:text-zinc-200 sm:flex">
+          All assignees <span className="text-slate-400 dark:text-zinc-500">⌄</span>
+        </button>
       </div>
 
       {isLoading ? (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-white py-20 text-center text-xs font-medium text-slate-400">
+        <div className="rounded-lg border border-dashed border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] py-20 text-center text-xs font-medium text-slate-400 dark:text-zinc-500">
           Loading production requests…
         </div>
       ) : viewMode === "kanban" ? (
@@ -270,17 +280,17 @@ export default function ProductionRequestsPage() {
             return (
               <div
                 key={col.id}
-                className="flex min-h-[330px] flex-col rounded-lg bg-[#eeeeef] p-2.5"
+                className="flex min-h-[330px] flex-col rounded-lg bg-[#eeeeef] dark:bg-[#18181b] p-2.5"
               >
                 {/* Column Top Header */}
                 <div className="flex items-center justify-between px-1.5 pb-2.5">
                   <div className="flex items-center gap-2">
                     <span className={`h-1.5 w-1.5 rounded-full ${col.accentDot}`} />
-                    <span className="text-[10px] font-bold text-slate-700 ">
+                    <span className="text-[10px] font-bold text-slate-700 dark:text-zinc-300">
                       {col.label}
                     </span>
                   </div>
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e0e0e1] text-[9px] font-bold text-slate-600">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e0e0e1] dark:bg-zinc-800 text-[9px] font-bold text-slate-600 dark:text-zinc-300">
                     {columnItems.length}
                   </span>
                 </div>
@@ -290,28 +300,28 @@ export default function ProductionRequestsPage() {
                   {columnItems.map((item) => (
                     <div
                       key={item.id}
-                      className="group relative rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+                      className="group relative rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3 shadow-sm transition-all duration-200 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-md"
                     >
                       <div className="flex items-center justify-between text-[9px]">
-                        <span className={`rounded-full px-2 py-1 font-semibold ${item.isOverdue && item.status !== "delivered" ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-500"}`}>
+                        <span className={`rounded-full px-2 py-1 font-semibold ${item.isOverdue && item.status !== "delivered" ? "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400" : "bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400"}`}>
                           <span className="mr-1">•</span>{item.isOverdue && item.status !== "delivered" ? "Overdue" : item.dueDate}
                         </span>
-                        <span className="text-sm font-bold tracking-widest text-slate-500">•••</span>
+                        <span className="text-sm font-bold tracking-widest text-slate-500 dark:text-zinc-500">•••</span>
                       </div>
 
                       {/* Customer & Service */}
                       <div className="mt-3">
-                        <h4 className="text-[10px] font-medium leading-snug text-slate-900">
+                        <h4 className="text-[10px] font-medium leading-snug text-slate-900 dark:text-zinc-100">
                           {item.service}
                         </h4>
-                        <p className="mt-3 text-[9px] text-slate-400">
+                        <p className="mt-3 text-[9px] text-slate-400 dark:text-zinc-500">
                           {item.customerName}
                         </p>
                       </div>
 
                       {/* Meta Row: Phone & Due Date */}
-                      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[9px] text-slate-400">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#f5dddd] text-[9px] font-bold text-[#c52b2f]">
+                      <div className="mt-3 flex items-center justify-between border-t border-slate-100 dark:border-zinc-800 pt-2.5 text-[9px] text-slate-400 dark:text-zinc-500">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#f5dddd] dark:bg-red-950/60 text-[9px] font-bold text-[#c52b2f] dark:text-red-300">
                           {item.assignedStaff.slice(0, 2).toUpperCase()}
                         </span>
                         <span className="flex items-center gap-1">
@@ -321,12 +331,12 @@ export default function ProductionRequestsPage() {
 
                       {/* Bottom Footer: Advance Step */}
                       {item.status !== "delivered" && (
-                        <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
-                          <span className="text-[9px] text-slate-400">Advance stage</span>
+                        <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+                          <span className="text-[9px] text-slate-400 dark:text-zinc-500">Advance stage</span>
                           <button
                             type="button"
                             onClick={() => handleAdvanceStatus(item.id)}
-                            className="inline-flex items-center gap-1 rounded bg-slate-100 hover:bg-red-50 hover:text-[#e21b23] px-2 py-0.5 text-[9px] font-semibold text-slate-700 transition-colors"
+                            className="inline-flex items-center gap-1 rounded bg-slate-100 dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-[#e21b23] dark:hover:text-red-400 px-2 py-0.5 text-[9px] font-semibold text-slate-700 dark:text-zinc-200 transition-colors"
                           >
                             <span>Next</span>
                             <ArrowRight className="h-2.5 w-2.5" />
@@ -337,8 +347,8 @@ export default function ProductionRequestsPage() {
                   ))}
 
                   {columnItems.length === 0 && (
-                    <div className="flex h-32 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200  text-center">
-                      <p className="text-[11px] font-medium text-slate-400">No requests in this stage</p>
+                    <div className="flex h-32 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center">
+                      <p className="text-[11px] font-medium text-slate-400 dark:text-zinc-500">No requests in this stage</p>
                     </div>
                   )}
                 </div>
@@ -348,37 +358,37 @@ export default function ProductionRequestsPage() {
         </div>
       ) : (
         /* Alternative Clean List View */
-        <div className="rounded-3xl bg-white  p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 ">
-          <div className="divide-y divide-slate-100 ">
+        <div className="rounded-3xl bg-white dark:bg-[#121214] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 dark:border-zinc-800">
+          <div className="divide-y divide-slate-100 dark:divide-zinc-800">
             {filteredRequests.map((item) => (
-              <div key={item.id} className="py-3.5 flex items-center justify-between hover:bg-slate-50/50  px-3 rounded-2xl transition-colors">
+              <div key={item.id} className="py-3.5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 px-3 rounded-2xl transition-colors">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-indigo-600 ">
+                    <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
                       #{item.orderNumber}
                     </span>
-                    <span className="text-xs font-bold text-slate-900 ">
+                    <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">
                       {item.customerName}
                     </span>
                     {item.isOverdue && item.status !== "delivered" && (
-                      <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[9px] font-bold text-rose-600 border border-rose-200">
+                      <span className="rounded-full bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 text-[9px] font-bold text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
                         Overdue
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500">{item.service} • Assigned to {item.assignedStaff}</p>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">{item.service} • Assigned to {item.assignedStaff}</p>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <span className="text-xs font-mono text-slate-400">{item.dueDate}</span>
-                  <span className="text-xs font-semibold capitalize text-slate-700 ">
+                  <span className="text-xs font-mono text-slate-400 dark:text-zinc-500">{item.dueDate}</span>
+                  <span className="text-xs font-semibold capitalize text-slate-700 dark:text-zinc-300">
                     {item.status.replace("_", " ")}
                   </span>
                   {item.status !== "delivered" && (
                     <button
                       type="button"
                       onClick={() => handleAdvanceStatus(item.id)}
-                      className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-600"
+                      className="rounded-full bg-slate-100 dark:bg-zinc-800 px-3 py-1 text-xs font-semibold hover:bg-indigo-50 dark:hover:bg-zinc-700 hover:text-indigo-600 dark:hover:text-indigo-400 text-slate-700 dark:text-zinc-200"
                     >
                       Advance
                     </button>
@@ -392,26 +402,26 @@ export default function ProductionRequestsPage() {
 
       {/* New Request Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md dark:bg-[#18181b] dark:border-zinc-800">
           <form onSubmit={handleCreateRequest}>
             <DialogHeader>
-              <DialogTitle className="text-base font-bold text-slate-900">
+              <DialogTitle className="text-base font-bold text-slate-900 dark:text-zinc-100">
                 Create Production Request
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
+              <DialogDescription className="text-xs text-slate-500 dark:text-zinc-400">
                 Track photo editing, printing, retouching, or framing jobs in the studio production pipeline.
               </DialogDescription>
             </DialogHeader>
 
             {dialogError && (
-              <div role="alert" className="mt-3 rounded-md bg-red-50 p-2.5 text-xs font-semibold text-red-700 border border-red-200">
+              <div role="alert" className="mt-3 rounded-md bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-semibold text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900">
                 {dialogError}
               </div>
             )}
 
             <div className="grid gap-3 py-4">
               <div className="grid gap-1">
-                <Label htmlFor="req-name" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="req-name" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                   Customer Name *
                 </Label>
                 <Input
@@ -419,13 +429,13 @@ export default function ProductionRequestsPage() {
                   placeholder="e.g. Dawit Haile"
                   value={reqName}
                   onChange={(e) => setReqName(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   required
                 />
               </div>
 
               <div className="grid gap-1">
-                <Label htmlFor="req-phone" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="req-phone" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                   Customer Phone *
                 </Label>
                 <Input
@@ -434,13 +444,13 @@ export default function ProductionRequestsPage() {
                   placeholder="09XXXXXXXX or +2519XXXXXXXX"
                   value={reqPhone}
                   onChange={(e) => setReqPhone(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   required
                 />
               </div>
 
               <div className="grid gap-1">
-                <Label htmlFor="req-service" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="req-service" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                   Package / Service Task *
                 </Label>
                 <div className="flex gap-2">
@@ -449,7 +459,7 @@ export default function ProductionRequestsPage() {
                     placeholder="e.g. Wedding Photo Retouching & Album Binding"
                     value={reqService}
                     onChange={(e) => setReqService(e.target.value)}
-                    className="h-9 text-xs flex-1"
+                    className="h-9 text-xs flex-1 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                     required
                   />
                   {packages.length > 0 && (
@@ -458,7 +468,7 @@ export default function ProductionRequestsPage() {
                       onChange={(e) => {
                         if (e.target.value) setReqService(e.target.value);
                       }}
-                      className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-600 max-w-[140px]"
+                      className="h-9 rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 text-xs text-slate-600 dark:text-zinc-300 max-w-[140px]"
                     >
                       <option value="">Packages...</option>
                       {packages.map((p) => (
@@ -472,7 +482,7 @@ export default function ProductionRequestsPage() {
               </div>
 
               <div className="grid gap-1">
-                <Label htmlFor="req-due" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="req-due" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                   Due Date (Gregorian & Ethiopian)
                 </Label>
                 <Input
@@ -480,17 +490,17 @@ export default function ProductionRequestsPage() {
                   type="date"
                   value={reqDueDate}
                   onChange={(e) => setReqDueDate(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                 />
                 {reqDueDate && (
-                  <p className="text-[10px] text-amber-700 font-medium">
+                  <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">
                     EC: {formatCalendarPair(reqDueDate).ethiopian} ({getEthiopianDateDetails(reqDueDate)?.textAm || ""})
                   </p>
                 )}
               </div>
 
               <div className="grid gap-1">
-                <Label htmlFor="req-notes" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="req-notes" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                   Instructions / Notes
                 </Label>
                 <Input
@@ -498,7 +508,7 @@ export default function ProductionRequestsPage() {
                   placeholder="e.g. Warm color tone, deliver high-res via Telegram"
                   value={reqNotes}
                   onChange={(e) => setReqNotes(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                 />
               </div>
             </div>
@@ -510,6 +520,7 @@ export default function ProductionRequestsPage() {
                 size="sm"
                 onClick={() => setIsCreateOpen(false)}
                 disabled={isSaving}
+                className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 Cancel
               </Button>

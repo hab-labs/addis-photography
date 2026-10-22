@@ -24,9 +24,12 @@ import {
   LogOut,
   UserCircle,
   Globe,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 import { useI18n } from "@/lib/i18n/context";
+import { useTheme } from "@/lib/theme/context";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { studioStore } from "@/lib/api/store";
 
@@ -50,6 +53,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const { user, isAdmin, logout } = useAuth();
   const { locale, setLocale, t } = useI18n();
+  const { theme, resolvedTheme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = React.useState(false);
   const visibleAdminNav = isAdmin ? navAdmin : [];
@@ -96,7 +100,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   }, [pathname]);
 
   return (
-    <div className="flex min-h-screen w-full bg-[#f5f5f5] font-sans selection:bg-red-600 selection:text-white">
+    <div className="flex min-h-screen w-full bg-[#f5f5f5] dark:bg-[#09090b] text-slate-900 dark:text-slate-100 font-sans selection:bg-red-600 selection:text-white transition-colors duration-150">
       <aside className="hidden w-[200px] shrink-0 flex-col justify-between bg-[#101010] px-3 py-4 text-slate-300 md:flex">
         <div>
           <div className="flex items-center gap-3 border-b border-[#262626] px-2 pb-4">
@@ -201,11 +205,11 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Island Window */}
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-[#f5f5f5]">
-        <header className="relative z-30 flex min-h-[61px] flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:flex-nowrap sm:px-6">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-[#f5f5f5] dark:bg-[#09090b]">
+        <header className="relative z-30 flex min-h-[61px] flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] px-4 py-3 sm:flex-nowrap sm:px-6 transition-colors">
           <div className="min-w-0">
-            <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400">Workspace / {(pathname.split("/").filter(Boolean).pop()?.replace("admin-", "") ?? "Today").replace(/^\w/, c => c.toUpperCase())}</p>
-            <p className="mt-0.5 text-[1.05rem] font-bold tracking-[-0.04em] text-slate-900">{pathname === "/today" ? "Today" : pathname.includes("admin/") ? pathname.split("/").pop()?.replace(/^\w/, c => c.toUpperCase()) : pathname.slice(1).replace(/^\w/, c => c.toUpperCase())}</p>
+            <p className="text-[10px] font-medium tracking-[0.02em] text-slate-400 dark:text-zinc-500">Workspace / {(pathname.split("/").filter(Boolean).pop()?.replace("admin-", "") ?? "Today").replace(/^\w/, c => c.toUpperCase())}</p>
+            <p className="mt-0.5 text-[1.05rem] font-bold tracking-[-0.04em] text-slate-900 dark:text-zinc-100">{pathname === "/today" ? "Today" : pathname.includes("admin/") ? pathname.split("/").pop()?.replace(/^\w/, c => c.toUpperCase()) : pathname.slice(1).replace(/^\w/, c => c.toUpperCase())}</p>
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
@@ -215,21 +219,38 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-navigation-links"
               onClick={() => setMobileMenuOpen((open) => !open)}
-              className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm md:hidden"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] text-slate-600 dark:text-zinc-300 shadow-sm md:hidden"
             >
               {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
+
+            {/* Language Switcher */}
             <button
               type="button"
               onClick={() => setLocale(locale === "en" ? "am" : "en")}
               aria-label={`Switch language to ${locale === "en" ? "Amharic" : "English"}`}
-              className="flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+              className="flex h-9 items-center gap-1.5 rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] px-2.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
             >
-              <Globe className="h-3.5 w-3.5 text-slate-500" />
+              <Globe className="h-3.5 w-3.5 text-slate-500 dark:text-zinc-400" />
               <span>{locale === "en" ? "አማርኛ" : "EN"}</span>
             </button>
 
-            <button aria-label="Notifications" className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm">
+            {/* Dark Mode Toggle Button */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
+              title={`Switch to ${resolvedTheme === "dark" ? "Light" : "Dark"} Mode`}
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] text-slate-700 dark:text-zinc-200 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="h-4 w-4 text-amber-400" />
+              ) : (
+                <Moon className="h-4 w-4 text-slate-600" />
+              )}
+            </button>
+
+            <button aria-label="Notifications" className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] text-slate-600 dark:text-zinc-300 shadow-sm">
               <Bell className="h-4 w-4" />
             </button>
 
@@ -248,12 +269,12 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                 aria-label="Open account menu"
                 aria-expanded={accountMenuOpen}
                 onClick={() => setAccountMenuOpen((open) => !open)}
-                className="flex items-center gap-2 rounded-md px-1.5 py-1 text-left hover:bg-slate-50"
+                className="flex items-center gap-2 rounded-md px-1.5 py-1 text-left hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors"
               >
-                <Avatar className="h-8 w-8"><AvatarFallback className="bg-[#f3d7d7] text-[10px] font-bold text-[#b82727]">{userInitials}</AvatarFallback></Avatar>
+                <Avatar className="h-8 w-8"><AvatarFallback className="bg-[#f3d7d7] dark:bg-red-950/60 text-[10px] font-bold text-[#b82727] dark:text-red-400">{userInitials}</AvatarFallback></Avatar>
                 <div className="hidden leading-tight sm:block">
-                  <div className="text-xs font-semibold text-slate-900">{userName}</div>
-                  <div className="text-[10px] text-slate-500">{userRole}</div>
+                  <div className="text-xs font-semibold text-slate-900 dark:text-zinc-100">{userName}</div>
+                  <div className="text-[10px] text-slate-500 dark:text-zinc-400">{userRole}</div>
                 </div>
                 <ChevronRight className={`h-4 w-4 text-slate-500 transition-transform ${accountMenuOpen ? "rotate-90" : ""}`} />
               </button>
@@ -266,22 +287,35 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                     onClick={() => setAccountMenuOpen(false)}
                     className="fixed inset-0 z-40 cursor-default"
                   />
-                  <div className="absolute right-0 top-11 z-50 w-60 rounded-lg border border-slate-200 bg-white p-2 text-left shadow-[0_8px_24px_rgba(15,23,42,0.16)]">
-                    <div className="flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2.5">
-                      <Avatar className="h-9 w-9"><AvatarFallback className="bg-[#f3d7d7] text-xs font-bold text-[#b82727]">{userInitials}</AvatarFallback></Avatar>
+                  <div className="absolute right-0 top-11 z-50 w-60 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] p-2 text-left shadow-[0_8px_24px_rgba(15,23,42,0.16)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
+                    <div className="flex items-center gap-2 rounded-md bg-slate-50 dark:bg-zinc-800/60 px-3 py-2.5">
+                      <Avatar className="h-9 w-9"><AvatarFallback className="bg-[#f3d7d7] dark:bg-red-950/60 text-xs font-bold text-[#b82727] dark:text-red-400">{userInitials}</AvatarFallback></Avatar>
                       <div className="min-w-0">
-                        <p className="truncate text-xs font-bold text-slate-900">{userName}</p>
-                        <p className="text-[10px] text-slate-500">{userRole}</p>
-                        <p className="truncate text-[10px] text-slate-400">{user?.username || "Signed-in account"}</p>
+                        <p className="truncate text-xs font-bold text-slate-900 dark:text-zinc-100">{userName}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-zinc-400">{userRole}</p>
+                        <p className="truncate text-[10px] text-slate-400 dark:text-zinc-500">{user?.username || "Signed-in account"}</p>
                       </div>
                     </div>
-                    <div className="my-1 border-t border-slate-100" />
-                    <Link href="/profile" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                    <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
+                    <button
+                      type="button"
+                      onClick={toggleTheme}
+                      className="flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/80"
+                    >
+                      <span className="flex items-center gap-2">
+                        {resolvedTheme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-500" />}
+                        Theme Mode
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase">
+                        {resolvedTheme}
+                      </span>
+                    </button>
+                    <Link href="/profile" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/80">
                       <UserCircle className="h-4 w-4" />
                       Account overview
                     </Link>
                     {isAdmin && (
-                      <Link href="/admin/settings" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                      <Link href="/admin/settings" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/80">
                         <Settings className="h-4 w-4" />
                         Account settings
                       </Link>
@@ -289,7 +323,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                     <button
                       type="button"
                       onClick={() => logout()}
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                     >
                       <LogOut className="h-4 w-4" />
                       Log out

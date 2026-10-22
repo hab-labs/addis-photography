@@ -251,10 +251,10 @@ export default function ClientAlbumsPage() {
           <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#e31b23]">
             Customer galleries
           </p>
-          <h1 className="mt-1 text-[25px] font-semibold leading-none text-slate-900">
+          <h1 className="mt-1 text-[25px] font-semibold leading-none text-slate-900 dark:text-zinc-100">
             Albums
           </h1>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
             Create, publish, and manage private customer collections.
           </p>
         </div>
@@ -270,29 +270,29 @@ export default function ClientAlbumsPage() {
         </Button>
       </section>
 
-      <section className="flex min-h-[52px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
+      <section className="flex min-h-[52px] items-center gap-2 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] px-3 py-2 shadow-sm">
         <div className="relative min-w-[170px] flex-1">
-          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
+          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search albums or customers"
-            className="h-8 w-full rounded-md border border-slate-200 pl-8 pr-2 text-[11px] text-slate-700 outline-none focus:border-red-300 focus:ring-1 focus:ring-red-200"
+            className="h-8 w-full rounded-md border border-slate-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 pl-8 pr-2 text-[11px] text-slate-700 outline-none focus:border-red-300 focus:ring-1 focus:ring-red-200 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
           />
         </div>
         <label className="relative min-w-[170px] flex-1">
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}
-            className="h-8 w-full appearance-none rounded-md border border-slate-200 bg-white px-3 pr-7 text-[11px] text-slate-600 outline-none"
+            className="h-8 w-full appearance-none rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 pr-7 text-[11px] text-slate-600 dark:text-zinc-300 outline-none"
           >
             <option>All statuses</option>
             <option>Published</option>
             <option>Draft</option>
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
+          <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
         </label>
-        <label className="flex items-center gap-1.5 whitespace-nowrap text-[10px] text-slate-500">
+        <label className="flex items-center gap-1.5 whitespace-nowrap text-[10px] text-slate-500 dark:text-zinc-400">
           <input
             type="checkbox"
             checked={expiringOnly}
@@ -301,7 +301,7 @@ export default function ClientAlbumsPage() {
           />
           Expiring soon
         </label>
-        <span className="hidden text-[10px] text-slate-400 sm:block">
+        <span className="hidden text-[10px] text-slate-400 dark:text-zinc-500 sm:block">
           {filteredAlbums.length} albums
         </span>
       </section>
@@ -313,7 +313,7 @@ export default function ClientAlbumsPage() {
           return (
             <div
               key={album.id}
-              className="group relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="group relative overflow-hidden rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               <div className="relative h-[154px] overflow-hidden bg-slate-900">
                 <Link href={`/albums/${album.id}`} className="block h-full w-full">
@@ -368,52 +368,52 @@ export default function ClientAlbumsPage() {
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 bg-white shadow-xl border border-slate-100 rounded-lg p-1 text-xs">
+                    <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-[#18181b] shadow-xl border border-slate-100 dark:border-zinc-800 rounded-lg p-1 text-xs">
                       <DropdownMenuItem
-                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 text-slate-700"
+                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
                         onClick={() => handleCopyLink(album)}
                       >
                         {copiedToken === album.token ? (
                           <>
-                            <Check className="h-3.5 w-3.5 text-emerald-600" />
-                            <span className="text-emerald-600 font-medium">Link Copied!</span>
+                            <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">Link Copied!</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="h-3.5 w-3.5 text-slate-500" />
+                            <Copy className="h-3.5 w-3.5 text-slate-500 dark:text-zinc-400" />
                             <span>Copy Public Link</span>
                           </>
                         )}
                       </DropdownMenuItem>
 
                       <DropdownMenuItem
-                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 text-slate-700"
+                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
                         onClick={() => window.open(`/a/${album.token}`, "_blank")}
                       >
-                        <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                        <ExternalLink className="h-3.5 w-3.5 text-slate-500 dark:text-zinc-400" />
                         <span>Open Public Gallery</span>
                       </DropdownMenuItem>
 
                       <DropdownMenuItem
-                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 text-slate-700"
+                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
                         onClick={() => handleOpenQr(album)}
                       >
-                        <QrCode className="h-3.5 w-3.5 text-slate-500" />
+                        <QrCode className="h-3.5 w-3.5 text-slate-500 dark:text-zinc-400" />
                         <span>QR Code & Flyer</span>
                       </DropdownMenuItem>
 
                       <DropdownMenuItem asChild>
                         <Link
                           href={`/albums/${album.id}`}
-                          className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 text-slate-700"
+                          className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
                         >
-                          <FolderOpen className="h-3.5 w-3.5 text-slate-500" />
+                          <FolderOpen className="h-3.5 w-3.5 text-slate-500 dark:text-zinc-400" />
                           <span>Manage & Upload</span>
                         </Link>
                       </DropdownMenuItem>
 
                       <DropdownMenuItem
-                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 text-slate-700"
+                        className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200"
                         onClick={() => handleExtendRetention(album)}
                       >
                         <Clock3 className="h-3.5 w-3.5 text-amber-500" />
@@ -422,10 +422,10 @@ export default function ClientAlbumsPage() {
 
                       {isAdmin && (
                         <>
-                          <DropdownMenuSeparator className="my-1 border-t border-slate-100" />
+                          <DropdownMenuSeparator className="my-1 border-t border-slate-100 dark:border-zinc-800" />
 
                           <DropdownMenuItem
-                            className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-red-50 text-red-600 font-medium"
+                            className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer rounded hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 font-medium"
                             onClick={() => setDeleteTargetAlbum(album)}
                           >
                             <Trash2 className="h-3.5 w-3.5 text-red-500" />
@@ -439,11 +439,11 @@ export default function ClientAlbumsPage() {
               </div>
 
               <Link href={`/albums/${album.id}`} className="block p-2.5">
-                <h2 className="truncate text-[11px] font-semibold text-slate-800 hover:text-[#e31b23] transition-colors">
+                <h2 className="truncate text-[11px] font-semibold text-slate-800 dark:text-zinc-100 hover:text-[#e31b23] dark:hover:text-[#e31b23] transition-colors">
                   {album.title}
                 </h2>
-                <p className="mt-1 truncate text-[9px] text-slate-400">{album.clientName}</p>
-                <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[9px] text-slate-400">
+                <p className="mt-1 truncate text-[9px] text-slate-400 dark:text-zinc-500">{album.clientName}</p>
+                <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 dark:border-zinc-800 pt-2 text-[9px] text-slate-400 dark:text-zinc-500">
                   <span className="flex items-center gap-1">
                     <ImageIcon className="h-3 w-3" />
                     {album.mediaCount} photos
@@ -486,10 +486,10 @@ export default function ClientAlbumsPage() {
 
       {/* New Album Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[460px]">
+        <DialogContent className="sm:max-w-[460px] dark:bg-[#18181b] dark:border-zinc-800">
           <DialogHeader>
-            <DialogTitle>Create Client Album</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-slate-900 dark:text-zinc-100">Create Client Album</DialogTitle>
+            <DialogDescription className="text-slate-500 dark:text-zinc-400">
               Create a private digital gallery link for customer delivery.
             </DialogDescription>
           </DialogHeader>
@@ -498,14 +498,14 @@ export default function ClientAlbumsPage() {
             {dialogError && (
               <div
                 role="alert"
-                className="rounded-md bg-red-50 p-2.5 text-xs font-medium text-red-700 border border-red-200"
+                className="rounded-md bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-medium text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900"
               >
                 {dialogError}
               </div>
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="alb-title" className="text-xs font-semibold text-slate-700">
+              <Label htmlFor="alb-title" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                 Album Title <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -513,19 +513,19 @@ export default function ClientAlbumsPage() {
                 placeholder="e.g. Bethlehem & Dawit Wedding Highlights"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="text-xs"
+                className="text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="alb-cust" className="text-xs font-semibold text-slate-700">
+              <Label htmlFor="alb-cust" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                 Client / Customer <span className="text-red-500">*</span>
               </Label>
               {customers.length > 0 && (
                 <div className="mb-1.5">
                   <select
-                    className="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none focus:border-red-400"
+                    className="h-9 w-full rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-red-400"
                     value={customerId}
                     onChange={(e) => handleCustomerSelect(e.target.value)}
                   >
@@ -546,13 +546,13 @@ export default function ClientAlbumsPage() {
                   setCustomerName(e.target.value);
                   if (customerId) setCustomerId("");
                 }}
-                className="text-xs"
+                className="text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="alb-date" className="text-xs font-semibold text-slate-700">
+              <Label htmlFor="alb-date" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                 Event Date <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -560,18 +560,18 @@ export default function ClientAlbumsPage() {
                 type="date"
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
-                className="text-xs"
+                className="text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                 required
               />
               {eventDate && (
-                <p className="mt-1 text-[10px] text-amber-700 font-medium">
+                <p className="mt-1 text-[10px] text-amber-700 dark:text-amber-400 font-medium">
                   EC: {formatCalendarPair(eventDate).ethiopian} ({getEthiopianDateDetails(eventDate)?.textAm || ""})
                 </p>
               )}
             </div>
 
-            <div className="space-y-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-700">
+            <div className="space-y-2 rounded-lg border border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 p-3">
+              <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-700 dark:text-zinc-300">
                 <input
                   type="checkbox"
                   checked={requirePin}
@@ -583,7 +583,7 @@ export default function ClientAlbumsPage() {
 
               {requirePin && (
                 <div className="space-y-1 pt-1.5">
-                  <Label htmlFor="alb-pin" className="text-[11px] text-slate-500">
+                  <Label htmlFor="alb-pin" className="text-[11px] text-slate-500 dark:text-zinc-400">
                     PIN Code (Client must enter this to view gallery)
                   </Label>
                   <Input
@@ -594,7 +594,7 @@ export default function ClientAlbumsPage() {
                     placeholder="e.g. 1234"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
-                    className="text-xs font-mono"
+                    className="text-xs font-mono dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                     required={requirePin}
                   />
                 </div>
@@ -608,6 +608,7 @@ export default function ClientAlbumsPage() {
                 size="sm"
                 onClick={() => setIsCreateOpen(false)}
                 disabled={isSaving}
+                className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 Cancel
               </Button>
@@ -633,7 +634,7 @@ export default function ClientAlbumsPage() {
 
       {/* Action Notification Banner */}
       {actionNotice && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-medium text-white shadow-xl animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-lg bg-slate-900 dark:bg-zinc-800 px-4 py-2.5 text-xs font-medium text-white shadow-xl animate-in fade-in slide-in-from-bottom-3 duration-200">
           <Check className="h-4 w-4 text-emerald-400" />
           <span>{actionNotice}</span>
         </div>
@@ -641,12 +642,12 @@ export default function ClientAlbumsPage() {
 
       {/* QR Code Dialog */}
       <Dialog open={Boolean(qrAlbum)} onOpenChange={(open) => !open && setQrAlbum(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dark:bg-[#18181b] dark:border-zinc-800">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-slate-900">
+            <DialogTitle className="text-base font-bold text-slate-900 dark:text-zinc-100">
               Client Gallery QR Code
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-zinc-400">
               Share with {qrAlbum?.clientName} to access the online album.
             </DialogDescription>
           </DialogHeader>
@@ -665,7 +666,7 @@ export default function ClientAlbumsPage() {
             )}
 
             <div className="w-full space-y-1">
-              <Label className="text-[11px] text-slate-500">Public Gallery Link</Label>
+              <Label className="text-[11px] text-slate-500 dark:text-zinc-400">Public Gallery Link</Label>
               <div className="flex items-center gap-1.5">
                 <Input
                   readOnly
@@ -674,15 +675,16 @@ export default function ClientAlbumsPage() {
                       ? `${window.location.origin}/a/${qrAlbum.token}`
                       : ""
                   }
-                  className="font-mono text-xs"
+                  className="font-mono text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                 />
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => qrAlbum && handleCopyLink(qrAlbum)}
+                  className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
                   {copiedToken === qrAlbum?.token ? (
-                    <Check className="h-4 w-4 text-emerald-600" />
+                    <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   ) : (
                     <Copy className="h-4 w-4" />
                   )}
@@ -701,6 +703,7 @@ export default function ClientAlbumsPage() {
                     downloadFile(qrDataUrl, `${qrAlbum.token}-qr.png`);
                   }
                 }}
+                className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 <Download className="mr-1.5 h-3.5 w-3.5" />
                 Download PNG
@@ -719,12 +722,13 @@ export default function ClientAlbumsPage() {
                     });
                   }
                 }}
+                className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 <Printer className="mr-1.5 h-3.5 w-3.5" />
                 Print Flyer
               </Button>
             </div>
-            <Button size="sm" onClick={() => setQrAlbum(null)}>
+            <Button size="sm" onClick={() => setQrAlbum(null)} className="dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700">
               Done
             </Button>
           </DialogFooter>
@@ -736,13 +740,13 @@ export default function ClientAlbumsPage() {
         open={Boolean(deleteTargetAlbum)}
         onOpenChange={(open) => !open && setDeleteTargetAlbum(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dark:bg-[#18181b] dark:border-zinc-800">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-red-600">
               Delete Album
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Are you sure you want to delete <span className="font-semibold text-slate-800">"{deleteTargetAlbum?.title}"</span>? This will permanently remove the album record and any associated uploaded media.
+            <DialogDescription className="text-xs text-slate-500 dark:text-zinc-400">
+              Are you sure you want to delete <span className="font-semibold text-slate-800 dark:text-zinc-200">"{deleteTargetAlbum?.title}"</span>? This will permanently remove the album record and any associated uploaded media.
             </DialogDescription>
           </DialogHeader>
 
@@ -753,6 +757,7 @@ export default function ClientAlbumsPage() {
               size="sm"
               onClick={() => setDeleteTargetAlbum(null)}
               disabled={isDeleting}
+              className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               Cancel
             </Button>

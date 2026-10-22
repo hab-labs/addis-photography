@@ -4,9 +4,9 @@ import { MapPin, Phone } from "lucide-react";
 
 export default function LoginPage() {
   return (
-    <div className="font-referenceSans grid min-h-[960px] bg-white lg:grid-cols-2">
-      <section className="flex flex-col items-center justify-between bg-white px-8 py-10 sm:px-12 lg:items-stretch lg:px-16 lg:py-12">
-        <div className="flex h-7 w-full items-center gap-3 border-l-[3px] border-[#D51E25] pl-3 text-[14px] font-normal leading-[17px] text-[#2B2B2B]">
+    <div className="font-referenceSans grid min-h-[960px] bg-white dark:bg-[#09090b] lg:grid-cols-2">
+      <section className="flex flex-col items-center justify-between bg-white dark:bg-[#09090b] px-8 py-10 sm:px-12 lg:items-stretch lg:px-16 lg:py-12">
+        <div className="flex h-7 w-full items-center gap-3 border-l-[3px] border-[#D51E25] pl-3 text-[14px] font-normal leading-[17px] text-[#2B2B2B] dark:text-zinc-200">
           Addis Photography
         </div>
 
@@ -16,10 +16,10 @@ export default function LoginPage() {
           </Suspense>
         </div>
 
-        <div className="flex h-[13px] w-full items-center justify-between text-[11px] font-normal leading-[13px] text-black">
+        <div className="flex h-[13px] w-full items-center justify-between text-[11px] font-normal leading-[13px] text-black dark:text-zinc-400">
           <span>Studio Management System</span>
           <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-sm bg-black" />
+            <span className="h-3 w-3 rounded-sm bg-black dark:bg-zinc-600" />
             Authorized studio access
           </span>
         </div>

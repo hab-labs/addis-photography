@@ -271,30 +271,28 @@ function NewOrderForm() {
     <div className="mx-auto max-w-[860px] space-y-4">
       {/* HEADER: Specification 6.5 */}
       {/* New Order                                        Booking #4 · 12/08/2026 */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-3">
         <div className="flex items-center gap-2">
-          <Link href="/today" className="text-slate-400 hover:text-slate-700 transition">
+          <Link href="/today" className="text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition">
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <h1 className="text-lg font-bold tracking-tight text-slate-900">New Order</h1>
+          <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-zinc-100">New Order</h1>
         </div>
-        <div className="font-mono text-xs font-bold text-slate-700">
+        <div className="font-mono text-xs font-bold text-slate-700 dark:text-zinc-300">
           Booking #{bookingNumberToday} · {todayFormatted}
         </div>
       </div>
 
       {formError && (
-        <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-700">
+        <div role="alert" className="rounded-md border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 px-4 py-2.5 text-xs font-semibold text-red-700 dark:text-red-400">
           {formError}
         </div>
       )}
 
       {/* CUSTOMER SECTION: Specification 6.5 */}
-      {/* Customer:  [ Search name or phone…              ]   [+ New customer]     */}
-      {/*            Meron T. · 0922… · Owes ETB 80.00 (1 order)                   */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs space-y-2.5">
+      <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-4 shadow-xs space-y-2.5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <label className="text-xs font-bold text-slate-700">Customer:</label>
+          <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">Customer:</label>
           <div className="flex items-center gap-2 flex-1 sm:max-w-md">
             <Input
               type="text"
@@ -304,7 +302,7 @@ function NewOrderForm() {
                 setSearchQuery(e.target.value);
                 if (isNewCustomerManual) setCustomerPhone(e.target.value);
               }}
-              className="h-8 text-xs font-medium"
+              className="h-8 text-xs font-medium border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100"
             />
             <button
               type="button"
@@ -314,8 +312,8 @@ function NewOrderForm() {
               }}
               className={`rounded-md border px-2.5 py-1 text-xs font-semibold shrink-0 transition ${
                 isNewCustomerManual
-                  ? "border-red-500 bg-red-50 text-red-700"
-                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400"
+                  : "border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700"
               }`}
             >
               {isNewCustomerManual ? "✕ Existing search" : "+ New customer"}
@@ -325,54 +323,49 @@ function NewOrderForm() {
 
         {/* Customer Status line */}
         {isNewCustomerManual ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-zinc-800">
             <div>
-              <label className="text-[10px] font-medium text-slate-500">Full Name *</label>
+              <label className="text-[10px] font-medium text-slate-500 dark:text-zinc-400">Full Name *</label>
               <Input
                 placeholder="Customer full name"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="h-8 text-xs"
+                className="h-8 text-xs border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100"
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-slate-500">Phone (09XXXXXXXX) *</label>
+              <label className="text-[10px] font-medium text-slate-500 dark:text-zinc-400">Phone (09XXXXXXXX) *</label>
               <Input
                 placeholder="09XXXXXXXX"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                className="h-8 text-xs font-mono"
+                className="h-8 text-xs font-mono border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100"
               />
             </div>
           </div>
         ) : matchedCustomer ? (
-          <div className="text-xs text-slate-600 bg-slate-50 rounded px-2.5 py-1.5 flex items-center justify-between">
+          <div className="text-xs text-slate-600 dark:text-zinc-300 bg-slate-50 dark:bg-zinc-800/60 rounded px-2.5 py-1.5 flex items-center justify-between">
             <span>
               <b>{matchedCustomer.name}</b> · {matchedCustomer.phone}
             </span>
-            <span className={Number(matchedCustomer.balance_due) > 0 ? "text-red-600 font-bold" : "text-emerald-700 font-medium"}>
+            <span className={Number(matchedCustomer.balance_due) > 0 ? "text-red-600 dark:text-red-400 font-bold" : "text-emerald-700 dark:text-emerald-400 font-medium"}>
               Owes ETB {matchedCustomer.balance_due} ({matchedCustomer.total_orders} orders)
             </span>
           </div>
         ) : searchQuery.length >= 3 ? (
-          <div className="text-xs text-slate-400 italic">
+          <div className="text-xs text-slate-400 dark:text-zinc-500 italic">
             No existing customer matched &quot;{searchQuery}&quot;. Click &quot;+ New customer&quot; to create profile.
           </div>
         ) : null}
       </div>
 
       {/* ITEMS SECTION: Specification 6.5 */}
-      {/* Items                                                                    */}
-      {/*  Photo type   Qty   Unit price     Line total                            */}
-      {/*  [3x4     ▾]  [ 4]  [ 50.00 ]      200.00              [🗑]              */}
-      {/*  [+ Add item]                                                            */}
-      {/*                                                  Total:  ETB 360.00      */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs space-y-3">
-        <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Items</h2>
+      <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-4 shadow-xs space-y-3">
+        <h2 className="text-xs font-bold text-slate-800 dark:text-zinc-200 uppercase tracking-wider">Items</h2>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-slate-200 text-[10px] font-bold uppercase text-slate-500">
+            <thead className="border-b border-slate-200 dark:border-zinc-800 text-[10px] font-bold uppercase text-slate-500 dark:text-zinc-400">
               <tr>
                 <th className="pb-2 w-48">Photo type</th>
                 <th className="pb-2 w-20 text-center">Qty</th>
@@ -381,7 +374,7 @@ function NewOrderForm() {
                 <th className="pb-2 w-10 text-center"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
               {items.map((item, idx) => {
                 const lineTotal = new Decimal(item.price || 0).times(item.quantity || 1);
                 return (
@@ -391,7 +384,7 @@ function NewOrderForm() {
                       <select
                         value={item.photo_type_name}
                         onChange={(e) => handlePhotoTypeChange(idx, e.target.value)}
-                        className="h-8 w-full rounded border border-slate-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-red-500"
+                        className="h-8 w-full rounded border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 text-xs text-slate-800 dark:text-zinc-100 outline-none focus:border-red-500"
                       >
                         {availablePhotoTypes.map((pt) => (
                           <option key={pt.id} value={pt.name}>
@@ -408,11 +401,11 @@ function NewOrderForm() {
                         min="1"
                         value={item.quantity}
                         onChange={(e) => handleUpdateItem(idx, "quantity", parseInt(e.target.value) || 1)}
-                        className="h-8 w-16 text-center text-xs mx-auto"
+                        className="h-8 w-16 text-center text-xs mx-auto border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
                       />
                     </td>
 
-                    {/* Unit price (Read-only for Staff, editable by Admin, Specification 6.5) */}
+                    {/* Unit price */}
                     <td className="py-2 px-1 text-right">
                       <Input
                         type="number"
@@ -420,15 +413,15 @@ function NewOrderForm() {
                         disabled={!isAdmin}
                         value={item.price}
                         onChange={(e) => handleUpdateItem(idx, "price", parseFloat(e.target.value) || 0)}
-                        className={`h-8 w-24 text-right text-xs font-mono ml-auto ${
-                          !isAdmin ? "bg-slate-50 text-slate-600 cursor-not-allowed" : ""
+                        className={`h-8 w-24 text-right text-xs font-mono ml-auto border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 ${
+                          !isAdmin ? "bg-slate-50 dark:bg-zinc-900/60 text-slate-600 dark:text-zinc-400 cursor-not-allowed" : ""
                         }`}
                         title={!isAdmin ? "Unit price is configured in Admin Price List" : "Edit price"}
                       />
                     </td>
 
                     {/* Line total */}
-                    <td className="py-2 pl-2 text-right font-mono font-bold text-slate-900">
+                    <td className="py-2 pl-2 text-right font-mono font-bold text-slate-900 dark:text-zinc-100">
                       ETB {lineTotal.toFixed(2)}
                     </td>
 
@@ -451,20 +444,20 @@ function NewOrderForm() {
           </table>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={handleAddItem}
-            className="h-8 text-xs font-semibold"
+            className="h-8 text-xs font-semibold border-slate-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
           >
             + Add item
           </Button>
 
           <div className="text-right">
-            <span className="text-xs text-slate-500 mr-2">Total:</span>
-            <span className="font-mono text-base font-bold text-slate-900">
+            <span className="text-xs text-slate-500 dark:text-zinc-400 mr-2">Total:</span>
+            <span className="font-mono text-base font-bold text-slate-900 dark:text-zinc-100">
               ETB {total.toFixed(2)}
             </span>
           </div>
@@ -472,32 +465,28 @@ function NewOrderForm() {
       </div>
 
       {/* PAYMENT & NOTES: Specification 6.5 */}
-      {/* Payment now (optional)                                                   */}
-      {/*  Amount [ 200.00 ]  Method [Cash ▾]  Reference [ optional ]              */}
-      {/*                                                  Balance: ETB 160.00     */}
-      {/* Notes: [                                                    ]            */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs space-y-3">
-        <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+      <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-4 shadow-xs space-y-3">
+        <h2 className="text-xs font-bold text-slate-800 dark:text-zinc-200 uppercase tracking-wider">
           Payment now (optional)
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="text-[10px] font-medium text-slate-500 block mb-1">Amount</label>
+            <label className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 block mb-1">Amount</label>
             <Input
               type="number"
               placeholder="0.00"
               value={paidInput}
               onChange={(e) => setPaidInput(e.target.value)}
-              className="h-8 text-xs font-mono font-bold"
+              className="h-8 text-xs font-mono font-bold border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
             />
           </div>
           <div>
-            <label className="text-[10px] font-medium text-slate-500 block mb-1">Method</label>
+            <label className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 block mb-1">Method</label>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-              className="h-8 w-full rounded border border-slate-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-red-500"
+              className="h-8 w-full rounded border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 text-xs text-slate-800 dark:text-zinc-100 outline-none focus:border-red-500"
             >
               <option value="cash">Cash</option>
               <option value="telebirr">Telebirr</option>
@@ -506,36 +495,35 @@ function NewOrderForm() {
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-medium text-slate-500 block mb-1">Reference (optional)</label>
+            <label className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 block mb-1">Reference (optional)</label>
             <Input
               placeholder="e.g. Telebirr code"
               value={referenceNo}
               onChange={(e) => setReferenceNo(e.target.value)}
-              className="h-8 text-xs"
+              className="h-8 text-xs border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
             />
           </div>
         </div>
 
         <div className="flex justify-end pt-1">
-          <span className="text-xs text-slate-500 mr-2">Balance:</span>
-          <span className={`font-mono text-sm font-bold ${balance.greaterThan(0) ? "text-[#e21b23]" : "text-emerald-700"}`}>
+          <span className="text-xs text-slate-500 dark:text-zinc-400 mr-2">Balance:</span>
+          <span className={`font-mono text-sm font-bold ${balance.greaterThan(0) ? "text-[#e21b23] dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}`}>
             ETB {balance.toFixed(2)}
           </span>
         </div>
 
         <div>
-          <label className="text-[10px] font-medium text-slate-500 block mb-1">Notes</label>
+          <label className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 block mb-1">Notes</label>
           <Input
             placeholder="Studio instructions or customer notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="h-8 text-xs"
+            className="h-8 text-xs border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100"
           />
         </div>
       </div>
 
       {/* ACTIONS: Specification 6.5 */}
-      {/*  [ Save ]   [ Save & mark delivered ]   [ Cancel ]                       */}
       <div className="flex items-center gap-2 pt-2">
         <Button
           type="button"
@@ -552,14 +540,14 @@ function NewOrderForm() {
           disabled={isSubmitting}
           onClick={() => handleSaveOrder(true)}
           variant="outline"
-          className="h-9 px-4 text-xs font-semibold"
+          className="h-9 px-4 text-xs font-semibold border-slate-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >
           Save &amp; mark delivered
         </Button>
 
         <Link
           href="/today"
-          className="ml-auto text-xs font-semibold text-slate-500 hover:text-slate-800 transition px-3 py-1.5"
+          className="ml-auto text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 transition px-3 py-1.5"
         >
           Cancel
         </Link>

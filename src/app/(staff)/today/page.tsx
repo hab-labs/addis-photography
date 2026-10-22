@@ -161,18 +161,15 @@ export default function TodayLedgerPage() {
     return totals;
   }, [dayOrders]);
 
-  // Specification 6.4 Filtered Table List:
-  // Filters: [Photo type ▾] [Payment ▾] [Status ▾] [☐ Unpaid only] [Search…]
+  // Specification 6.4 Filtered Table List
   const filteredOrders = React.useMemo(() => {
     return dayOrders.filter((o) => {
-      // 1. Search term (customer, phone, order number)
       const customer = (o.customer?.name || "").toLowerCase();
       const phone = (o.customer?.phone || "").toLowerCase();
       const id = String(o.order_number || o.id || "").toLowerCase();
       const term = search.toLowerCase();
       const matchesSearch = !term || customer.includes(term) || phone.includes(term) || id.includes(term);
 
-      // 2. Photo type filter
       const matchesPhotoType =
         photoTypeFilter === "all" ||
         (o.items || []).some((item) => {
@@ -183,16 +180,12 @@ export default function TodayLedgerPage() {
           return name.includes(photoTypeFilter.toLowerCase());
         });
 
-      // 3. Payment method filter
       const matchesPayment =
         paymentFilter === "all" ||
         (o.payments || []).some((p) => p.payment_method === paymentFilter) ||
         (paymentFilter === "unpaid" && Number(o.paid_amount || 0) === 0);
 
-      // 4. Status filter
       const matchesStatus = statusFilter === "all" || o.status === statusFilter;
-
-      // 5. Unpaid only checkbox
       const matchesUnpaid = !unpaidOnly || Number(o.balance_amount || 0) > 0;
 
       return matchesSearch && matchesPhotoType && matchesPayment && matchesStatus && matchesUnpaid;
@@ -227,15 +220,15 @@ export default function TodayLedgerPage() {
   const renderStatusBadge = (statusStr: string) => {
     switch (statusStr?.toLowerCase()) {
       case "ready":
-        return <span className="text-xs font-semibold text-emerald-700">Ready</span>;
+        return <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Ready</span>;
       case "in_progress":
-        return <span className="text-xs font-semibold text-amber-700">In prog</span>;
+        return <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">In prog</span>;
       case "delivered":
-        return <span className="text-xs font-semibold text-slate-500">Delivered</span>;
+        return <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Delivered</span>;
       case "voided":
-        return <span className="text-xs font-semibold text-rose-600 line-through">Voided</span>;
+        return <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 line-through">Voided</span>;
       default:
-        return <span className="text-xs font-semibold text-blue-700">New</span>;
+        return <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">New</span>;
     }
   };
 
@@ -243,9 +236,9 @@ export default function TodayLedgerPage() {
     <div className="mx-auto max-w-[1140px] space-y-4">
       {/* HEADER SECTION: Specification 6.4 */}
       {/* Date: [ 12/08/2026 ▾ ] [Today] */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-zinc-800 pb-3">
         <div className="flex items-center gap-2 relative">
-          <span className="text-xs font-bold text-slate-700">Date:</span>
+          <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Date:</span>
 
           {/* Date Selector [ 12/08/2026 ▾ ] */}
           <div className="relative">
@@ -256,10 +249,10 @@ export default function TodayLedgerPage() {
               aria-label="Select Studio Date"
               className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold shadow-xs transition ${
                 !isAdmin
-                  ? "border-slate-200 bg-slate-100 text-slate-500 cursor-default"
+                  ? "border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-800 text-slate-500 cursor-default"
                   : isCalendarOpen
-                  ? "border-red-500 bg-red-50 text-red-700 ring-1 ring-red-500/30"
-                  : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+                  ? "border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 ring-1 ring-red-500/30"
+                  : "border-slate-300 dark:border-zinc-700 bg-white dark:bg-[#18181b] text-slate-800 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800"
               }`}
             >
               <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
@@ -292,8 +285,8 @@ export default function TodayLedgerPage() {
             onClick={() => setSelectedDate(new Date())}
             className={`rounded-md border px-3 py-1.5 text-xs font-semibold shadow-xs transition ${
               isTodaySelected
-                ? "border-slate-300 bg-slate-100 text-slate-600"
-                : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+                ? "border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400"
+                : "border-slate-300 dark:border-zinc-700 bg-white dark:bg-[#18181b] text-slate-800 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800"
             }`}
           >
             Today
@@ -306,7 +299,7 @@ export default function TodayLedgerPage() {
           )}
 
           {isAdmin && selectedCalendar && !isTodaySelected && (
-            <span className="text-[11px] font-medium text-amber-700 ml-1">
+            <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 ml-1">
               • Historical/Future Date: {selectedEthDetails?.textAm} EC
             </span>
           )}
@@ -319,7 +312,7 @@ export default function TodayLedgerPage() {
             size="sm"
             onClick={handleExportCSV}
             disabled={filteredOrders.length === 0}
-            className="h-8 text-xs font-semibold"
+            className="h-8 text-xs font-semibold border-slate-300 dark:border-zinc-700 dark:bg-[#18181b] dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
             Export CSV
           </Button>
@@ -328,7 +321,7 @@ export default function TodayLedgerPage() {
             onClick={loadData}
             disabled={isRefreshing}
             aria-label="Refresh orders"
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 dark:border-zinc-700 bg-white dark:bg-[#18181b] text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
           >
             <RefreshCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-red-600" : ""}`} />
           </button>
@@ -336,82 +329,77 @@ export default function TodayLedgerPage() {
       </div>
 
       {/* THREE SUMMARY CARDS: Specification 6.4 */}
-      {/* +--------------+  +--------------+  +--------------+                    */}
-      {/* | Bookings     |  | Paid         |  | Due          |   (Admin only:     */}
-      {/* |      3       |  | ETB 460.00   |  | ETB 230.00   |    Paid and Due)   */}
-      {/* +--------------+  +--------------+  +--------------+                    */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {/* Card 1: Bookings (All Users) */}
-        <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-xs">
-          <span className="text-[11px] font-semibold text-slate-600">Bookings</span>
-          <div className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+        {/* Card 1: Bookings */}
+        <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Bookings</span>
+          <div className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
             {metrics.count}
           </div>
-          <span className="text-[9px] text-slate-400">
+          <span className="text-[9px] text-slate-400 dark:text-zinc-500">
             {isTodaySelected ? "Orders created today" : `Orders on ${selectedCalendar?.gregorian}`}
           </span>
         </div>
 
-        {/* Card 2: Paid (Admin Only, FR-18) */}
-        <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-xs">
+        {/* Card 2: Paid (Admin Only) */}
+        <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-600">Paid</span>
+            <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Paid</span>
             {!isAdmin && <span className="text-[9px] text-slate-400">Admin only</span>}
           </div>
-          <div className="mt-1 text-2xl font-bold tracking-tight text-emerald-700">
+          <div className="mt-1 text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
             {isAdmin ? `ETB ${metrics.collected}` : "ETB ••••••"}
           </div>
-          <span className="text-[9px] text-slate-400">Excel booking-date collections</span>
+          <span className="text-[9px] text-slate-400 dark:text-zinc-500">Excel booking-date collections</span>
         </div>
 
-        {/* Card 3: Due (Admin Only, FR-18) */}
-        <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-xs">
+        {/* Card 3: Due (Admin Only) */}
+        <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-600">Due</span>
+            <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Due</span>
             {!isAdmin && <span className="text-[9px] text-slate-400">Admin only</span>}
           </div>
-          <div className="mt-1 text-2xl font-bold tracking-tight text-[#e21b23]">
+          <div className="mt-1 text-2xl font-bold tracking-tight text-[#e21b23] dark:text-red-400">
             {isAdmin ? `ETB ${metrics.balance}` : "ETB ••••••"}
           </div>
-          <span className="text-[9px] text-slate-400">Remaining balance on bookings</span>
+          <span className="text-[9px] text-slate-400 dark:text-zinc-500">Remaining balance on bookings</span>
         </div>
 
-        {/* Card 4: Cash Received Today (Specification 3.7) */}
-        <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-xs">
+        {/* Card 4: Cash Received */}
+        <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-600">Cash Received</span>
+            <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Cash Received</span>
             {!isAdmin && <span className="text-[9px] text-slate-400">Admin only</span>}
           </div>
-          <div className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+          <div className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
             {isAdmin ? `ETB ${cashReceivedToday}` : "ETB ••••••"}
           </div>
-          <span className="text-[9px] text-slate-400">Cash payments on date</span>
+          <span className="text-[9px] text-slate-400 dark:text-zinc-500">Cash payments on date</span>
         </div>
       </div>
 
       {/* QUANTITY BY PHOTO TYPE BAR: Specification 3.7 & FR-15 */}
-      <div className="flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 shadow-xs overflow-x-auto text-xs">
-        <span className="font-bold text-slate-700 shrink-0 mr-4 text-[11px]">
+      <div className="flex items-center rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] px-4 py-2.5 shadow-xs overflow-x-auto text-xs">
+        <span className="font-bold text-slate-700 dark:text-zinc-300 shrink-0 mr-4 text-[11px]">
           Quantities:
         </span>
         {Object.entries(quantityTotals).map(([label, qty], idx) => (
-          <div key={label} className={`flex items-center gap-1 px-3 ${idx > 0 ? "border-l border-slate-200" : ""}`}>
-            <span className="text-slate-500 font-medium">{label} =</span>
-            <span className="font-bold text-slate-900 font-mono">{qty}</span>
+          <div key={label} className={`flex items-center gap-1 px-3 ${idx > 0 ? "border-l border-slate-200 dark:border-zinc-800" : ""}`}>
+            <span className="text-slate-500 dark:text-zinc-400 font-medium">{label} =</span>
+            <span className="font-bold text-slate-900 dark:text-zinc-100 font-mono">{qty}</span>
           </div>
         ))}
       </div>
 
       {/* FILTERS BAR: Specification 6.4 */}
-      {/* Filters: [Photo type ▾] [Payment ▾] [Status ▾] [☐ Unpaid only] [Search…] */}
-      <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-slate-200 bg-white p-2.5 shadow-xs text-xs">
+      <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-2.5 shadow-xs text-xs">
         {/* Photo type filter */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-slate-500 uppercase">Photo:</span>
+          <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase">Photo:</span>
           <select
             value={photoTypeFilter}
             onChange={(e) => setPhotoTypeFilter(e.target.value)}
-            className="h-8 rounded-md border border-slate-200 bg-slate-50/50 px-2 text-xs text-slate-700 outline-none focus:border-red-500"
+            className="h-8 rounded-md border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/80 px-2 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500"
           >
             <option value="all">All Sizes</option>
             <option value="3x4">3x4</option>
@@ -425,11 +413,11 @@ export default function TodayLedgerPage() {
 
         {/* Payment filter */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-slate-500 uppercase">Payment:</span>
+          <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase">Payment:</span>
           <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="h-8 rounded-md border border-slate-200 bg-slate-50/50 px-2 text-xs text-slate-700 outline-none focus:border-red-500"
+            className="h-8 rounded-md border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/80 px-2 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500"
           >
             <option value="all">All Methods</option>
             <option value="cash">Cash</option>
@@ -442,11 +430,11 @@ export default function TodayLedgerPage() {
 
         {/* Status filter */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-slate-500 uppercase">Status:</span>
+          <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase">Status:</span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-8 rounded-md border border-slate-200 bg-slate-50/50 px-2 text-xs text-slate-700 outline-none focus:border-red-500"
+            className="h-8 rounded-md border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/80 px-2 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500"
           >
             <option value="all">All Statuses</option>
             <option value="new">New</option>
@@ -457,12 +445,12 @@ export default function TodayLedgerPage() {
         </div>
 
         {/* [☐ Unpaid only] Checkbox */}
-        <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700 select-none pl-1">
+        <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700 dark:text-zinc-300 select-none pl-1">
           <input
             type="checkbox"
             checked={unpaidOnly}
             onChange={(e) => setUnpaidOnly(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-slate-300 text-red-600 focus:ring-red-500"
+            className="h-3.5 w-3.5 rounded border-slate-300 dark:border-zinc-700 text-red-600 focus:ring-red-500"
           />
           <span>Unpaid only</span>
         </label>
@@ -475,17 +463,16 @@ export default function TodayLedgerPage() {
             placeholder="Search customer, phone, booking #..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 w-full rounded-md border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+            className="h-8 w-full rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80 pl-8 pr-3 text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
           />
         </div>
       </div>
 
       {/* MAIN ORDERS TABLE: Specification 6.4 */}
-      {/* #  Customer        Phone        Items        Total  Paid   Balance Status */}
-      <div className="rounded-lg border border-slate-200 bg-white shadow-xs overflow-hidden">
+      <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase text-[10px] text-slate-500">
+            <thead className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-800/60 font-bold uppercase text-[10px] text-slate-500 dark:text-zinc-400">
               <tr>
                 <th className="py-2.5 px-3 w-10">#</th>
                 <th className="py-2.5 px-3">Customer</th>
@@ -497,7 +484,7 @@ export default function TodayLedgerPage() {
                 <th className="py-2.5 px-3 text-center">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
               {filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
@@ -514,44 +501,44 @@ export default function TodayLedgerPage() {
                   return (
                     <tr
                       key={order.id}
-                      className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                      className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group"
                     >
                       {/* # sequential index */}
-                      <td className="py-2.5 px-3 font-mono font-bold text-slate-600">
+                      <td className="py-2.5 px-3 font-mono font-bold text-slate-600 dark:text-zinc-400">
                         {idx + 1}
                       </td>
 
                       {/* Customer */}
-                      <td className="py-2.5 px-3 font-semibold text-slate-900 group-hover:text-red-600 transition">
+                      <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-zinc-100 group-hover:text-red-600 transition">
                         <Link href={`/orders/${order.id}`}>
                           {order.customer?.name || "Walk-In"}
                         </Link>
                       </td>
 
                       {/* Phone */}
-                      <td className="py-2.5 px-3 font-mono text-slate-600 text-[11px]">
+                      <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-zinc-400 text-[11px]">
                         {order.customer?.phone || "-"}
                       </td>
 
-                      {/* Items (e.g. 3x4 ×4, 10x15 ×3) */}
-                      <td className="py-2.5 px-3 text-slate-700 max-w-xs truncate" title={itemsSummary}>
+                      {/* Items */}
+                      <td className="py-2.5 px-3 text-slate-700 dark:text-zinc-300 max-w-xs truncate" title={itemsSummary}>
                         {itemsSummary || "Studio Photography"}
                       </td>
 
                       {/* Total */}
-                      <td className="py-2.5 px-3 text-right font-mono text-slate-900">
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-900 dark:text-zinc-100">
                         {formatETB(order.total_amount)}
                       </td>
 
                       {/* Paid */}
-                      <td className="py-2.5 px-3 text-right font-mono text-emerald-700 font-semibold">
+                      <td className="py-2.5 px-3 text-right font-mono text-emerald-700 dark:text-emerald-400 font-semibold">
                         {formatETB(order.paid_amount)}
                       </td>
 
-                      {/* Balance (with 🔴 dot if owed) */}
+                      {/* Balance */}
                       <td className="py-2.5 px-3 text-right font-mono font-bold">
                         <span className="inline-flex items-center gap-1 justify-end">
-                          <span className={hasDue ? "text-[#e21b23]" : "text-slate-400"}>
+                          <span className={hasDue ? "text-[#e21b23] dark:text-red-400" : "text-slate-400 dark:text-zinc-500"}>
                             {formatETB(order.balance_amount)}
                           </span>
                           {hasDue && <span className="text-red-500 font-bold">🔴</span>}
@@ -572,20 +559,19 @@ export default function TodayLedgerPage() {
       </div>
 
       {/* BOTTOM STATUS BAR: Specification 6.4 */}
-      {/* | Open requests (2)  ·  Overdue (1)                                        | */}
-      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs shadow-xs">
+      <div className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] px-4 py-2.5 text-xs shadow-xs">
         <Link
           href="/requests"
-          className="flex items-center gap-2 font-medium text-slate-700 hover:text-red-600 transition"
+          className="flex items-center gap-2 font-medium text-slate-700 dark:text-zinc-300 hover:text-red-600 dark:hover:text-red-400 transition"
         >
           <span>Open requests ({requestsSummary.open})</span>
-          <span className="text-slate-300">·</span>
-          <span className={requestsSummary.overdue > 0 ? "text-rose-600 font-bold" : "text-slate-500"}>
+          <span className="text-slate-300 dark:text-zinc-700">·</span>
+          <span className={requestsSummary.overdue > 0 ? "text-rose-600 dark:text-rose-400 font-bold" : "text-slate-500 dark:text-zinc-400"}>
             Overdue ({requestsSummary.overdue})
           </span>
           <ArrowRight className="h-3 w-3 text-slate-400" />
         </Link>
-        <span className="text-[10px] text-slate-400">
+        <span className="text-[10px] text-slate-400 dark:text-zinc-500">
           Click to manage studio retouches & editing requests
         </span>
       </div>

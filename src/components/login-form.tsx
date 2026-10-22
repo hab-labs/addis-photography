@@ -223,16 +223,16 @@ export function LoginForm({
           <span className="h-px w-[18px] bg-[#D51E25]" />
           STUDIO ACCESS
         </p>
-        <h1 className="font-referenceDisplay text-[40px] font-medium leading-[46px] tracking-normal text-black">
+        <h1 className="font-referenceDisplay text-[40px] font-medium leading-[46px] tracking-normal text-black dark:text-zinc-100">
           Login to your account
         </h1>
-        <p className="text-[16px] leading-[26px] text-[#2B2B2B]">
+        <p className="text-[16px] leading-[26px] text-[#2B2B2B] dark:text-zinc-400">
           Enter your studio credentials below to access your account
         </p>
       </div>
 
       {serverError && (
-        <div className="flex items-start gap-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="flex items-start gap-3 rounded border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-700 dark:text-red-300">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{serverError}</span>
         </div>
@@ -240,13 +240,13 @@ export function LoginForm({
 
       <div className="grid gap-6">
         <div className="grid gap-3">
-          <Label htmlFor="username" className="font-referenceDisplay text-[18px] font-normal leading-[23px] text-black">Username</Label>
+          <Label htmlFor="username" className="font-referenceDisplay text-[18px] font-normal leading-[23px] text-black dark:text-zinc-200">Username</Label>
           <div className="relative">
-            <User className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-black" />
+            <User className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-black dark:text-zinc-400" />
             <Input
               id="username"
               placeholder="e.g. yonas"
-              className="h-14 rounded-lg border-[#2B2B2B] px-4 pl-12 text-[15px] leading-[18px] text-black shadow-none placeholder:text-black focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
+              className="h-14 rounded-lg border-[#2B2B2B] dark:border-zinc-700 dark:bg-zinc-900 px-4 pl-12 text-[15px] leading-[18px] text-black dark:text-zinc-100 shadow-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
@@ -256,32 +256,32 @@ export function LoginForm({
         </div>
 
         <div className="grid gap-3">
-          <Label htmlFor="password" className="font-referenceDisplay text-[18px] font-normal leading-5 text-black">Password</Label>
+          <Label htmlFor="password" className="font-referenceDisplay text-[18px] font-normal leading-5 text-black dark:text-zinc-200">Password</Label>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-black" />
+            <Lock className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-black dark:text-zinc-400" />
             <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
-              className="h-14 rounded-lg border-[#2B2B2B] px-4 pl-12 pr-12 text-[15px] leading-[18px] text-black shadow-none placeholder:text-black focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
+              className="h-14 rounded-lg border-[#2B2B2B] dark:border-zinc-700 dark:bg-zinc-900 px-4 pl-12 pr-12 text-[15px] leading-[18px] text-black dark:text-zinc-100 shadow-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
               required
             />
-            <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute right-4 top-1/2 flex h-[18px] w-[18px] -translate-y-1/2 items-center justify-center p-0 text-black hover:text-slate-800" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+            <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute right-4 top-1/2 flex h-[18px] w-[18px] -translate-y-1/2 items-center justify-center p-0 text-black dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200" aria-label={showPassword ? 'Hide password' : 'Show password'}>
               {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
             </button>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          <label className="flex cursor-pointer items-center gap-3 text-[14px] font-medium leading-[17px] text-[#2B2B2B]">
+          <label className="flex cursor-pointer items-center gap-3 text-[14px] font-medium leading-[17px] text-[#2B2B2B] dark:text-zinc-300">
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 rounded border-[#2B2B2B] text-[#D51E25] focus:ring-[#D51E25]/20"
+              className="h-4 w-4 rounded border-[#2B2B2B] dark:border-zinc-600 text-[#D51E25] focus:ring-[#D51E25]/20"
             />
             Remember me
           </label>
@@ -302,9 +302,9 @@ export function LoginForm({
           )}
         </Button>
 
-        <p className="text-center text-[16px] leading-[24px] text-gray-600 max-w-[400px] mx-auto">
+        <p className="text-center text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400 max-w-[400px] mx-auto">
           Need technical support?{' '}
-          <span className="text-red-700">Contact the Studio Administrator</span>
+          <span className="text-red-700 dark:text-red-400">Contact the Studio Administrator</span>
         </p>
       </div>
     </form>
