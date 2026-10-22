@@ -6,22 +6,13 @@ import Decimal from "decimal.js";
 import {
   Calendar as CalendarIcon,
   Search,
-  Users,
-  CreditCard,
-  RefreshCcw,
-  Sparkles,
-  ArrowUpRight,
-  TrendingUp,
-  Wallet,
-  MoreHorizontal,
   ChevronDown,
-  CalendarDays,
-  LayoutList,
+  RefreshCcw,
   CheckCircle2,
-  Package,
   Clock,
+  Layers,
   ArrowRight,
-  X,
+  Filter,
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth/context";
@@ -31,43 +22,45 @@ import {
   formatDate,
   isTodayInAddis,
   isSameDayInAddis,
+  isOverdue,
   getEthiopianDateDetails,
 } from "@/lib/date";
 import { formatETB } from "@/lib/money";
 import type { Order } from "@/types";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { DualCalendarPicker } from "@/components/calendar/DualCalendarPicker";
 
 export default function TodayLedgerPage() {
   const { isAdmin, user } = useAuth();
+
+  // Specification 6.4 Filters
   const [search, setSearch] = React.useState("");
-  const [status, setStatus] = React.useState("all");
+  const [photoTypeFilter, setPhotoTypeFilter] = React.useState("all");
+  const [paymentFilter, setPaymentFilter] = React.useState("all");
+  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [unpaidOnly, setUnpaidOnly] = React.useState(false);
+
   const [allOrders, setAllOrders] = React.useState<Order[]>([]);
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
-  const [viewMode, setViewMode] = React.useState<"ledger" | "schedule">("ledger");
-
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-  const loadOrders = React.useCallback(() => {
+  // Request status counts for bottom bar (Section 6.4)
+  const [requestsSummary, setRequestsSummary] = React.useState({ open: 0, overdue: 0 });
+
+  const loadData = React.useCallback(() => {
     setIsRefreshing(true);
     if (typeof studioStore !== "undefined" && studioStore.getOrders) {
       setAllOrders(studioStore.getOrders());
+
+      // Sync requests for the Section 6.4 bottom bar
+      try {
+        const reqs = studioStore.getRequests();
+        const open = reqs.filter((r) => r.status !== "delivered").length;
+        const overdue = reqs.filter((r) => r.status !== "delivered" && isOverdue(r.due_date)).length;
+        setRequestsSummary({ open, overdue });
+      } catch {}
+
       studioStore
         .syncOrders()
         .then((all) => {
@@ -81,10 +74,10 @@ export default function TodayLedgerPage() {
   }, []);
 
   React.useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+    loadData();
+  }, [loadData]);
 
-  // Selected date pair
+  // Gregorian dd/mm/yyyy display (Specification 2.3 & 6.4)
   const selectedCalendar = React.useMemo(() => {
     return selectedDate ? formatCalendarPair(selectedDate) : null;
   }, [selectedDate]);
@@ -97,55 +90,124 @@ export default function TodayLedgerPage() {
     return selectedDate ? isTodayInAddis(selectedDate) : false;
   }, [selectedDate]);
 
-  // Filter orders for the selected date
-  const orders = React.useMemo(() => {
-    if (!selectedDate) return allOrders;
-    return allOrders.filter((o) => isSameDayInAddis(o.created_at, selectedDate));
-  }, [allOrders, selectedDate]);
+  // FR-18: Staff see today's orders only; Admin can view any date
+  const effectiveDate = React.useMemo(() => {
+    if (!isAdmin) return new Date(); // Lock staff to today
+    return selectedDate;
+  }, [isAdmin, selectedDate]);
 
+  // Orders filtered by the studio day
+  const dayOrders = React.useMemo(() => {
+    if (!effectiveDate) return allOrders;
+    return allOrders.filter((o) => isSameDayInAddis(o.created_at, effectiveDate));
+  }, [allOrders, effectiveDate]);
+
+  // Dashboard Metrics for chosen studio day D (Specification 3.7 & FR-15)
   const metrics = React.useMemo(() => {
+    let gross = new Decimal(0);
     let collected = new Decimal(0);
     let balance = new Decimal(0);
+    const nonVoided = dayOrders.filter((o) => o.status !== "voided");
 
-    orders.forEach((order) => {
-      collected = collected.plus(new Decimal(order.paid_amount || 0));
-      const total = new Decimal(order.total_amount || 0);
+    nonVoided.forEach((order) => {
+      const orderTotal = new Decimal(order.total_amount || 0);
       const paid = new Decimal(order.paid_amount || 0);
-      const diff = total.minus(paid);
+      gross = gross.plus(orderTotal);
+      collected = collected.plus(paid);
+      const diff = orderTotal.minus(paid);
       if (diff.greaterThan(0)) {
         balance = balance.plus(diff);
       }
     });
 
     return {
-      count: orders.length,
+      count: nonVoided.length,
+      gross: gross.toFixed(2),
       collected: collected.toFixed(2),
       balance: balance.toFixed(2),
     };
-  }, [orders]);
+  }, [dayOrders]);
 
+  // Cash received today (Specification 3.7: payments whose payment date is D)
+  const cashReceivedToday = React.useMemo(() => {
+    let cash = new Decimal(0);
+    const targetDate = effectiveDate || new Date();
+    allOrders.forEach((o) => {
+      if (o.status === "voided") return;
+      (o.payments || []).forEach((p) => {
+        if (p.payment_method === "cash" && isSameDayInAddis(p.created_at, targetDate)) {
+          cash = cash.plus(new Decimal(p.amount || 0));
+        }
+      });
+    });
+    return cash.toFixed(2);
+  }, [allOrders, effectiveDate]);
+
+  // Quantities per photo type for chosen day D (Specification 3.7 & FR-15)
+  const quantityTotals = React.useMemo(() => {
+    const totals: Record<string, number> = { "3x4": 0, "10x15": 0, "30x45": 0, "13x18": 0, "20x25": 0, Other: 0 };
+    dayOrders.forEach((order) => {
+      if (order.status === "voided") return;
+      (order.items || []).forEach((item) => {
+        const name = (item.photo_type_name || "").toLowerCase().replace(/×/g, "x");
+        const foundKey = Object.keys(totals).find((k) => k !== "Other" && name.includes(k.toLowerCase()));
+        if (foundKey) {
+          totals[foundKey] += Number(item.quantity) || 0;
+        } else {
+          totals["Other"] += Number(item.quantity) || 0;
+        }
+      });
+    });
+    return totals;
+  }, [dayOrders]);
+
+  // Specification 6.4 Filtered Table List:
+  // Filters: [Photo type ▾] [Payment ▾] [Status ▾] [☐ Unpaid only] [Search…]
   const filteredOrders = React.useMemo(() => {
-    return orders.filter((o) => {
+    return dayOrders.filter((o) => {
+      // 1. Search term (customer, phone, order number)
       const customer = (o.customer?.name || "").toLowerCase();
       const phone = (o.customer?.phone || "").toLowerCase();
-      const id = String(o.id || o.order_number || "").toLowerCase();
+      const id = String(o.order_number || o.id || "").toLowerCase();
       const term = search.toLowerCase();
-
       const matchesSearch = !term || customer.includes(term) || phone.includes(term) || id.includes(term);
-      const matchesStatus = status === "all" || o.status === status;
 
-      return matchesSearch && matchesStatus;
+      // 2. Photo type filter
+      const matchesPhotoType =
+        photoTypeFilter === "all" ||
+        (o.items || []).some((item) => {
+          const name = (item.photo_type_name || "").toLowerCase().replace(/×/g, "x");
+          if (photoTypeFilter === "other") {
+            return !["3x4", "10x15", "30x45", "13x18", "20x25"].some((std) => name.includes(std));
+          }
+          return name.includes(photoTypeFilter.toLowerCase());
+        });
+
+      // 3. Payment method filter
+      const matchesPayment =
+        paymentFilter === "all" ||
+        (o.payments || []).some((p) => p.payment_method === paymentFilter) ||
+        (paymentFilter === "unpaid" && Number(o.paid_amount || 0) === 0);
+
+      // 4. Status filter
+      const matchesStatus = statusFilter === "all" || o.status === statusFilter;
+
+      // 5. Unpaid only checkbox
+      const matchesUnpaid = !unpaidOnly || Number(o.balance_amount || 0) > 0;
+
+      return matchesSearch && matchesPhotoType && matchesPayment && matchesStatus && matchesUnpaid;
     });
-  }, [orders, search, status]);
+  }, [dayOrders, search, photoTypeFilter, paymentFilter, statusFilter, unpaidOnly]);
 
   const handleExportCSV = React.useCallback(() => {
     if (filteredOrders.length === 0) return;
-    const headers = ["Order Number", "Customer Name", "Phone", "Services", "Total (ETB)", "Paid (ETB)", "Balance (ETB)", "Status", "Date"];
-    const rows = filteredOrders.map((o) => [
+    const headers = ["#", "Booking Number", "Customer Name", "Phone", "Items", "Total (ETB)", "Paid (ETB)", "Balance (ETB)", "Status", "Date"];
+    const rows = filteredOrders.map((o, idx) => [
+      idx + 1,
       o.order_number || o.id,
       `"${(o.customer?.name || "Walk-In").replace(/"/g, '""')}"`,
       `"${o.customer?.phone || ""}"`,
-      `"${(o.items?.map((i) => `${i.quantity}x ${i.photo_type_name}`).join("; ") || "Studio Photography").replace(/"/g, '""')}"`,
+      `"${(o.items?.map((i) => `${i.photo_type_name} ×${i.quantity}`).join("; ") || "Studio Photography").replace(/"/g, '""')}"`,
       o.total_amount,
       o.paid_amount,
       o.balance_amount,
@@ -156,169 +218,64 @@ export default function TodayLedgerPage() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `addis-ledger-${selectedCalendar ? selectedCalendar.gregorian.replace(/\//g, "-") : "all"}.csv`);
+    link.setAttribute("download", `addis-bookings-${selectedCalendar?.gregorian.replace(/\//g, "-") || "today"}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   }, [filteredOrders, selectedCalendar]);
 
-  const paymentTotals = React.useMemo(() => {
-    const totals: Record<string, Decimal> = {};
-    orders.forEach((order) => {
-      (order.payments || []).forEach((payment) => {
-        const method = payment.payment_method || "other";
-        totals[method] = (totals[method] || new Decimal(0)).plus(payment.amount || 0);
-      });
-    });
-    return totals;
-  }, [orders]);
-
-  const outstandingCustomers = React.useMemo(() => {
-    const balances = new Map<string, { name: string; orderNumber: string; balance: Decimal }>();
-    orders.forEach((order) => {
-      const balance = new Decimal(order.balance_amount || 0);
-      if (!balance.greaterThan(0)) return;
-      const customerId = order.customer_id || order.customer?.id || order.id;
-      const current = balances.get(customerId);
-      balances.set(customerId, {
-        name: order.customer?.name || "Walk-In Guest",
-        orderNumber: order.order_number || order.id,
-        balance: (current?.balance || new Decimal(0)).plus(balance),
-      });
-    });
-    return Array.from(balances.values()).sort((a, b) => b.balance.comparedTo(a.balance)).slice(0, 3);
-  }, [orders]);
-
-  const quantityTotals = React.useMemo(() => {
-    const totals: Record<string, number> = { "3×4": 0, "10×15": 0, "30×45": 0, "13×18": 0, "20×25": 0, Other: 0 };
-    orders.forEach((order) => {
-      (order.items || []).forEach((item) => {
-        const name = item.photo_type_name || "";
-        const label = Object.keys(totals).find((candidate) => candidate !== "Other" && name.includes(candidate.replace("×", "x")));
-        totals[label || "Other"] += Number(item.quantity) || 0;
-      });
-    });
-    return totals;
-  }, [orders]);
-
-  const renderStatus = (orderStatus: string) => {
-    switch (orderStatus?.toLowerCase()) {
+  const renderStatusBadge = (statusStr: string) => {
+    switch (statusStr?.toLowerCase()) {
       case "ready":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/60">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Ready
-          </span>
-        );
+        return <span className="text-xs font-semibold text-emerald-700">Ready</span>;
       case "in_progress":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/60">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-            In Progress
-          </span>
-        );
+        return <span className="text-xs font-semibold text-amber-700">In prog</span>;
       case "delivered":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-slate-600 bg-slate-100">
-            Delivered
-          </span>
-        );
+        return <span className="text-xs font-semibold text-slate-500">Delivered</span>;
+      case "voided":
+        return <span className="text-xs font-semibold text-rose-600 line-through">Voided</span>;
       default:
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/60">
-            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-            New
-          </span>
-        );
+        return <span className="text-xs font-semibold text-blue-700">New</span>;
     }
   };
 
   return (
-    <div className="mx-auto max-w-[1128px] space-y-3">
-      {/* Title & Interactive Calendar Button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-[25px] font-medium leading-none tracking-[-0.04em] text-slate-900">
-            Good morning, {user?.name?.split(" ")[0] || "there"}
-          </h1>
-          <p className="mt-1 text-[11px] text-slate-500">
-            {isTodaySelected
-              ? "Here’s what’s happening at your studio today."
-              : selectedCalendar
-              ? `Viewing ledger for ${selectedCalendar.gregorian} (${selectedEthDetails?.textAm || ""}).`
-              : "Viewing all recorded studio orders."}
-          </p>
-        </div>
+    <div className="mx-auto max-w-[1140px] space-y-4">
+      {/* HEADER SECTION: Specification 6.4 */}
+      {/* Date: [ 12/08/2026 ▾ ] [Today] */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-3">
+        <div className="flex items-center gap-2 relative">
+          <span className="text-xs font-bold text-slate-700">Date:</span>
 
-        <div className="flex w-full items-center gap-2 sm:w-auto relative">
-          {/* View Mode Toggle */}
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setViewMode("ledger")}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
-                viewMode === "ledger"
-                  ? "bg-[#e21b23] text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <LayoutList className="h-3 w-3" />
-              <span>Ledger</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("schedule")}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
-                viewMode === "schedule"
-                  ? "bg-[#e21b23] text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <CalendarDays className="h-3 w-3" />
-              <span>Schedule</span>
-            </button>
-          </div>
-
-          {/* Interactive Dual Calendar Dropdown Button */}
+          {/* Date Selector [ 12/08/2026 ▾ ] */}
           <div className="relative">
             <button
               type="button"
-              onClick={() => setIsCalendarOpen((prev) => !prev)}
-              aria-label="Open Studio Calendar"
-              className={`flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border px-3 text-[11px] font-semibold shadow-sm transition sm:min-w-[190px] sm:flex-none sm:px-4 ${
-                isCalendarOpen
-                  ? "border-red-500 bg-red-50/60 text-[#e21b23] ring-2 ring-red-500/20"
-                  : isTodaySelected
-                  ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                  : "border-red-400 bg-red-50/30 text-red-700 hover:bg-red-50/60"
+              disabled={!isAdmin}
+              onClick={() => isAdmin && setIsCalendarOpen((prev) => !prev)}
+              aria-label="Select Studio Date"
+              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold shadow-xs transition ${
+                !isAdmin
+                  ? "border-slate-200 bg-slate-100 text-slate-500 cursor-default"
+                  : isCalendarOpen
+                  ? "border-red-500 bg-red-50 text-red-700 ring-1 ring-red-500/30"
+                  : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
               }`}
             >
-              <CalendarIcon className={`h-3.5 w-3.5 ${isCalendarOpen || !isTodaySelected ? "text-[#e21b23]" : "text-slate-400"}`} />
-              <span className="truncate">
-                {selectedCalendar ? (
-                  <>
-                    {selectedCalendar.gregorian} <span className="text-slate-400">•</span>{" "}
-                    {selectedCalendar.ethiopian} EC
-                  </>
-                ) : (
-                  "All Dates"
-                )}
-              </span>
-              <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${isCalendarOpen ? "rotate-180" : ""}`} />
+              <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
+              <span>{selectedCalendar?.gregorian || formatDate(new Date())}</span>
+              {isAdmin && <ChevronDown className="h-3 w-3 text-slate-400" />}
             </button>
 
-            {/* Dropdown Popover */}
-            {isCalendarOpen && (
+            {/* Date Picker Popover (Admin Only) */}
+            {isCalendarOpen && isAdmin && (
               <>
-                <div
-                  className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] sm:bg-transparent"
-                  onClick={() => setIsCalendarOpen(false)}
-                />
-                <div className="absolute right-0 top-12 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="fixed inset-0 z-40" onClick={() => setIsCalendarOpen(false)} />
+                <div className="absolute left-0 top-10 z-50 animate-in fade-in zoom-in-95 duration-100">
                   <DualCalendarPicker
                     selectedDate={selectedDate}
                     onSelectDate={(d) => {
-                      setSelectedDate(d);
+                      setSelectedDate(d || new Date());
                       setIsCalendarOpen(false);
                     }}
                     orders={allOrders}
@@ -329,343 +286,309 @@ export default function TodayLedgerPage() {
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={loadOrders}
-            disabled={isRefreshing}
-            aria-label="Refresh today ledger"
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
-          >
-            <RefreshCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-red-600" : "text-slate-500"}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* Date Banner if Viewing a Non-Today Date */}
-      {!isTodaySelected && selectedCalendar && (
-        <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50/60 px-4 py-2.5 text-xs text-red-900 shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white font-bold text-[10px]">!</span>
-            <span>
-              Viewing historical/future bookings for <b>{selectedCalendar.gregorian}</b> ({selectedEthDetails?.textAm || ""}).
-            </span>
-          </div>
+          {/* [Today] Button */}
           <button
             type="button"
             onClick={() => setSelectedDate(new Date())}
-            className="flex items-center gap-1 rounded-md bg-white border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 shadow-xs transition"
+            className={`rounded-md border px-3 py-1.5 text-xs font-semibold shadow-xs transition ${
+              isTodaySelected
+                ? "border-slate-300 bg-slate-100 text-slate-600"
+                : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+            }`}
           >
-            Jump to Today
+            Today
           </button>
-        </div>
-      )}
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="relative flex min-h-[118px] flex-col justify-between overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate-600">Bookings</span>
-            <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isTodaySelected ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"}`}>
-              • {isTodaySelected ? "Today" : selectedCalendar?.gregorian || "Selected"}
+          {!isAdmin && (
+            <span className="text-[10px] text-slate-400 italic">
+              (Staff view locked to today)
             </span>
-          </div>
-          <div className="text-[21px] font-bold tracking-tight text-slate-900">{metrics.count}</div>
-          <div className="flex items-end justify-between text-[9px] text-slate-400">
-            <span>Orders created on {selectedCalendar ? selectedCalendar.gregorian : "catalog"}</span>
-            <span className="h-5 w-16 bg-[linear-gradient(to_top,#ededed_0_55%,transparent_55%_100%)] opacity-80" />
-          </div>
+          )}
+
+          {isAdmin && selectedCalendar && !isTodaySelected && (
+            <span className="text-[11px] font-medium text-amber-700 ml-1">
+              • Historical/Future Date: {selectedEthDetails?.textAm} EC
+            </span>
+          )}
         </div>
 
-        <div className="flex min-h-[118px] flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate-600">Paid</span>
-            <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• Collected</span>
-          </div>
-          <div className="text-[21px] font-bold tracking-tight text-slate-900">{isAdmin ? `ETB ${metrics.collected}` : "ETB ••••••"}</div>
-          <div className="flex items-end justify-between text-[9px] text-slate-400">
-            <span>Payments on {selectedCalendar ? selectedCalendar.gregorian : "all"}</span>
-            <span className="h-5 w-16 bg-[linear-gradient(to_top,#ededed_0_55%,transparent_55%)] opacity-80" />
-          </div>
-        </div>
-
-        <div className="flex min-h-[118px] flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-[11px] font-medium text-slate-600">Due</div>
-          <div className="text-[21px] font-bold tracking-tight text-[#e21b23]">{isAdmin ? `ETB ${metrics.balance}` : "ETB ••••••"}</div>
-          <div className="flex items-end justify-between text-[9px] text-slate-400">
-            <span>Balance on bookings</span>
-            <span className="h-5 w-16 bg-[linear-gradient(to_top,#ededed_0_55%,transparent_55%)] opacity-80" />
-          </div>
-        </div>
-
-        <div className="flex min-h-[118px] flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate-600">Cash received</span>
-            <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">• Valid</span>
-          </div>
-          <div className="text-[21px] font-bold tracking-tight text-slate-900">
-            {isAdmin ? `ETB ${(paymentTotals["cash"] || new Decimal(0)).toFixed(2)}` : "ETB ••••••"}
-          </div>
-          <div className="flex items-end justify-between text-[9px] text-slate-400">
-            <span>Valid cash payments</span>
-            <span className="h-5 w-16 bg-[linear-gradient(to_top,#f2b4b7_0_70%,transparent_70%)] opacity-80" />
-          </div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            disabled={filteredOrders.length === 0}
+            className="h-8 text-xs font-semibold"
+          >
+            Export CSV
+          </Button>
+          <button
+            type="button"
+            onClick={loadData}
+            disabled={isRefreshing}
+            aria-label="Refresh orders"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition"
+          >
+            <RefreshCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-red-600" : ""}`} />
+          </button>
         </div>
       </div>
 
-      {/* Package & Photo Quantities Bar */}
-      <div className="flex h-[56px] items-center rounded-lg border border-slate-200 bg-white px-4 shadow-sm overflow-x-auto">
-        <div className="w-[190px] shrink-0">
-          <p className="text-[11px] font-bold text-slate-800">Photo & Package Quantities</p>
-          <p className="text-[9px] text-slate-400">
-            {selectedCalendar ? `Booked on ${selectedCalendar.gregorian}` : "All booked items"}
-          </p>
+      {/* THREE SUMMARY CARDS: Specification 6.4 */}
+      {/* +--------------+  +--------------+  +--------------+                    */}
+      {/* | Bookings     |  | Paid         |  | Due          |   (Admin only:     */}
+      {/* |      3       |  | ETB 460.00   |  | ETB 230.00   |    Paid and Due)   */}
+      {/* +--------------+  +--------------+  +--------------+                    */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* Card 1: Bookings (All Users) */}
+        <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-600">Bookings</span>
+          <div className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+            {metrics.count}
+          </div>
+          <span className="text-[9px] text-slate-400">
+            {isTodaySelected ? "Orders created today" : `Orders on ${selectedCalendar?.gregorian}`}
+          </span>
         </div>
-        {Object.entries(quantityTotals).map(([label, value]) => (
-          <div key={label} className="flex flex-1 min-w-[70px] items-center justify-center gap-2 border-l border-slate-200 text-[9px] text-slate-400">
-            <strong className="text-[16px] text-slate-900">{value}</strong>{label}
+
+        {/* Card 2: Paid (Admin Only, FR-18) */}
+        <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-600">Paid</span>
+            {!isAdmin && <span className="text-[9px] text-slate-400">Admin only</span>}
+          </div>
+          <div className="mt-1 text-2xl font-bold tracking-tight text-emerald-700">
+            {isAdmin ? `ETB ${metrics.collected}` : "ETB ••••••"}
+          </div>
+          <span className="text-[9px] text-slate-400">Excel booking-date collections</span>
+        </div>
+
+        {/* Card 3: Due (Admin Only, FR-18) */}
+        <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-600">Due</span>
+            {!isAdmin && <span className="text-[9px] text-slate-400">Admin only</span>}
+          </div>
+          <div className="mt-1 text-2xl font-bold tracking-tight text-[#e21b23]">
+            {isAdmin ? `ETB ${metrics.balance}` : "ETB ••••••"}
+          </div>
+          <span className="text-[9px] text-slate-400">Remaining balance on bookings</span>
+        </div>
+
+        {/* Card 4: Cash Received Today (Specification 3.7) */}
+        <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-600">Cash Received</span>
+            {!isAdmin && <span className="text-[9px] text-slate-400">Admin only</span>}
+          </div>
+          <div className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+            {isAdmin ? `ETB ${cashReceivedToday}` : "ETB ••••••"}
+          </div>
+          <span className="text-[9px] text-slate-400">Cash payments on date</span>
+        </div>
+      </div>
+
+      {/* QUANTITY BY PHOTO TYPE BAR: Specification 3.7 & FR-15 */}
+      <div className="flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 shadow-xs overflow-x-auto text-xs">
+        <span className="font-bold text-slate-700 shrink-0 mr-4 text-[11px]">
+          Quantities:
+        </span>
+        {Object.entries(quantityTotals).map(([label, qty], idx) => (
+          <div key={label} className={`flex items-center gap-1 px-3 ${idx > 0 ? "border-l border-slate-200" : ""}`}>
+            <span className="text-slate-500 font-medium">{label} =</span>
+            <span className="font-bold text-slate-900 font-mono">{qty}</span>
           </div>
         ))}
       </div>
 
-      {/* MAIN VIEW: Calendar Schedule View vs Table Ledger */}
-      {viewMode === "schedule" ? (
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px] items-start">
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="mb-3 text-sm font-bold text-slate-800 flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-[#e21b23]" />
-              Monthly Schedule & Bookings Calendar
-            </h2>
-            <DualCalendarPicker
-              selectedDate={selectedDate}
-              onSelectDate={(d) => setSelectedDate(d)}
-              orders={allOrders}
-              isInline={true}
-            />
-          </div>
+      {/* FILTERS BAR: Specification 6.4 */}
+      {/* Filters: [Photo type ▾] [Payment ▾] [Status ▾] [☐ Unpaid only] [Search…] */}
+      <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-slate-200 bg-white p-2.5 shadow-xs text-xs">
+        {/* Photo type filter */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-slate-500 uppercase">Photo:</span>
+          <select
+            value={photoTypeFilter}
+            onChange={(e) => setPhotoTypeFilter(e.target.value)}
+            className="h-8 rounded-md border border-slate-200 bg-slate-50/50 px-2 text-xs text-slate-700 outline-none focus:border-red-500"
+          >
+            <option value="all">All Sizes</option>
+            <option value="3x4">3x4</option>
+            <option value="10x15">10x15</option>
+            <option value="30x45">30x45</option>
+            <option value="13x18">13x18</option>
+            <option value="20x25">20x25</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
 
-          <div className="space-y-3">
-            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <h3 className="text-xs font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center justify-between">
-                <span>Bookings on {selectedCalendar?.gregorian || "Date"}</span>
-                <span className="text-[10px] text-red-600 font-semibold">{selectedEthDetails?.textAm}</span>
-              </h3>
+        {/* Payment filter */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-slate-500 uppercase">Payment:</span>
+          <select
+            value={paymentFilter}
+            onChange={(e) => setPaymentFilter(e.target.value)}
+            className="h-8 rounded-md border border-slate-200 bg-slate-50/50 px-2 text-xs text-slate-700 outline-none focus:border-red-500"
+          >
+            <option value="all">All Methods</option>
+            <option value="cash">Cash</option>
+            <option value="telebirr">Telebirr</option>
+            <option value="cbe_birr">CBE Birr</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="unpaid">Unpaid</option>
+          </select>
+        </div>
 
-              <div className="mt-3 space-y-2 max-h-[460px] overflow-y-auto">
-                {orders.length === 0 ? (
-                  <p className="py-8 text-center text-xs text-slate-400">
-                    No sessions or orders booked for this date.
-                  </p>
-                ) : (
-                  orders.map((ord) => (
-                    <Link
-                      key={ord.id}
-                      href={`/orders/${ord.id}`}
-                      className="block p-3 rounded-lg border border-slate-200 hover:border-red-300 hover:bg-red-50/20 transition group"
+        {/* Status filter */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-slate-500 uppercase">Status:</span>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-8 rounded-md border border-slate-200 bg-slate-50/50 px-2 text-xs text-slate-700 outline-none focus:border-red-500"
+          >
+            <option value="all">All Statuses</option>
+            <option value="new">New</option>
+            <option value="in_progress">In Progress</option>
+            <option value="ready">Ready</option>
+            <option value="delivered">Delivered</option>
+          </select>
+        </div>
+
+        {/* [☐ Unpaid only] Checkbox */}
+        <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700 select-none pl-1">
+          <input
+            type="checkbox"
+            checked={unpaidOnly}
+            onChange={(e) => setUnpaidOnly(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-slate-300 text-red-600 focus:ring-red-500"
+          />
+          <span>Unpaid only</span>
+        </label>
+
+        {/* [Search…] Input */}
+        <div className="relative ml-auto flex-1 sm:max-w-xs">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search customer, phone, booking #..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 w-full rounded-md border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+          />
+        </div>
+      </div>
+
+      {/* MAIN ORDERS TABLE: Specification 6.4 */}
+      {/* #  Customer        Phone        Items        Total  Paid   Balance Status */}
+      <div className="rounded-lg border border-slate-200 bg-white shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-slate-200 bg-slate-50/80 font-bold uppercase text-[10px] text-slate-500">
+              <tr>
+                <th className="py-2.5 px-3 w-10">#</th>
+                <th className="py-2.5 px-3">Customer</th>
+                <th className="py-2.5 px-3">Phone</th>
+                <th className="py-2.5 px-3">Items</th>
+                <th className="py-2.5 px-3 text-right">Total</th>
+                <th className="py-2.5 px-3 text-right">Paid</th>
+                <th className="py-2.5 px-3 text-right">Balance</th>
+                <th className="py-2.5 px-3 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
+                    No orders found for this date and filter selection.
+                  </td>
+                </tr>
+              ) : (
+                filteredOrders.map((order, idx) => {
+                  const hasDue = Number(order.balance_amount || 0) > 0;
+                  const itemsSummary = (order.items || [])
+                    .map((it) => `${it.photo_type_name} ×${it.quantity}`)
+                    .join(", ");
+
+                  return (
+                    <tr
+                      key={order.id}
+                      className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-[11px] font-bold text-slate-900 group-hover:text-red-600">
-                          {ord.order_number || ord.id}
-                        </span>
-                        {renderStatus(ord.status)}
-                      </div>
-                      <p className="mt-1 text-xs font-semibold text-slate-800">
-                        {ord.customer?.name || "Walk-In Customer"}
-                      </p>
-                      <div className="mt-2 text-[10px] text-slate-500 space-y-0.5">
-                        {(ord.items || []).map((it, idx) => (
-                          <div key={idx} className="flex justify-between">
-                            <span>• {it.quantity}x {it.photo_type_name}</span>
-                            <span className="font-semibold text-slate-700">ETB {it.line_total}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                        <span className="text-slate-400">Total: ETB {ord.total_amount}</span>
-                        <span className="text-emerald-600 font-bold">Paid: ETB {ord.paid_amount}</span>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Standard Table Ledger View */
-        <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_260px]">
-          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">
-                  {isTodaySelected ? "Today’s bookings" : `Bookings on ${selectedCalendar?.gregorian || "Selected Date"}`}
-                </h2>
-                <p className="text-[10px] text-slate-400">
-                  {selectedEthDetails ? `${selectedEthDetails.textAm} • ` : ""}
-                  All studio appointments, sessions, and instant prints
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search customer, phone, ID..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="h-8 w-44 rounded-md border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                  />
-                </div>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="h-8 w-28 text-xs">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="ready">Ready</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                  </SelectContent>
-                </Select>
-                <button
-                  type="button"
-                  onClick={handleExportCSV}
-                  disabled={filteredOrders.length === 0}
-                  className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-40"
-                >
-                  Export CSV
-                </button>
-              </div>
-            </div>
+                      {/* # sequential index */}
+                      <td className="py-2.5 px-3 font-mono font-bold text-slate-600">
+                        {idx + 1}
+                      </td>
 
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-500">Booking</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-500">Customer</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-500">Packages / Services</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase text-slate-500">Status</TableHead>
-                    <TableHead className="text-right text-[10px] font-bold uppercase text-slate-500">Total</TableHead>
-                    <TableHead className="text-right text-[10px] font-bold uppercase text-slate-500">Paid</TableHead>
-                    <TableHead className="text-right text-[10px] font-bold uppercase text-slate-500">Balance</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrders.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-32 text-center text-xs text-slate-400">
-                        No orders recorded for this date and filter.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredOrders.map((order) => {
-                      const isUnpaid = Number(order.balance_amount || 0) > 0;
-                      return (
-                        <TableRow key={order.id} className="cursor-pointer hover:bg-slate-50/80 transition-colors">
-                          <TableCell className="font-mono text-xs font-semibold text-slate-900">
-                            <Link href={`/orders/${order.id}`} className="hover:text-[#e21b23] hover:underline">
-                              {order.order_number || order.id}
-                            </Link>
-                          </TableCell>
-                          <TableCell>
-                            <p className="text-xs font-medium text-slate-800">{order.customer?.name || "Walk-In"}</p>
-                            <p className="text-[10px] text-slate-400">{order.customer?.phone || "-"}</p>
-                          </TableCell>
-                          <TableCell className="max-w-[200px]">
-                            <p className="truncate text-xs text-slate-600">
-                              {(order.items || []).map((i) => `${i.quantity}x ${i.photo_type_name}`).join(", ") || "Studio Photography"}
-                            </p>
-                          </TableCell>
-                          <TableCell>{renderStatus(order.status)}</TableCell>
-                          <TableCell className="text-right font-mono text-xs font-medium text-slate-900">
-                            {formatETB(order.total_amount)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-xs font-medium text-emerald-600">
-                            {formatETB(order.paid_amount)}
-                          </TableCell>
-                          <TableCell className={`text-right font-mono text-xs font-bold ${isUnpaid ? "text-[#e21b23]" : "text-slate-400"}`}>
+                      {/* Customer */}
+                      <td className="py-2.5 px-3 font-semibold text-slate-900 group-hover:text-red-600 transition">
+                        <Link href={`/orders/${order.id}`}>
+                          {order.customer?.name || "Walk-In"}
+                        </Link>
+                      </td>
+
+                      {/* Phone */}
+                      <td className="py-2.5 px-3 font-mono text-slate-600 text-[11px]">
+                        {order.customer?.phone || "-"}
+                      </td>
+
+                      {/* Items (e.g. 3x4 ×4, 10x15 ×3) */}
+                      <td className="py-2.5 px-3 text-slate-700 max-w-xs truncate" title={itemsSummary}>
+                        {itemsSummary || "Studio Photography"}
+                      </td>
+
+                      {/* Total */}
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-900">
+                        {formatETB(order.total_amount)}
+                      </td>
+
+                      {/* Paid */}
+                      <td className="py-2.5 px-3 text-right font-mono text-emerald-700 font-semibold">
+                        {formatETB(order.paid_amount)}
+                      </td>
+
+                      {/* Balance (with 🔴 dot if owed) */}
+                      <td className="py-2.5 px-3 text-right font-mono font-bold">
+                        <span className="inline-flex items-center gap-1 justify-end">
+                          <span className={hasDue ? "text-[#e21b23]" : "text-slate-400"}>
                             {formatETB(order.balance_amount)}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+                          </span>
+                          {hasDue && <span className="text-red-500 font-bold">🔴</span>}
+                        </span>
+                      </td>
 
-          {/* Right-Side Financial Breakdown */}
-          <aside className="space-y-3">
-            <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-200 px-3 py-3">
-                <h2 className="text-xs font-semibold text-slate-800">Payments by method</h2>
-                <p className="mt-1 text-[9px] text-slate-400">
-                  Valid payments · {selectedCalendar ? selectedCalendar.gregorian : "All"}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 p-4">
-                <div
-                  className="flex h-[88px] w-[88px] items-center justify-center rounded-full"
-                  style={{
-                    background:
-                      "conic-gradient(#e21b23 0 64%, #111 64% 82%, #aeb0b4 82% 94%, #ddd 94% 100%)",
-                  }}
-                >
-                  <div className="flex h-[55px] w-[55px] flex-col items-center justify-center rounded-full bg-white text-center">
-                    <strong className="text-[14px] text-slate-800">
-                      {isAdmin ? formatETB(metrics.collected).replace("ETB ", "") : "••••"}
-                    </strong>
-                    <span className="text-[7px] text-slate-400">Total ETB</span>
-                  </div>
-                </div>
-                <div className="space-y-2 text-[9px] text-slate-600">
-                  {[
-                    ["🔴", "Cash", "cash"],
-                    ["⚫", "Telebirr", "telebirr"],
-                    ["◾", "Bank transfer", "bank_transfer"],
-                    ["◽", "CBE Birr", "cbe_birr"],
-                  ].map(([icon, label, method]) => (
-                    <p key={method}>
-                      {icon} {label}{" "}
-                      <b className="float-right ml-4">
-                        {isAdmin ? formatETB(paymentTotals[method] || 0).replace("ETB ", "") : "••••"}
-                      </b>
-                    </p>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-200 px-3 py-3">
-                <div>
-                  <h2 className="text-xs font-semibold text-slate-800">Outstanding balances</h2>
-                  <p className="mt-1 text-[9px] text-slate-400">Top customers for this date</p>
-                </div>
-              </div>
-              {outstandingCustomers.map(({ name, orderNumber, balance }) => (
-                <div key={name} className="flex items-center gap-2 border-b border-slate-100 px-3 py-3 last:border-0">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f5dddd] text-[9px] font-bold text-[#c52b2f]">
-                    {name.slice(0, 2).toUpperCase()}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[10px] font-semibold text-slate-800">{name}</p>
-                    <p className="text-[8px] text-slate-400">{orderNumber}</p>
-                  </div>
-                  <b className="text-[9px] text-[#e21b23]">{isAdmin ? formatETB(balance) : "ETB ••••••"}</b>
-                </div>
-              ))}
-              {outstandingCustomers.length === 0 && (
-                <p className="px-3 py-5 text-center text-[10px] text-slate-400">
-                  No outstanding balances for this date.
-                </p>
+                      {/* Status */}
+                      <td className="py-2.5 px-3 text-center">
+                        {renderStatusBadge(order.status)}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
-            </section>
-          </aside>
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
+
+      {/* BOTTOM STATUS BAR: Specification 6.4 */}
+      {/* | Open requests (2)  ·  Overdue (1)                                        | */}
+      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs shadow-xs">
+        <Link
+          href="/requests"
+          className="flex items-center gap-2 font-medium text-slate-700 hover:text-red-600 transition"
+        >
+          <span>Open requests ({requestsSummary.open})</span>
+          <span className="text-slate-300">·</span>
+          <span className={requestsSummary.overdue > 0 ? "text-rose-600 font-bold" : "text-slate-500"}>
+            Overdue ({requestsSummary.overdue})
+          </span>
+          <ArrowRight className="h-3 w-3 text-slate-400" />
+        </Link>
+        <span className="text-[10px] text-slate-400">
+          Click to manage studio retouches & editing requests
+        </span>
+      </div>
     </div>
   );
 }

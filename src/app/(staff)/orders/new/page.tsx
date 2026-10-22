@@ -4,117 +4,75 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Decimal from "decimal.js";
-import {
-  Zap,
-  RotateCcw,
-  User,
-  Phone,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  Lock,
-  Unlock,
-  Receipt,
-  Sparkles,
-  ArrowRight,
-  CreditCard,
-  Banknote,
-  Smartphone,
-  Building2,
-  Loader2,
-  Calendar as CalendarIcon,
-  ChevronDown,
-  Tags,
-  Search,
-  Package,
-  Clock,
-  Layers,
-} from "lucide-react";
+import { Trash2, Loader2, ArrowLeft } from "lucide-react";
 
 import { studioStore } from "@/lib/api/store";
 import { useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { DualCalendarPicker } from "@/components/calendar/DualCalendarPicker";
-import {
-  formatCalendarPair,
-  formatDate,
-  getEthiopianDateDetails,
-} from "@/lib/date";
+import { formatDate } from "@/lib/date";
 import type { PaymentMethod, Customer, PriceItem } from "@/types";
 
-interface OrderItem {
+interface OrderItemRow {
   id: string;
-  price_item_id?: string;
-  name: string;
-  photo_type_name?: string;
+  price_item_id: string;
+  photo_type_name: string;
   price: number;
   quantity: number;
-  locked: boolean;
 }
 
-const PAYMENT_METHODS = [
-  { id: "telebirr", label: "Telebirr", icon: Smartphone, color: "from-amber-500 to-amber-600" },
-  { id: "cash", label: "Cash", icon: Banknote, color: "from-emerald-500 to-emerald-600" },
-  { id: "cbe_birr", label: "CBE Birr", icon: CreditCard, color: "from-violet-500 to-violet-600" },
-  { id: "bank_transfer", label: "Bank Transfer", icon: Building2, color: "from-blue-500 to-blue-600" },
+const DEFAULT_PHOTO_TYPES = [
+  { id: "prc-1", name: "3x4", price: 100 },
+  { id: "prc-2", name: "10x15", price: 100 },
+  { id: "prc-3", name: "13x18", price: 400 },
+  { id: "prc-4", name: "20x25", price: 600 },
+  { id: "prc-5", name: "30x45", price: 800 },
+  { id: "prc-6", name: "Other", price: 500 },
 ];
 
-const CATEGORIES = [
-  { id: "all", label: "All Packages" },
-  { id: "passport", label: "Passport & ID" },
-  { id: "instant", label: "Instant Prints" },
-  { id: "portrait", label: "Studio Portraits" },
-  { id: "event", label: "Events & Graduation" },
-  { id: "wedding", label: "Wedding Coverage" },
-  { id: "framing", label: "Framing" },
-];
-
-function NewWalkInOrderForm() {
+function NewOrderForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
-  // Form States
-  const [phone, setPhone] = React.useState(searchParams.get("phone") || "");
+  // Price Catalog
+  const [catalog, setCatalog] = React.useState<PriceItem[]>([]);
+
+  // Customer State
+  const [searchQuery, setSearchQuery] = React.useState(searchParams.get("phone") || searchParams.get("name") || "");
   const [customerName, setCustomerName] = React.useState(searchParams.get("name") || "");
+  const [customerPhone, setCustomerPhone] = React.useState(searchParams.get("phone") || "");
   const [customerId, setCustomerId] = React.useState(searchParams.get("customer_id") || "");
+  const [isNewCustomerManual, setIsNewCustomerManual] = React.useState(false);
+
+  // Form State
   const [notes, setNotes] = React.useState("");
-  const [paymentMethod, setPaymentMethod] = React.useState("telebirr");
-  const [transactionRef, setTransactionRef] = React.useState("");
-  const [paidInput, setPaidInput] = React.useState("350");
+  const [paidInput, setPaidInput] = React.useState("");
+  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>("telebirr");
+  const [referenceNo, setReferenceNo] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [formError, setFormError] = React.useState("");
 
-  // Packages Catalog State
-  const [packages, setPackages] = React.useState<PriceItem[]>([]);
-  const [selectedCategory, setSelectedCategory] = React.useState("all");
-  const [packageSearch, setPackageSearch] = React.useState("");
+  // Booking numbering (Specification 3.4 & 6.5: e.g. Booking #4 · 12/08/2026)
+  const [bookingNumberToday, setBookingNumberToday] = React.useState(1);
+  const todayFormatted = React.useMemo(() => formatDate(new Date()), []);
 
-  // Delivery / Session Date with Calendar
-  const [deliveryDate, setDeliveryDate] = React.useState<Date | null>(new Date());
-  const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
-
-  const [previewNumber, setPreviewNumber] = React.useState("APS-261015-043");
-
-  React.useEffect(() => {
-    setPreviewNumber(`AP-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`);
-  }, []);
-
-  // Load packages catalog dynamically from store
+  // Load Catalog and today order count
   React.useEffect(() => {
     try {
-      const active = studioStore.getPrices().filter((p) => p.is_active !== false);
-      setPackages(active);
+      const activePrices = studioStore.getPrices().filter((p) => p.is_active !== false);
+      setCatalog(activePrices);
       studioStore
         .syncPrices()
-        .then((all) => setPackages(all.filter((p) => p.is_active !== false)))
+        .then((all) => setCatalog(all.filter((p) => p.is_active !== false)))
         .catch(() => {});
+
+      const todayOrders = studioStore.getTodayOrders();
+      setBookingNumberToday(todayOrders.length + 1);
     } catch {}
   }, []);
 
-  // Customer auto-detection from store
+  // Customer auto-matching from store
   const allCustomers = React.useMemo(() => {
     try {
       return studioStore.getCustomers();
@@ -124,51 +82,69 @@ function NewWalkInOrderForm() {
   }, []);
 
   const matchedCustomer = React.useMemo(() => {
-    const clean = phone.replace(/[\s-]/g, "");
-    if (!clean || clean.length < 9) return null;
-    return allCustomers.find((c) => c.phone.replace(/[\s-]/g, "") === clean);
-  }, [phone, allCustomers]);
+    const clean = searchQuery.trim().toLowerCase();
+    if (!clean || clean.length < 3) return null;
+    return (
+      allCustomers.find(
+        (c) =>
+          c.phone.replace(/[\s-]/g, "").includes(clean.replace(/[\s-]/g, "")) ||
+          c.name.toLowerCase().includes(clean)
+      ) || null
+    );
+  }, [searchQuery, allCustomers]);
 
   React.useEffect(() => {
-    if (matchedCustomer) {
+    if (matchedCustomer && !isNewCustomerManual) {
       setCustomerName(matchedCustomer.name);
+      setCustomerPhone(matchedCustomer.phone);
       setCustomerId(matchedCustomer.id);
     }
-  }, [matchedCustomer]);
+  }, [matchedCustomer, isNewCustomerManual]);
 
-  // Items State (Defaulting to first package from catalog)
-  const [items, setItems] = React.useState<OrderItem[]>([
+  // Items State (Section 6.5: Photo type, Qty, Unit price, Line total)
+  const [items, setItems] = React.useState<OrderItemRow[]>([
     {
-      id: "item-default",
+      id: "item-1",
       price_item_id: "prc-1",
-      name: "3x4 Passport Photo",
       photo_type_name: "3x4",
       price: 100,
-      quantity: 1,
-      locked: true,
+      quantity: 4,
     },
   ]);
 
-  // Synchronize first item price when packages load if unmodified
+  // Synchronize item prices once catalog loads
   React.useEffect(() => {
-    if (packages.length > 0 && items.length === 1 && items[0].id === "item-default") {
-      const p1 = packages[0];
-      setItems([
-        {
-          id: `item-${Date.now()}`,
-          price_item_id: p1.id,
-          name: p1.name,
-          photo_type_name: p1.name,
-          price: Number(p1.standard_unit_price) || 100,
-          quantity: 1,
-          locked: true,
-        },
-      ]);
-      setPaidInput(String(Number(p1.standard_unit_price) || 100));
+    if (catalog.length > 0) {
+      setItems((prev) =>
+        prev.map((it) => {
+          const match = catalog.find((c) => c.id === it.price_item_id || c.name === it.photo_type_name);
+          if (match && it.id === "item-1") {
+            return {
+              ...it,
+              price_item_id: match.id,
+              photo_type_name: match.name,
+              price: Number(match.standard_unit_price) || it.price,
+            };
+          }
+          return it;
+        })
+      );
     }
-  }, [packages]);
+  }, [catalog]);
 
-  // Reactive financial totals using Decimal
+  // Available photo types for dropdown
+  const availablePhotoTypes = React.useMemo(() => {
+    if (catalog.length > 0) {
+      return catalog.map((c) => ({
+        id: c.id,
+        name: c.name,
+        price: Number(c.standard_unit_price) || 0,
+      }));
+    }
+    return DEFAULT_PHOTO_TYPES;
+  }, [catalog]);
+
+  // Reactive Totals
   const { total, paid, balance } = React.useMemo(() => {
     let orderTotal = new Decimal(0);
     items.forEach((item) => {
@@ -186,60 +162,35 @@ function NewWalkInOrderForm() {
     };
   }, [items, paidInput]);
 
-  // Set paid to full amount shortcut
-  const handleSetFull = () => {
-    setPaidInput(total.toString());
-  };
-
-  // Add package from catalog
-  const handleAddPackage = (pkg: PriceItem) => {
-    // If item already exists, increment quantity
-    const existingIndex = items.findIndex((it) => it.price_item_id === pkg.id || it.name === pkg.name);
-    if (existingIndex >= 0) {
-      setItems((prev) => {
-        const copy = [...prev];
-        copy[existingIndex].quantity += 1;
-        return copy;
-      });
-      return;
-    }
-
+  const handleAddItem = () => {
+    const firstType = availablePhotoTypes[0];
     setItems((prev) => [
       ...prev,
       {
-        id: `pkg-${pkg.id}-${Date.now()}`,
-        price_item_id: pkg.id,
-        name: pkg.name,
-        photo_type_name: pkg.name,
-        price: Number(pkg.standard_unit_price) || 0,
+        id: `item-${Date.now()}-${prev.length}`,
+        price_item_id: firstType.id,
+        photo_type_name: firstType.name,
+        price: firstType.price,
         quantity: 1,
-        locked: true,
-      },
-    ]);
-
-    // Update estimated delivery date if package has turnaround
-    if (pkg.turnaround_days > 0) {
-      const target = new Date();
-      target.setDate(target.getDate() + pkg.turnaround_days);
-      setDeliveryDate(target);
-    }
-  };
-
-  const handleAddCustomItem = () => {
-    setItems((prev) => [
-      ...prev,
-      {
-        id: `custom-${Date.now()}`,
-        name: "Other / Studio Custom Service",
-        photo_type_name: "Other",
-        price: 500,
-        quantity: 1,
-        locked: false,
       },
     ]);
   };
 
-  const handleUpdateItem = (index: number, field: keyof OrderItem, val: any) => {
+  const handlePhotoTypeChange = (index: number, newTypeName: string) => {
+    const matched = availablePhotoTypes.find((p) => p.name === newTypeName);
+    setItems((prev) => {
+      const copy = [...prev];
+      copy[index] = {
+        ...copy[index],
+        photo_type_name: newTypeName,
+        price_item_id: matched?.id || copy[index].price_item_id,
+        price: matched ? matched.price : copy[index].price,
+      };
+      return copy;
+    });
+  };
+
+  const handleUpdateItem = (index: number, field: keyof OrderItemRow, val: any) => {
     setItems((prev) => {
       const copy = [...prev];
       copy[index] = { ...copy[index], [field]: val };
@@ -252,45 +203,32 @@ function NewWalkInOrderForm() {
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleReset = () => {
-    setPhone("");
-    setCustomerName("");
-    setNotes("");
-    setPaymentMethod("telebirr");
-    setItems([
-      {
-        id: `item-${Date.now()}`,
-        price_item_id: packages[0]?.id || "pt-1",
-        name: packages[0]?.name || "3x4 Standard Passport Photo",
-        photo_type_name: "3x4",
-        price: Number(packages[0]?.standard_unit_price) || 100,
-        quantity: 1,
-        locked: true,
-      },
-    ]);
-    setPaidInput(packages[0]?.standard_unit_price || "100");
-  };
-
   const handleSaveOrder = (markDelivered: boolean = false) => {
-    const normalizedPhone = phone.replace(/[\s-]/g, "");
-    const validPhone = /^(09\d{8}|\+2519\d{8})$/.test(normalizedPhone);
+    const finalPhone = (isNewCustomerManual ? customerPhone : matchedCustomer?.phone || customerPhone || searchQuery).replace(/[\s-]/g, "");
+    const finalName = (isNewCustomerManual ? customerName : matchedCustomer?.name || customerName || searchQuery).trim();
 
-    if (!customerName.trim()) {
-      setFormError("Enter the customer's full name.");
+    if (!finalName) {
+      setFormError("Customer name is required.");
       return;
     }
+
+    const validPhone = /^(09\d{8}|\+2519\d{8})$/.test(finalPhone);
     if (!validPhone) {
       setFormError("Enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX).");
       return;
     }
-    if (items.some((item) => !item.name.trim() || item.quantity < 1 || item.price < 0)) {
-      setFormError("Check each service name, quantity, and price before saving.");
+
+    if (items.some((it) => it.quantity < 1 || it.price < 0)) {
+      setFormError("Check item quantities and prices.");
       return;
     }
+
     if (paid.isNegative()) {
       setFormError("Payment cannot be negative.");
       return;
     }
+
+    // Specification 6.5: "Save is blocked with a clear message if the payment exceeds the total."
     if (paid.greaterThan(total)) {
       setFormError("Payment cannot exceed the order total.");
       return;
@@ -298,506 +236,342 @@ function NewWalkInOrderForm() {
 
     setFormError("");
     setIsSubmitting(true);
-    try {
-      const scheduledDateStr = deliveryDate ? formatDate(deliveryDate) : undefined;
-      const deliveryNote = scheduledDateStr ? `[Scheduled/Delivery: ${scheduledDateStr}]` : "";
-      const finalNotes = [notes.trim(), deliveryNote].filter(Boolean).join(" ");
 
+    try {
       studioStore.createOrder({
         customer_id: customerId || undefined,
-        customer_name: customerName.trim(),
-        customer_phone: normalizedPhone,
-        items: items.map((item) => {
-          const catalogItem = packages.find(
-            (price) => price.id === item.price_item_id || price.name === item.name
-          );
-          return {
-            price_item_id: catalogItem?.id || item.photo_type_name || item.id,
-            photo_type_name: item.photo_type_name || catalogItem?.name || item.name.trim(),
-            quantity: item.quantity,
-            unit_price: item.price.toFixed(2),
-            notes: item.name !== item.photo_type_name ? item.name : undefined,
-          };
-        }),
-        payment_method: paymentMethod as PaymentMethod,
+        customer_name: finalName,
+        customer_phone: finalPhone,
+        items: items.map((item) => ({
+          price_item_id: item.price_item_id,
+          photo_type_name: item.photo_type_name,
+          quantity: item.quantity,
+          unit_price: item.price.toFixed(2),
+          notes: undefined,
+        })),
+        payment_method: paymentMethod,
         paid_amount: paid.toFixed(2),
-        reference_no: transactionRef.trim() || undefined,
-        notes: finalNotes || undefined,
+        reference_no: referenceNo.trim() || undefined,
+        notes: notes.trim() || undefined,
         is_delivered: markDelivered,
         created_by: {
-          id: user?.id || "usr-demo",
-          name: user?.name || "Demo Staff",
+          id: user?.id || "usr-current",
+          name: user?.name || "Staff",
         },
       });
 
       router.push("/today");
-    } catch (error) {
+    } catch (err) {
       setIsSubmitting(false);
-      setFormError(error instanceof Error ? error.message : "Unable to save the order. Please try again.");
+      setFormError(err instanceof Error ? err.message : "Failed to save order.");
     }
   };
 
-  // Filter packages based on category and search
-  const filteredPackages = React.useMemo(() => {
-    return packages.filter((pkg) => {
-      const matchesCat = selectedCategory === "all" || pkg.category === selectedCategory;
-      const term = packageSearch.toLowerCase();
-      const matchesTerm =
-        !term ||
-        pkg.name.toLowerCase().includes(term) ||
-        (pkg.description || "").toLowerCase().includes(term) ||
-        pkg.code.toLowerCase().includes(term);
-
-      return matchesCat && matchesTerm;
-    });
-  }, [packages, selectedCategory, packageSearch]);
-
-  const deliveryCalendarPair = deliveryDate ? formatCalendarPair(deliveryDate) : null;
-  const deliveryEthDetails = deliveryDate ? getEthiopianDateDetails(deliveryDate) : null;
-
   return (
-    <div className="mx-auto max-w-[1140px] space-y-5">
-      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-        <div>
-          <Link href="/today" className="text-[11px] font-medium text-slate-400 hover:text-slate-700">
-            ← Back to today
+    <div className="mx-auto max-w-[860px] space-y-4">
+      {/* HEADER: Specification 6.5 */}
+      {/* New Order                                        Booking #4 · 12/08/2026 */}
+      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="flex items-center gap-2">
+          <Link href="/today" className="text-slate-400 hover:text-slate-700 transition">
+            <ArrowLeft className="h-4 w-4" />
           </Link>
-          <h1 className="mt-1 text-xl font-bold tracking-tight text-slate-900">New Order & Booking</h1>
-          <p className="text-[11px] text-slate-500">
-            Select photography packages, set scheduled dates, and record payments.
-          </p>
+          <h1 className="text-lg font-bold tracking-tight text-slate-900">New Order</h1>
         </div>
-        <div className="hidden rounded-md border border-slate-200 bg-white px-4 py-2 text-right sm:block">
-          <p className="text-[9px] text-slate-400">Booking number</p>
-          <p className="font-mono text-[11px] font-semibold text-slate-700">{previewNumber}</p>
+        <div className="font-mono text-xs font-bold text-slate-700">
+          Booking #{bookingNumberToday} · {todayFormatted}
         </div>
       </div>
 
       {formError && (
-        <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
+        <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-700">
           {formError}
         </div>
       )}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-        <div className="space-y-4">
-          {/* STEP 1: CUSTOMER */}
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
-                  1
-                </span>
-                <div>
-                  <h2 className="text-xs font-bold text-slate-800">Customer Details</h2>
-                  <p className="text-[10px] text-slate-400">Search customer by Ethiopian phone number or add new.</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setCustomerName("");
-                  setPhone("");
-                  setCustomerId("");
-                }}
-                className="rounded-md border border-slate-200 px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 transition"
-              >
-                ＋ New Customer
-              </button>
-            </div>
-            <label className="mb-1 block text-[10px] font-medium text-slate-500">Search customer by phone</label>
-            <div className="relative">
-              <Input
-                type="tel"
-                placeholder="09XXXXXXXX or +2519XXXXXXXX"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="h-9 rounded-md border-slate-200 pr-8 text-xs font-mono"
-              />
-              <span className="pointer-events-none absolute right-3 top-2.5 text-xs text-slate-400">⌄</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50/50 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-600">
-                  {customerName ? customerName.slice(0, 2).toUpperCase() : "CU"}
-                </span>
-                <div>
-                  <p className="text-[10px] font-semibold text-slate-700">{customerName || "New customer profile"}</p>
-                  <p className="text-[9px] text-slate-400 font-mono">{phone || "Phone number pending"}</p>
-                </div>
-              </div>
-              <span className="text-right text-[9px] text-slate-400">
-                Outstanding balance<br />
-                <b className="text-slate-700">ETB {matchedCustomer ? matchedCustomer.balance_due : "0.00"}</b>{" "}
-                {matchedCustomer && Number(matchedCustomer.balance_due) > 0 ? (
-                  <span className="text-red-600 font-bold">!</span>
-                ) : (
-                  <span className="text-emerald-600">✓</span>
-                )}
-              </span>
-            </div>
-            <label className="mt-3 mb-1 block text-[10px] font-medium text-slate-500">Customer full name</label>
+      {/* CUSTOMER SECTION: Specification 6.5 */}
+      {/* Customer:  [ Search name or phone…              ]   [+ New customer]     */}
+      {/*            Meron T. · 0922… · Owes ETB 80.00 (1 order)                   */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs space-y-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <label className="text-xs font-bold text-slate-700">Customer:</label>
+          <div className="flex items-center gap-2 flex-1 sm:max-w-md">
             <Input
-              placeholder="e.g. Abebe Kebede"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              className="h-9 rounded-md border-slate-200 text-xs"
+              type="text"
+              placeholder="Search name or phone…"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (isNewCustomerManual) setCustomerPhone(e.target.value);
+              }}
+              className="h-8 text-xs font-medium"
             />
-          </section>
+            <button
+              type="button"
+              onClick={() => {
+                setIsNewCustomerManual((v) => !v);
+                setCustomerId("");
+              }}
+              className={`rounded-md border px-2.5 py-1 text-xs font-semibold shrink-0 transition ${
+                isNewCustomerManual
+                  ? "border-red-500 bg-red-50 text-red-700"
+                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {isNewCustomerManual ? "✕ Existing search" : "+ New customer"}
+            </button>
+          </div>
+        </div>
 
-          {/* STEP 2: PACKAGES & PRICE CATALOG INTEGRATION */}
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
-                  2
-                </span>
-                <div>
-                  <h2 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Package className="h-3.5 w-3.5 text-[#e21b23]" />
-                    Studio Packages Catalog
-                  </h2>
-                  <p className="text-[10px] text-slate-400">
-                    Click any package to instantly add it to this order.
-                  </p>
-                </div>
-              </div>
-
-              {/* Package Search */}
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search packages..."
-                  value={packageSearch}
-                  onChange={(e) => setPackageSearch(e.target.value)}
-                  className="h-7 w-48 rounded-md border border-slate-200 bg-white pl-8 pr-2.5 text-[11px] text-slate-700 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                />
-              </div>
+        {/* Customer Status line */}
+        {isNewCustomerManual ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+            <div>
+              <label className="text-[10px] font-medium text-slate-500">Full Name *</label>
+              <Input
+                placeholder="Customer full name"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="h-8 text-xs"
+              />
             </div>
-
-            {/* Category filter pills */}
-            <div className="flex flex-wrap items-center gap-1.5 pb-3 border-b border-slate-100">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition ${
-                    selectedCategory === cat.id
-                      ? "bg-[#e21b23] text-white shadow-xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
+            <div>
+              <label className="text-[10px] font-medium text-slate-500">Phone (09XXXXXXXX) *</label>
+              <Input
+                placeholder="09XXXXXXXX"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                className="h-8 text-xs font-mono"
+              />
             </div>
+          </div>
+        ) : matchedCustomer ? (
+          <div className="text-xs text-slate-600 bg-slate-50 rounded px-2.5 py-1.5 flex items-center justify-between">
+            <span>
+              <b>{matchedCustomer.name}</b> · {matchedCustomer.phone}
+            </span>
+            <span className={Number(matchedCustomer.balance_due) > 0 ? "text-red-600 font-bold" : "text-emerald-700 font-medium"}>
+              Owes ETB {matchedCustomer.balance_due} ({matchedCustomer.total_orders} orders)
+            </span>
+          </div>
+        ) : searchQuery.length >= 3 ? (
+          <div className="text-xs text-slate-400 italic">
+            No existing customer matched &quot;{searchQuery}&quot;. Click &quot;+ New customer&quot; to create profile.
+          </div>
+        ) : null}
+      </div>
 
-            {/* Packages Grid */}
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-56 overflow-y-auto pr-1">
-              {filteredPackages.map((pkg) => {
-                const isSelected = items.some((it) => it.price_item_id === pkg.id || it.name === pkg.name);
-                return (
-                  <div
-                    key={pkg.id}
-                    onClick={() => handleAddPackage(pkg)}
-                    className={`p-2.5 rounded-lg border cursor-pointer transition-all flex flex-col justify-between group ${
-                      isSelected
-                        ? "border-red-400 bg-red-50/40 ring-1 ring-red-400/30"
-                        : "border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-white"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-1">
-                        <h3 className="text-[11px] font-bold text-slate-800 group-hover:text-red-600 transition leading-snug">
-                          {pkg.name}
-                        </h3>
-                        <span className="shrink-0 font-mono text-[10px] font-bold text-slate-900 bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                          ETB {Number(pkg.standard_unit_price).toFixed(0)}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[9px] text-slate-500 line-clamp-2">
-                        {pkg.description || "Studio photography package"}
-                      </p>
-                    </div>
+      {/* ITEMS SECTION: Specification 6.5 */}
+      {/* Items                                                                    */}
+      {/*  Photo type   Qty   Unit price     Line total                            */}
+      {/*  [3x4     ▾]  [ 4]  [ 50.00 ]      200.00              [🗑]              */}
+      {/*  [+ Add item]                                                            */}
+      {/*                                                  Total:  ETB 360.00      */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs space-y-3">
+        <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Items</h2>
 
-                    <div className="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[8.5px]">
-                      <span className="text-slate-400 flex items-center gap-1">
-                        <Clock className="h-2.5 w-2.5" />
-                        {pkg.turnaround_days === 0 ? "⚡ Same Day" : `🕒 ${pkg.turnaround_days} Days`}
-                      </span>
-                      <span className="font-bold text-red-600 group-hover:underline">
-                        {isSelected ? "＋ Add Another" : "＋ Add Package"}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* STEP 3: ORDER ITEMS & SCHEDULED CALENDAR DATE */}
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
-                  3
-                </span>
-                <div>
-                  <h2 className="text-xs font-bold text-slate-800">Order Items & Quantities</h2>
-                  <p className="text-[10px] text-slate-400">Review selected packages or customize item prices.</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleAddCustomItem}
-                className="rounded-md border border-slate-200 px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 transition"
-              >
-                ＋ Custom Service
-              </button>
-            </div>
-
-            <div className="hidden grid-cols-[1fr_82px_100px_100px_18px] gap-2 px-2 pb-1 text-[8px] uppercase text-slate-400 sm:grid">
-              <span>Package / Photo type</span>
-              <span>Quantity</span>
-              <span>Unit price</span>
-              <span>Line total</span>
-            </div>
-
-            <div className="space-y-2">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-slate-200 text-[10px] font-bold uppercase text-slate-500">
+              <tr>
+                <th className="pb-2 w-48">Photo type</th>
+                <th className="pb-2 w-20 text-center">Qty</th>
+                <th className="pb-2 w-28 text-right">Unit price</th>
+                <th className="pb-2 w-28 text-right">Line total</th>
+                <th className="pb-2 w-10 text-center"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
               {items.map((item, idx) => {
                 const lineTotal = new Decimal(item.price || 0).times(item.quantity || 1);
                 return (
-                  <div
-                    key={item.id}
-                    className="grid gap-2 rounded-md border border-slate-200 p-2 sm:grid-cols-[1fr_82px_100px_100px_18px] sm:items-center"
-                  >
-                    <Input
-                      value={item.name}
-                      disabled={item.locked}
-                      onChange={(e) => handleUpdateItem(idx, "name", e.target.value)}
-                      className="h-8 rounded-md text-[11px]"
-                    />
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) => handleUpdateItem(idx, "quantity", parseInt(e.target.value) || 1)}
-                      className="h-8 rounded-md text-center text-[11px]"
-                    />
-                    <Input
-                      type="number"
-                      value={item.price}
-                      disabled={item.locked}
-                      onChange={(e) => handleUpdateItem(idx, "price", parseFloat(e.target.value) || 0)}
-                      className="h-8 rounded-md text-[11px]"
-                    />
-                    <span className="text-right font-mono text-[11px] font-bold text-slate-700">
+                  <tr key={item.id} className="group">
+                    {/* Photo type dropdown */}
+                    <td className="py-2 pr-2">
+                      <select
+                        value={item.photo_type_name}
+                        onChange={(e) => handlePhotoTypeChange(idx, e.target.value)}
+                        className="h-8 w-full rounded border border-slate-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-red-500"
+                      >
+                        {availablePhotoTypes.map((pt) => (
+                          <option key={pt.id} value={pt.name}>
+                            {pt.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+
+                    {/* Qty */}
+                    <td className="py-2 px-1 text-center">
+                      <Input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => handleUpdateItem(idx, "quantity", parseInt(e.target.value) || 1)}
+                        className="h-8 w-16 text-center text-xs mx-auto"
+                      />
+                    </td>
+
+                    {/* Unit price (Read-only for Staff, editable by Admin, Specification 6.5) */}
+                    <td className="py-2 px-1 text-right">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        disabled={!isAdmin}
+                        value={item.price}
+                        onChange={(e) => handleUpdateItem(idx, "price", parseFloat(e.target.value) || 0)}
+                        className={`h-8 w-24 text-right text-xs font-mono ml-auto ${
+                          !isAdmin ? "bg-slate-50 text-slate-600 cursor-not-allowed" : ""
+                        }`}
+                        title={!isAdmin ? "Unit price is configured in Admin Price List" : "Edit price"}
+                      />
+                    </td>
+
+                    {/* Line total */}
+                    <td className="py-2 pl-2 text-right font-mono font-bold text-slate-900">
                       ETB {lineTotal.toFixed(2)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveItem(idx)}
-                      disabled={items.length <= 1}
-                      className="text-slate-400 hover:text-red-600 disabled:opacity-30 transition"
-                      aria-label="Remove item"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
+                    </td>
+
+                    {/* Delete button */}
+                    <td className="py-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(idx)}
+                        disabled={items.length <= 1}
+                        className="text-slate-400 hover:text-red-600 disabled:opacity-30 transition p-1"
+                        aria-label="Remove item"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
+                  </tr>
                 );
               })}
-            </div>
-
-            {/* Integrated Dual Calendar for Delivery / Session Date */}
-            <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-700 flex items-center gap-1">
-                  <CalendarIcon className="h-3 w-3 text-[#e21b23]" />
-                  Scheduled Session / Delivery Date
-                </label>
-                <p className="text-[9px] text-slate-400">
-                  Target date for photo shoot, studio session, or print pickup.
-                </p>
-              </div>
-
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsCalendarOpen((prev) => !prev)}
-                  className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
-                >
-                  <CalendarIcon className="h-3.5 w-3.5 text-slate-500" />
-                  <span>
-                    {deliveryCalendarPair
-                      ? `${deliveryCalendarPair.gregorian} (${deliveryEthDetails?.textAm || ""})`
-                      : "Pick Date"}
-                  </span>
-                  <ChevronDown className="h-3 w-3 text-slate-400" />
-                </button>
-
-                {isCalendarOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40 bg-black/10 sm:bg-transparent"
-                      onClick={() => setIsCalendarOpen(false)}
-                    />
-                    <div className="absolute right-0 bottom-full mb-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                      <DualCalendarPicker
-                        selectedDate={deliveryDate}
-                        onSelectDate={(d) => {
-                          setDeliveryDate(d);
-                          setIsCalendarOpen(false);
-                        }}
-                        onClose={() => setIsCalendarOpen(false)}
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* STEP 4: PAYMENT */}
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
-                4
-              </span>
-              <div>
-                <h2 className="text-xs font-bold text-slate-800">Payment Recording</h2>
-                <p className="text-[10px] text-slate-400">Record a payment now or leave the balance due.</p>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-[10px] font-medium text-slate-500">Payment amount (ETB)</label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    value={paidInput}
-                    onChange={(e) => setPaidInput(e.target.value)}
-                    className="h-9 rounded-md text-xs font-mono font-bold"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSetFull}
-                    className="h-9 text-[10px] font-semibold text-emerald-700 border-emerald-200 hover:bg-emerald-50 shrink-0"
-                  >
-                    Full Paid
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-medium text-slate-500">Payment method</label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-xs"
-                >
-                  <option value="telebirr">Telebirr</option>
-                  <option value="cash">Cash</option>
-                  <option value="cbe_birr">CBE Birr</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                </select>
-              </div>
-              <Input
-                placeholder="Transaction reference (e.g. Telebirr / CBE Ref)"
-                value={transactionRef}
-                onChange={(e) => setTransactionRef(e.target.value)}
-                className="h-9 rounded-md text-xs"
-              />
-              <Input
-                placeholder="Internal notes — visible only to studio staff"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="h-9 rounded-md text-xs"
-              />
-            </div>
-
-            <div className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-[9px] font-semibold text-emerald-700">
-              ✓ ETB {paid.toFixed(2)} will be recorded as a valid payment.{" "}
-              <span className="block font-normal">Remaining balance: ETB {balance.toFixed(2)}</span>
-            </div>
-          </section>
+            </tbody>
+          </table>
         </div>
 
-        {/* SIDEBAR SUMMARY */}
-        <aside className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-4">
-          <h2 className="border-b border-slate-200 pb-3 text-xs font-bold text-slate-700">Order Summary</h2>
-          <div className="space-y-2 border-b border-slate-100 py-3 text-[10px] text-slate-500">
-            <div className="flex justify-between">
-              <span>Items × {items.length}</span>
-              <b className="text-slate-700">ETB {total.toFixed(2)}</b>
-            </div>
-            <div className="flex justify-between">
-              <span>Payment</span>
-              <b className="text-emerald-600">− ETB {paid.toFixed(2)}</b>
-            </div>
-          </div>
-          <div className="flex justify-between py-3 text-xs font-bold text-slate-800">
-            <span>Remaining balance</span>
-            <span className="text-red-600">ETB {balance.toFixed(2)}</span>
-          </div>
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleAddItem}
+            className="h-8 text-xs font-semibold"
+          >
+            + Add item
+          </Button>
 
-          <div className="space-y-2">
-            <Button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => handleSaveOrder(false)}
-              className="h-8 w-full rounded-md bg-[#e21b23] text-[10px] font-bold hover:bg-red-700"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  Saving Order...
-                </>
-              ) : (
-                "Save Order"
-              )}
-            </Button>
-            <Button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => handleSaveOrder(true)}
-              variant="outline"
-              className="h-8 w-full rounded-md text-[10px]"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save & Mark Delivered"
-              )}
-            </Button>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="w-full py-1 text-[10px] text-slate-400 hover:text-slate-700 transition"
-            >
-              Reset Form
-            </button>
+          <div className="text-right">
+            <span className="text-xs text-slate-500 mr-2">Total:</span>
+            <span className="font-mono text-base font-bold text-slate-900">
+              ETB {total.toFixed(2)}
+            </span>
           </div>
+        </div>
+      </div>
 
-          <p className="mt-3 border-t border-slate-100 pt-3 text-[8px] text-slate-400">
-            🔒 Financial records are signed and synchronized with studio daily reports.
-          </p>
-        </aside>
+      {/* PAYMENT & NOTES: Specification 6.5 */}
+      {/* Payment now (optional)                                                   */}
+      {/*  Amount [ 200.00 ]  Method [Cash ▾]  Reference [ optional ]              */}
+      {/*                                                  Balance: ETB 160.00     */}
+      {/* Notes: [                                                    ]            */}
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs space-y-3">
+        <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+          Payment now (optional)
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="text-[10px] font-medium text-slate-500 block mb-1">Amount</label>
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={paidInput}
+              onChange={(e) => setPaidInput(e.target.value)}
+              className="h-8 text-xs font-mono font-bold"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-medium text-slate-500 block mb-1">Method</label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+              className="h-8 w-full rounded border border-slate-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-red-500"
+            >
+              <option value="cash">Cash</option>
+              <option value="telebirr">Telebirr</option>
+              <option value="cbe_birr">CBE Birr</option>
+              <option value="bank_transfer">Bank transfer</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-medium text-slate-500 block mb-1">Reference (optional)</label>
+            <Input
+              placeholder="e.g. Telebirr code"
+              value={referenceNo}
+              onChange={(e) => setReferenceNo(e.target.value)}
+              className="h-8 text-xs"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <span className="text-xs text-slate-500 mr-2">Balance:</span>
+          <span className={`font-mono text-sm font-bold ${balance.greaterThan(0) ? "text-[#e21b23]" : "text-emerald-700"}`}>
+            ETB {balance.toFixed(2)}
+          </span>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-medium text-slate-500 block mb-1">Notes</label>
+          <Input
+            placeholder="Studio instructions or customer notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="h-8 text-xs"
+          />
+        </div>
+      </div>
+
+      {/* ACTIONS: Specification 6.5 */}
+      {/*  [ Save ]   [ Save & mark delivered ]   [ Cancel ]                       */}
+      <div className="flex items-center gap-2 pt-2">
+        <Button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => handleSaveOrder(false)}
+          className="h-9 px-5 bg-[#e21b23] text-white text-xs font-bold hover:bg-red-700 shadow-xs"
+        >
+          {isSubmitting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+          Save
+        </Button>
+
+        <Button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => handleSaveOrder(true)}
+          variant="outline"
+          className="h-9 px-4 text-xs font-semibold"
+        >
+          Save &amp; mark delivered
+        </Button>
+
+        <Link
+          href="/today"
+          className="ml-auto text-xs font-semibold text-slate-500 hover:text-slate-800 transition px-3 py-1.5"
+        >
+          Cancel
+        </Link>
       </div>
     </div>
   );
 }
 
-export default function NewWalkInOrderPage() {
+export default function NewOrderPage() {
   return (
     <React.Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Loading order form…</div>}>
-      <NewWalkInOrderForm />
+      <NewOrderForm />
     </React.Suspense>
   );
 }
