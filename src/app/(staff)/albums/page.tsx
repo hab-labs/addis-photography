@@ -45,7 +45,7 @@ import {
 import { useAuth } from "@/lib/auth/context";
 import { generateQrPng, downloadFile, printBrandedFlyer } from "@/lib/qr";
 import { studioStore } from "@/lib/api/store";
-import { formatCalendarPair } from "@/lib/date";
+import { formatCalendarPair, getEthiopianDateDetails } from "@/lib/date";
 import type { Album as StoreAlbum, Customer } from "@/types";
 
 type ClientAlbum = StoreAlbum & {
@@ -563,6 +563,11 @@ export default function ClientAlbumsPage() {
                 className="text-xs"
                 required
               />
+              {eventDate && (
+                <p className="mt-1 text-[10px] text-amber-700 font-medium">
+                  EC: {formatCalendarPair(eventDate).ethiopian} ({getEthiopianDateDetails(eventDate)?.textAm || ""})
+                </p>
+              )}
             </div>
 
             <div className="space-y-2 rounded-lg border border-slate-100 bg-slate-50 p-3">

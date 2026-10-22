@@ -31,7 +31,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { studioStore } from "@/lib/api/store";
-import { formatDate, isOverdue } from "@/lib/date";
+import { formatDate, isOverdue, formatCalendarPair, getEthiopianDateDetails } from "@/lib/date";
 import type { ClientRequest } from "@/types";
 
 interface RequestCard {
@@ -74,6 +74,14 @@ export default function ProductionRequestsPage() {
   const [reqNotes, setReqNotes] = React.useState("");
   const [dialogError, setDialogError] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
+
+  const packages = React.useMemo(() => {
+    try {
+      return studioStore.getPrices().filter((p) => p.is_active !== false);
+    } catch {
+      return [];
+    }
+  }, []);
 
   const loadRequests = React.useCallback(() => {
     const refreshData = () => {
@@ -433,21 +441,39 @@ export default function ProductionRequestsPage() {
 
               <div className="grid gap-1">
                 <Label htmlFor="req-service" className="text-xs font-semibold text-slate-700">
-                  Service / Task *
+                  Package / Service Task *
                 </Label>
-                <Input
-                  id="req-service"
-                  placeholder="e.g. Wedding Photo Retouching & Album Binding"
-                  value={reqService}
-                  onChange={(e) => setReqService(e.target.value)}
-                  className="h-9 text-xs"
-                  required
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="req-service"
+                    placeholder="e.g. Wedding Photo Retouching & Album Binding"
+                    value={reqService}
+                    onChange={(e) => setReqService(e.target.value)}
+                    className="h-9 text-xs flex-1"
+                    required
+                  />
+                  {packages.length > 0 && (
+                    <select
+                      aria-label="Select Package"
+                      onChange={(e) => {
+                        if (e.target.value) setReqService(e.target.value);
+                      }}
+                      className="h-9 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-600 max-w-[140px]"
+                    >
+                      <option value="">Packages...</option>
+                      {packages.map((p) => (
+                        <option key={p.id} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
 
               <div className="grid gap-1">
                 <Label htmlFor="req-due" className="text-xs font-semibold text-slate-700">
-                  Due Date
+                  Due Date (Gregorian & Ethiopian)
                 </Label>
                 <Input
                   id="req-due"
@@ -456,6 +482,11 @@ export default function ProductionRequestsPage() {
                   onChange={(e) => setReqDueDate(e.target.value)}
                   className="h-9 text-xs"
                 />
+                {reqDueDate && (
+                  <p className="text-[10px] text-amber-700 font-medium">
+                    EC: {formatCalendarPair(reqDueDate).ethiopian} ({getEthiopianDateDetails(reqDueDate)?.textAm || ""})
+                  </p>
+                )}
               </div>
 
               <div className="grid gap-1">

@@ -146,3 +146,72 @@ export function isOverdue(dueDateInput: string | Date): boolean {
     return false;
   }
 }
+
+/**
+ * Check if two dates fall on the same day in Africa/Addis_Ababa
+ */
+export function isSameDayInAddis(
+  dateA: string | Date | number | null | undefined,
+  dateB: string | Date | number | null | undefined
+): boolean {
+  if (!dateA || !dateB) return false;
+  return formatDate(dateA) === formatDate(dateB);
+}
+
+export interface EthiopianDateDetails {
+  day: string;
+  monthAm: string;
+  monthEn: string;
+  year: string;
+  textAm: string;
+  textEn: string;
+}
+
+/**
+ * Get detailed Ethiopian date parts for calendar day cell display
+ */
+export function getEthiopianDateDetails(
+  dateInput: string | Date | number | null | undefined
+): EthiopianDateDetails | null {
+  if (!dateInput) return null;
+  try {
+    const date =
+      typeof dateInput === "string" || typeof dateInput === "number"
+        ? new Date(dateInput)
+        : dateInput;
+    if (isNaN(date.getTime())) return null;
+
+    const amFormatter = new Intl.DateTimeFormat("am-ET-u-ca-ethiopic", {
+      timeZone: ADDIS_TIMEZONE,
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    const enFormatter = new Intl.DateTimeFormat("en-GB-u-ca-ethiopic-nu-latn", {
+      timeZone: ADDIS_TIMEZONE,
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
+    const partsAm = amFormatter.formatToParts(date);
+    const day = partsAm.find((p) => p.type === "day")?.value || "";
+    const monthAm = partsAm.find((p) => p.type === "month")?.value || "";
+    const year = partsAm.find((p) => p.type === "year")?.value || "";
+
+    const partsEn = enFormatter.formatToParts(date);
+    const monthEn = partsEn.find((p) => p.type === "month")?.value || "";
+
+    return {
+      day,
+      monthAm,
+      monthEn,
+      year,
+      textAm: `${day} ${monthAm} ${year}`,
+      textEn: `${day} ${monthEn} ${year}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
