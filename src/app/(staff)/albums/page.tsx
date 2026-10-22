@@ -465,8 +465,8 @@ export default function ClientAlbumsPage() {
       </section>
 
       {filteredAlbums.length === 0 && (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-white py-16 text-center text-xs text-slate-400 space-y-3">
-          <FolderPlus className="mx-auto h-8 w-8 text-slate-300" />
+        <div className="rounded-lg border border-dashed border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] py-16 text-center text-xs text-slate-400 dark:text-zinc-500 space-y-3">
+          <FolderPlus className="mx-auto h-8 w-8 text-slate-300 dark:text-zinc-600" />
           <p>No albums match your search or filters.</p>
           <Button
             variant="outline"
@@ -477,7 +477,7 @@ export default function ClientAlbumsPage() {
               setExpiringOnly(false);
               setIsCreateOpen(true);
             }}
-            className="text-xs text-slate-700"
+            className="text-xs text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-zinc-700"
           >
             Create New Album
           </Button>

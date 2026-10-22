@@ -169,27 +169,27 @@ export default function PriceListPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
               Price List
             </h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 border border-indigo-500/20">
+            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 dark:bg-indigo-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 dark:border-indigo-800">
               <Tags className="h-3 w-3" /> Live Catalog
             </span>
           </div>
-          <p className="text-xs font-medium text-slate-400 mt-1">
+          <p className="text-xs font-medium text-slate-400 dark:text-zinc-400 mt-1">
             Manage standard studio services, pricing, and turnaround expectations.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search services..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-full sm:w-60 rounded-full bg-white border border-slate-200/80 pl-9 pr-4 text-xs font-medium text-slate-700 placeholder-slate-400 outline-none transition-all focus:ring-2 focus:ring-indigo-500/30 shadow-[0_2px_10px_rgb(0,0,0,0.02)]"
+              className="h-9 w-full sm:w-60 rounded-full bg-white dark:bg-[#121214] border border-slate-200/80 dark:border-zinc-700 pl-9 pr-4 text-xs font-medium text-slate-700 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 outline-none transition-all focus:ring-2 focus:ring-indigo-500/30 shadow-sm"
             />
           </div>
           <Button
@@ -206,10 +206,10 @@ export default function PriceListPage() {
         </div>
       </div>
 
-      <div className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+      <div className="rounded-3xl bg-white dark:bg-[#121214] p-6 shadow-sm border border-slate-100 dark:border-zinc-800">
         <Table>
           <TableHeader>
-            <TableRow className="border-none text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:bg-transparent">
+            <TableRow className="border-none text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-400 hover:bg-transparent">
               <TableHead className="pl-4">Service Item</TableHead>
               <TableHead>Category</TableHead>
               <TableHead className="text-right">Price (ETB)</TableHead>
@@ -218,16 +218,16 @@ export default function PriceListPage() {
               <TableHead className="text-right pr-4">Actions</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-slate-100/80">
+          <TableBody className="divide-y divide-slate-100/80 dark:divide-zinc-800/80">
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-40 text-center text-xs text-slate-400">
+                <TableCell colSpan={6} className="h-40 text-center text-xs text-slate-400 dark:text-zinc-500">
                   Loading price catalog…
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-40 text-center text-xs text-slate-400">
+                <TableCell colSpan={6} className="h-40 text-center text-xs text-slate-400 dark:text-zinc-500">
                   No services match your search.
                 </TableCell>
               </TableRow>
@@ -235,31 +235,31 @@ export default function PriceListPage() {
               filtered.map((item) => (
                 <TableRow
                   key={item.id}
-                  className="border-none hover:bg-slate-50/80 transition-colors"
+                  className="border-none hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors"
                 >
-                  <TableCell className="pl-4 py-3.5 font-bold text-xs text-slate-900">
+                  <TableCell className="pl-4 py-3.5 font-bold text-xs text-slate-900 dark:text-zinc-100">
                     <div>{item.name}</div>
                     {item.description && (
-                      <div className="text-[10px] font-normal text-slate-400">
+                      <div className="text-[10px] font-normal text-slate-400 dark:text-zinc-500">
                         {item.description}
                       </div>
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 capitalize">
+                    <span className="rounded-full bg-slate-100 dark:bg-zinc-800 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 dark:text-zinc-300 capitalize">
                       {item.category}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right font-mono font-bold text-xs text-slate-800 tabular-nums">
+                  <TableCell className="text-right font-mono font-bold text-xs text-slate-800 dark:text-zinc-200 tabular-nums">
                     ETB {Number(item.standard_unit_price).toFixed(2)}
                   </TableCell>
-                  <TableCell className="text-xs font-medium text-slate-400">
+                  <TableCell className="text-xs font-medium text-slate-400 dark:text-zinc-400">
                     {item.turnaround_days === 0
                       ? "Same day"
                       : `${item.turnaround_days} day${item.turnaround_days === 1 ? "" : "s"}`}
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800">
                       <CheckCircle2 className="h-3 w-3" /> Active
                     </span>
                   </TableCell>
@@ -273,7 +273,7 @@ export default function PriceListPage() {
                           setEditPriceInput(item.standard_unit_price);
                         }}
                         aria-label={`Edit ${item.name} price`}
-                        className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors rounded-md hover:bg-slate-100"
+                        className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
                       </button>
@@ -281,7 +281,7 @@ export default function PriceListPage() {
                         type="button"
                         onClick={() => setDeletingItem(item)}
                         aria-label={`Delete ${item.name}`}
-                        className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors rounded-md hover:bg-rose-50"
+                        className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/40"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -296,10 +296,10 @@ export default function PriceListPage() {
 
       {/* Edit Price Dialog */}
       <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
-        <DialogContent className="sm:max-w-[380px]">
+        <DialogContent className="sm:max-w-[380px] dark:bg-[#18181b] dark:border-zinc-800">
           <DialogHeader>
-            <DialogTitle>Update Price</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-slate-900 dark:text-zinc-100">Update Price</DialogTitle>
+            <DialogDescription className="text-slate-500 dark:text-zinc-400">
               {editingItem?.name} ({editingItem?.category})
             </DialogDescription>
           </DialogHeader>
@@ -308,18 +308,18 @@ export default function PriceListPage() {
             {editError && (
               <div
                 role="alert"
-                className="rounded-md bg-red-50 p-2.5 text-xs font-medium text-red-700 border border-red-200"
+                className="rounded-md bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-medium text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900"
               >
                 {editError}
               </div>
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="edit-price-input" className="text-xs font-semibold text-slate-700">
+              <Label htmlFor="edit-price-input" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                 Standard Unit Price (ETB)
               </Label>
               <div className="relative">
-                <span className="absolute left-3 top-2 text-xs font-semibold text-slate-400">
+                <span className="absolute left-3 top-2 text-xs font-semibold text-slate-400 dark:text-zinc-500">
                   ETB
                 </span>
                 <Input
@@ -329,7 +329,7 @@ export default function PriceListPage() {
                   min="0"
                   value={editPriceInput}
                   onChange={(e) => setEditPriceInput(e.target.value)}
-                  className="pl-12 text-sm font-mono font-bold"
+                  className="pl-12 text-sm font-mono font-bold dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   autoFocus
                   required
                 />
@@ -342,6 +342,7 @@ export default function PriceListPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setEditingItem(null)}
+                className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 Cancel
               </Button>
@@ -359,10 +360,10 @@ export default function PriceListPage() {
 
       {/* Add Service Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="sm:max-w-[440px]">
+        <DialogContent className="sm:max-w-[440px] dark:bg-[#18181b] dark:border-zinc-800">
           <DialogHeader>
-            <DialogTitle>Add Studio Service</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-slate-900 dark:text-zinc-100">Add Studio Service</DialogTitle>
+            <DialogDescription className="text-slate-500 dark:text-zinc-400">
               Add a new photo package, session, or framing option to the catalog.
             </DialogDescription>
           </DialogHeader>
@@ -371,14 +372,14 @@ export default function PriceListPage() {
             {addError && (
               <div
                 role="alert"
-                className="rounded-md bg-red-50 p-2.5 text-xs font-medium text-red-700 border border-red-200"
+                className="rounded-md bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-medium text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900"
               >
                 {addError}
               </div>
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="add-name" className="text-xs font-semibold text-slate-700">
+              <Label htmlFor="add-name" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                 Service Name <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -386,14 +387,14 @@ export default function PriceListPage() {
                 placeholder="e.g. Newborn Session (10 Retouched)"
                 value={addName}
                 onChange={(e) => setAddName(e.target.value)}
-                className="text-xs"
+                className="text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                 required
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="add-cat" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="add-cat" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                   Category
                 </Label>
                 <select
@@ -402,7 +403,7 @@ export default function PriceListPage() {
                   onChange={(e) =>
                     setAddCategory(e.target.value as PriceItem["category"])
                   }
-                  className="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none focus:border-indigo-500"
+                  className="h-9 w-full rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-indigo-500"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -413,7 +414,7 @@ export default function PriceListPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="add-turn" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="add-turn" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                   Turnaround (Days)
                 </Label>
                 <Input
@@ -422,18 +423,18 @@ export default function PriceListPage() {
                   min="0"
                   value={addTurnaround}
                   onChange={(e) => setAddTurnaround(e.target.value)}
-                  className="text-xs"
+                  className="text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="add-price" className="text-xs font-semibold text-slate-700">
+              <Label htmlFor="add-price" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                 Unit Price (ETB) <span className="text-red-500">*</span>
               </Label>
               <div className="relative">
-                <span className="absolute left-3 top-2 text-xs font-semibold text-slate-400">
+                <span className="absolute left-3 top-2 text-xs font-semibold text-slate-400 dark:text-zinc-500">
                   ETB
                 </span>
                 <Input
@@ -444,14 +445,14 @@ export default function PriceListPage() {
                   placeholder="0.00"
                   value={addPrice}
                   onChange={(e) => setAddPrice(e.target.value)}
-                  className="pl-12 text-xs font-mono font-bold"
+                  className="pl-12 text-xs font-mono font-bold dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="add-desc" className="text-xs font-semibold text-slate-700">
+              <Label htmlFor="add-desc" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                 Description (Optional)
               </Label>
               <Input
@@ -459,7 +460,7 @@ export default function PriceListPage() {
                 placeholder="Includes 2 prints and high-res digital downloads"
                 value={addDescription}
                 onChange={(e) => setAddDescription(e.target.value)}
-                className="text-xs"
+                className="text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
               />
             </div>
 
@@ -469,6 +470,7 @@ export default function PriceListPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setIsAddOpen(false)}
+                className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 Cancel
               </Button>
@@ -486,13 +488,13 @@ export default function PriceListPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deletingItem} onOpenChange={(open) => !open && setDeletingItem(null)}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[400px] dark:bg-[#18181b] dark:border-zinc-800">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-rose-600">
               <AlertTriangle className="h-5 w-5" /> Delete Service
             </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to remove <strong>{deletingItem?.name}</strong> from the
+            <DialogDescription className="text-slate-500 dark:text-zinc-400">
+              Are you sure you want to remove <strong className="text-slate-800 dark:text-zinc-200">{deletingItem?.name}</strong> from the
               active pricing catalog? Existing historical orders with this item will not be
               affected.
             </DialogDescription>
@@ -503,6 +505,7 @@ export default function PriceListPage() {
               variant="outline"
               size="sm"
               onClick={() => setDeletingItem(null)}
+              className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               Keep Service
             </Button>

@@ -352,7 +352,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
           <nav
             id="mobile-navigation-links"
             aria-label="Mobile navigation"
-            className="fixed right-3 top-[66px] z-50 w-[min(280px,calc(100vw-1.5rem))] rounded-lg border border-slate-200 bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.16)] md:hidden"
+            className="fixed right-3 top-[66px] z-50 w-[min(280px,calc(100vw-1.5rem))] rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3 shadow-[0_8px_24px_rgba(15,23,42,0.16)] md:hidden"
           >
             <div className="grid grid-cols-2 gap-1.5">
               {mobileNavItems.map((item) => {

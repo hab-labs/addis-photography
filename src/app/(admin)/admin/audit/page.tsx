@@ -56,39 +56,39 @@ export default function AuditLogPage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#e31b23]">
           Accountability
         </p>
-        <h1 className="mt-1 text-[25px] font-semibold leading-none text-slate-900">Audit Log</h1>
-        <p className="mt-2 text-xs text-slate-500">
+        <h1 className="mt-1 text-[25px] font-semibold leading-none text-slate-900 dark:text-zinc-100">Audit Log</h1>
+        <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
           Review sensitive actions and operational changes.
         </p>
       </section>
 
-      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 p-2">
+      <section className="overflow-hidden rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-zinc-800 p-2">
           <div className="relative min-w-[170px] flex-1">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search action or record"
-              className="h-8 w-full rounded-md border border-slate-200 pl-8 pr-2 text-[10px] text-slate-700 outline-none focus:border-red-300 focus:ring-1 focus:ring-red-200"
+              className="h-8 w-full rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-8 pr-2 text-[10px] text-slate-700 dark:text-zinc-100 outline-none focus:border-red-300 focus:ring-1 focus:ring-red-200 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
             />
           </div>
           <label className="relative min-w-[150px] flex-1">
             <select
               value={userFilter}
               onChange={(event) => setUserFilter(event.target.value)}
-              className="h-8 w-full appearance-none rounded-md border border-slate-200 bg-white px-2.5 pr-7 text-[10px] text-slate-600 outline-none"
+              className="h-8 w-full appearance-none rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 pr-7 text-[10px] text-slate-600 dark:text-zinc-200 outline-none"
             >
               <option>All users</option>
               {users.map((user) => <option key={user}>{user}</option>)}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
+            <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
           </label>
           <label className="relative min-w-[150px] flex-1">
             <select
               value={actionFilter}
               onChange={(event) => setActionFilter(event.target.value)}
-              className="h-8 w-full appearance-none rounded-md border border-slate-200 bg-white px-2.5 pr-7 text-[10px] text-slate-600 outline-none"
+              className="h-8 w-full appearance-none rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 pr-7 text-[10px] text-slate-600 dark:text-zinc-200 outline-none"
             >
               <option>All actions</option>
               {actions.map((action) => (
@@ -97,11 +97,11 @@ export default function AuditLogPage() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400" />
+            <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
           </label>
           <button
             type="button"
-            className="flex h-8 items-center gap-1.5 rounded-md border border-slate-200 px-2.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
+            className="flex h-8 items-center gap-1.5 rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-[10px] font-semibold text-slate-600 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800"
           >
             <CalendarDays className="h-3.5 w-3.5" />
             Date range
@@ -111,7 +111,7 @@ export default function AuditLogPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/60 text-left text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+              <tr className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/60 text-left text-[9px] font-semibold uppercase tracking-wide text-slate-400 dark:text-zinc-400">
                 <th className="px-2 py-2.5">Timestamp</th>
                 <th className="px-2 py-2.5">User</th>
                 <th className="px-2 py-2.5">Action</th>
@@ -123,18 +123,18 @@ export default function AuditLogPage() {
               {filteredLogs.map((log) => {
                 const timestamp = formatTimestamp(log.timestamp);
                 return (
-                  <tr key={log.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
-                    <td className="whitespace-nowrap px-2 py-3 text-[10px] font-semibold text-slate-700">
+                  <tr key={log.id} className="border-b border-slate-100 dark:border-zinc-800 last:border-0 hover:bg-slate-50/60 dark:hover:bg-zinc-800/40">
+                    <td className="whitespace-nowrap px-2 py-3 text-[10px] font-semibold text-slate-700 dark:text-zinc-200">
                       {timestamp.date}, {timestamp.time}
                     </td>
-                    <td className="whitespace-nowrap px-2 py-3 text-[10px] text-slate-600">{log.actor_name}</td>
-                    <td className="whitespace-nowrap px-2 py-3 text-[10px] text-slate-600">
+                    <td className="whitespace-nowrap px-2 py-3 text-[10px] text-slate-600 dark:text-zinc-300">{log.actor_name}</td>
+                    <td className="whitespace-nowrap px-2 py-3 text-[10px] text-slate-600 dark:text-zinc-300">
                       {actionLabels[log.action] ?? log.action}
                     </td>
-                    <td className="whitespace-nowrap px-2 py-3 text-[10px] text-slate-600">
+                    <td className="whitespace-nowrap px-2 py-3 text-[10px] text-slate-600 dark:text-zinc-300">
                       {log.target_id}
                     </td>
-                    <td className="px-2 py-3 text-[10px] text-slate-500">{log.details}</td>
+                    <td className="px-2 py-3 text-[10px] text-slate-500 dark:text-zinc-400">{log.details}</td>
                   </tr>
                 );
               })}
@@ -143,7 +143,7 @@ export default function AuditLogPage() {
         </div>
 
         {filteredLogs.length === 0 && (
-          <div className="border-t border-slate-100 py-10 text-center text-xs text-slate-400">
+          <div className="border-t border-slate-100 dark:border-zinc-800 py-10 text-center text-xs text-slate-400 dark:text-zinc-500">
             No audit records match your filters.
           </div>
         )}

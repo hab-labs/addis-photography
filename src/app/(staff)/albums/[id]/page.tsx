@@ -398,23 +398,23 @@ export default function AlbumDetailsPage() {
       </div>
 
       {/* Wireframe 6.9 - Section 1: Album Details & Status Card */}
-      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+      <Card className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
               Album:
             </span>
-            <h1 className="text-lg font-bold text-slate-900 tracking-tight">
+            <h1 className="text-lg font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
               {album.title}
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">Status:</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Status:</span>
             <Badge
               className={
                 isExpired
-                  ? "bg-rose-100 text-rose-700 hover:bg-rose-100 border-0 text-xs font-bold"
-                  : "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-0 text-xs font-bold"
+                  ? "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 hover:bg-rose-100 border-0 text-xs font-bold"
+                  : "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 border-0 text-xs font-bold"
               }
             >
               {isExpired ? "Expired" : "Active"}
@@ -423,21 +423,21 @@ export default function AlbumDetailsPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 text-xs">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-slate-600">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-slate-600 dark:text-zinc-300">
             <div>
-              <span className="font-semibold text-slate-900">Customer: </span>
+              <span className="font-semibold text-slate-900 dark:text-zinc-100">Customer: </span>
               <span>{album.customer_name}</span>
             </div>
             <div>
-              <span className="font-semibold text-slate-900">Event: </span>
+              <span className="font-semibold text-slate-900 dark:text-zinc-100">Event: </span>
               <span>{formatCalendarPair(album.event_date).gregorian}</span>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center sm:justify-end gap-2 text-slate-600">
+          <div className="flex flex-wrap items-center sm:justify-end gap-2 text-slate-600 dark:text-zinc-300">
             <div>
-              <span className="font-semibold text-slate-900">Expires: </span>
-              <span className="font-mono text-slate-700">
+              <span className="font-semibold text-slate-900 dark:text-zinc-100">Expires: </span>
+              <span className="font-mono text-slate-700 dark:text-zinc-300">
                 {formatCalendarPair(album.expires_at).gregorian}
               </span>
             </div>
@@ -446,7 +446,7 @@ export default function AlbumDetailsPage() {
               variant="outline"
               onClick={handleExtendRetention}
               disabled={isExtending}
-              className="h-7 px-2.5 text-xs font-semibold text-slate-700 border-slate-300 hover:bg-slate-50 hover:text-[#e21b23] transition-colors"
+              className="h-7 px-2.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 border-slate-300 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-[#e21b23] transition-colors"
             >
               <CalendarPlus className="mr-1 h-3.5 w-3.5 text-[#e21b23]" />
               {isExtending ? "Extending…" : "[Extend]"}
@@ -457,7 +457,7 @@ export default function AlbumDetailsPage() {
                 size="sm"
                 variant="outline"
                 onClick={() => setDeleteAlbumModalOpen(true)}
-                className="h-7 px-2.5 text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                className="h-7 px-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 transition-colors"
               >
                 <Trash2 className="mr-1 h-3.5 w-3.5" />
                 Delete Album
@@ -468,14 +468,14 @@ export default function AlbumDetailsPage() {
       </Card>
 
       {/* Wireframe 6.9 - Section 2: Visibility, Downloads, Link & QR Card */}
-      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <Card className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] p-5 shadow-sm">
         <div className="flex flex-col md:flex-row items-start justify-between gap-6">
           {/* Left Column: Visibility, Downloads, Link, Export Buttons */}
           <div className="flex-1 space-y-4 w-full">
             {/* Visibility: ( ) Public  (•) Private  PIN: •••• [Change PIN] */}
             <div className="flex flex-wrap items-center gap-4 text-xs">
-              <span className="font-bold text-slate-700">Visibility:</span>
-              <label className="inline-flex items-center gap-1.5 cursor-pointer font-medium text-slate-800">
+              <span className="font-bold text-slate-700 dark:text-zinc-300">Visibility:</span>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer font-medium text-slate-800 dark:text-zinc-200">
                 <input
                   type="radio"
                   name="visibility"
@@ -487,7 +487,7 @@ export default function AlbumDetailsPage() {
                 <span>Public</span>
               </label>
 
-              <label className="inline-flex items-center gap-1.5 cursor-pointer font-medium text-slate-800">
+              <label className="inline-flex items-center gap-1.5 cursor-pointer font-medium text-slate-800 dark:text-zinc-200">
                 <input
                   type="radio"
                   name="visibility"
@@ -500,8 +500,8 @@ export default function AlbumDetailsPage() {
               </label>
 
               {accessMode === "private" && (
-                <div className="inline-flex items-center gap-2 ml-2 pl-3 border-l border-slate-200">
-                  <span className="font-mono text-slate-700 font-bold">
+                <div className="inline-flex items-center gap-2 ml-2 pl-3 border-l border-slate-200 dark:border-zinc-700">
+                  <span className="font-mono text-slate-700 dark:text-zinc-300 font-bold">
                     PIN: {album.pin_set ? "••••" : (accessPin || "••••")}
                   </span>
                   <Button
@@ -513,7 +513,7 @@ export default function AlbumDetailsPage() {
                       setPinError("");
                       setChangePinOpen(true);
                     }}
-                    className="h-6 px-2 text-[11px] font-semibold text-slate-700 hover:text-[#e21b23]"
+                    className="h-6 px-2 text-[11px] font-semibold text-slate-700 dark:text-zinc-200 border-slate-300 dark:border-zinc-700 hover:text-[#e21b23]"
                   >
                     [Change PIN]
                   </Button>
@@ -620,9 +620,9 @@ export default function AlbumDetailsPage() {
       </Card>
 
       {/* Wireframe 6.9 - Section 3: Upload Box & Progress */}
-      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+      <Card className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-700">Upload:</span>
+          <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Upload:</span>
         </div>
 
         <div
@@ -635,8 +635,8 @@ export default function AlbumDetailsPage() {
           onClick={() => fileInputRef.current?.click()}
           className={`flex cursor-pointer flex-col sm:flex-row items-center justify-center sm:justify-between rounded-xl border-2 border-dashed p-6 text-center sm:text-left transition-colors ${
             dragOver
-              ? "border-[#e21b23] bg-red-50/50"
-              : "border-slate-300 hover:border-slate-400 bg-slate-50/60"
+              ? "border-[#e21b23] bg-red-50/50 dark:bg-red-950/20"
+              : "border-slate-300 dark:border-zinc-700 hover:border-slate-400 dark:hover:border-zinc-600 bg-slate-50/60 dark:bg-zinc-900/40"
           }`}
         >
           <input
@@ -648,14 +648,14 @@ export default function AlbumDetailsPage() {
             className="hidden"
           />
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-[#e21b23]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/50 text-[#e21b23]">
               <UploadCloud className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-900">
+              <p className="text-xs font-bold text-slate-900 dark:text-zinc-100">
                 [ Drag photos and videos here or Browse ]
               </p>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
                 Supports JPG, PNG, HEIC, MP4, MOV. Chunked 5MB uploads with auto-resume.
               </p>
             </div>
@@ -671,15 +671,15 @@ export default function AlbumDetailsPage() {
 
         {/* Live Uploads Queue: IMG_001.jpg done, VID_02.mp4 62% */}
         {activeUploads.length > 0 && (
-          <div className="space-y-2 pt-2 border-t border-slate-100">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
               Live Upload Queue ({activeUploads.length})
             </p>
             {activeUploads.map((item) => (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 text-xs">
                   <div className="flex flex-col gap-0.5 truncate max-w-sm">
                     <div className="flex items-center gap-2 truncate">
-                      <span className="font-semibold text-slate-800 truncate">{item.filename}</span>
+                      <span className="font-semibold text-slate-800 dark:text-zinc-200 truncate">{item.filename}</span>
                       <span className="text-[10px] text-slate-400 font-mono">
                         ({(item.totalSize / (1024 * 1024)).toFixed(1)} MB)
                       </span>
@@ -721,20 +721,20 @@ export default function AlbumDetailsPage() {
       </Card>
 
       {/* Wireframe 6.9 - Section 4: Storage & Files & Thumbnail Grid */}
-      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+      <Card className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] p-5 shadow-sm space-y-4">
         {/* Header: Storage: 412 MB of 1 GB    Files: 236 photos · 4 videos */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
             <div>
-              <span className="font-bold text-slate-700">Storage: </span>
-              <span className="font-semibold text-slate-900 font-mono">
+              <span className="font-bold text-slate-700 dark:text-zinc-300">Storage: </span>
+              <span className="font-semibold text-slate-900 dark:text-zinc-100 font-mono">
                 {usedMB} MB of {totalGB} GB
               </span>
               <span className="text-slate-400 ml-1">({percentUsed}%)</span>
             </div>
             <div>
-              <span className="font-bold text-slate-700">Files: </span>
-              <span className="font-semibold text-slate-900">
+              <span className="font-bold text-slate-700 dark:text-zinc-300">Files: </span>
+              <span className="font-semibold text-slate-900 dark:text-zinc-100">
                 {photoCount} {photoCount === 1 ? "photo" : "photos"} · {videoCount} {videoCount === 1 ? "video" : "videos"}
               </span>
             </div>
@@ -744,7 +744,7 @@ export default function AlbumDetailsPage() {
           <div className="flex items-center gap-2">
             {selectedMediaIds.size > 0 && (
               <>
-                <span className="text-xs text-slate-500 font-medium">
+                <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium">
                   {selectedMediaIds.size} selected
                 </span>
                 {selectedMediaIds.size === 1 && (
@@ -752,7 +752,7 @@ export default function AlbumDetailsPage() {
                     size="sm"
                     variant="outline"
                     onClick={handleSetCoverFromSelection}
-                    className="h-7 px-2.5 text-xs text-slate-700 hover:text-[#e21b23] border-slate-300"
+                    className="h-7 px-2.5 text-xs text-slate-700 dark:text-zinc-200 hover:text-[#e21b23] border-slate-300 dark:border-zinc-700 dark:bg-zinc-900"
                   >
                     <ImageIcon className="mr-1 h-3.5 w-3.5" />
                     Set cover
@@ -763,7 +763,7 @@ export default function AlbumDetailsPage() {
                   variant="outline"
                   onClick={handleDeleteSelectedMedia}
                   disabled={isDeletingMedia}
-                  className="h-7 px-2.5 text-xs text-rose-600 hover:bg-rose-50 border-rose-200"
+                  className="h-7 px-2.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 border-rose-200 dark:border-rose-900/50"
                 >
                   <Trash2 className="mr-1 h-3.5 w-3.5" />
                   {isDeletingMedia ? "Deleting…" : `Delete (${selectedMediaIds.size})`}
@@ -775,7 +775,7 @@ export default function AlbumDetailsPage() {
                 size="sm"
                 variant="ghost"
                 onClick={handleToggleSelectAll}
-                className="h-7 px-2 text-xs text-slate-500"
+                className="h-7 px-2 text-xs text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100"
               >
                 {selectedMediaIds.size === mediaFiles.length ? "Deselect All" : "Select All"}
               </Button>
@@ -784,7 +784,7 @@ export default function AlbumDetailsPage() {
         </div>
 
         {/* Storage Bar Indicator */}
-        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-1.5 w-full bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${
               percentUsed > 80 ? "bg-rose-500" : "bg-[#e21b23]"
@@ -810,10 +810,10 @@ export default function AlbumDetailsPage() {
                 <div
                   key={media.id}
                   onClick={() => handleToggleSelect(media.id)}
-                  className={`group relative rounded-xl border overflow-hidden cursor-pointer bg-white transition-all ${
+                  className={`group relative rounded-xl border overflow-hidden cursor-pointer bg-white dark:bg-[#18181b] transition-all ${
                     isSelected
                       ? "border-[#e21b23] ring-2 ring-[#e21b23]/30 shadow-md"
-                      : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
+                      : "border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-sm"
                   }`}
                 >
                   {/* Thumbnail Image Container */}
@@ -842,7 +842,7 @@ export default function AlbumDetailsPage() {
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => {}} // handled by parent onClick
-                        className="h-4 w-4 rounded border-slate-300 text-[#e21b23] focus:ring-[#e21b23]"
+                        className="h-4 w-4 rounded border-slate-300 dark:border-zinc-600 text-[#e21b23] focus:ring-[#e21b23]"
                       />
                     </div>
 
@@ -875,7 +875,7 @@ export default function AlbumDetailsPage() {
 
                   {/* Metadata & Quick Actions */}
                   <div className="p-2 text-xs">
-                    <p className="font-semibold text-slate-800 truncate" title={media.filename}>
+                    <p className="font-semibold text-slate-800 dark:text-zinc-200 truncate" title={media.filename}>
                       {media.filename}
                     </p>
                     <div className="flex items-center justify-between mt-1 text-[10px] text-slate-400">
@@ -905,13 +905,13 @@ export default function AlbumDetailsPage() {
 
       {/* Change PIN Modal Dialog */}
       <Dialog open={changePinOpen} onOpenChange={setChangePinOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm bg-white dark:bg-[#141417] border-slate-200 dark:border-zinc-800">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <DialogTitle className="text-base font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
               <Lock className="h-4 w-4 text-[#e21b23]" />
               <span>Change Album PIN</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
+            <DialogDescription className="text-xs text-slate-500 dark:text-zinc-400">
               Set a 4 to 6 numeric digit PIN to protect "{album.title}".
             </DialogDescription>
           </DialogHeader>
@@ -926,7 +926,7 @@ export default function AlbumDetailsPage() {
                 placeholder="4 to 6 digit PIN (e.g. 1234)"
                 value={newPinInput}
                 onChange={(e) => setNewPinInput(e.target.value)}
-                className="text-center font-mono text-lg tracking-widest"
+                className="text-center font-mono text-lg tracking-widest bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-700 text-slate-900 dark:text-zinc-100"
                 autoFocus
                 required
               />
@@ -941,6 +941,7 @@ export default function AlbumDetailsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setChangePinOpen(false)}
+                className="border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300"
               >
                 Cancel
               </Button>
@@ -991,18 +992,18 @@ export default function AlbumDetailsPage() {
 
       {/* Delete Album Modal Dialog for Admins */}
       <Dialog open={deleteAlbumModalOpen} onOpenChange={setDeleteAlbumModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-white dark:bg-[#141417] border-slate-200 dark:border-zinc-800">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-rose-600 flex items-center gap-2">
               <Trash2 className="h-4 w-4" />
               <span>Delete Album</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 pt-1">
-              Are you sure you want to delete <strong className="text-slate-800">"{album.title}"</strong>?
+            <DialogDescription className="text-xs text-slate-500 dark:text-zinc-400 pt-1">
+              Are you sure you want to delete <strong className="text-slate-800 dark:text-zinc-200">"{album.title}"</strong>?
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-2 text-xs text-slate-600 space-y-2">
+          <div className="py-2 text-xs text-slate-600 dark:text-zinc-400 space-y-2">
             <p>
               This will permanently remove the album record, unlock sessions, and all associated media files ({mediaFiles.length} uploaded files).
             </p>
@@ -1018,6 +1019,7 @@ export default function AlbumDetailsPage() {
               size="sm"
               onClick={() => setDeleteAlbumModalOpen(false)}
               disabled={isDeletingAlbum}
+              className="border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300"
             >
               Cancel
             </Button>

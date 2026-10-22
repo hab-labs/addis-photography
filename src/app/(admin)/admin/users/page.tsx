@@ -185,14 +185,14 @@ export default function StaffUsersPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
               Users
             </h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 border border-indigo-500/20">
+            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 dark:bg-indigo-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 dark:border-indigo-800">
               <UserCheck className="h-3 w-3" /> Team Access
             </span>
           </div>
-          <p className="text-xs font-medium text-slate-400 mt-1">
+          <p className="text-xs font-medium text-slate-400 dark:text-zinc-400 mt-1">
             Manage studio operator accounts, access privileges, and authentication credentials.
           </p>
         </div>
@@ -215,29 +215,29 @@ export default function StaffUsersPage() {
       {successNotice && (
         <div
           role="status"
-          className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-800 border border-emerald-200"
+          className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
         >
-          <Check className="h-4 w-4 text-emerald-600" />
+          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           <span>{successNotice}</span>
         </div>
       )}
 
-      <div className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+      <div className="rounded-3xl bg-white dark:bg-[#121214] p-6 shadow-sm border border-slate-100 dark:border-zinc-800">
         <Table>
           <TableHeader>
-            <TableRow className="border-none text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:bg-transparent">
+            <TableRow className="border-none text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-400 hover:bg-transparent">
               <TableHead className="pl-4">Staff Member</TableHead>
               <TableHead>Access Role</TableHead>
               <TableHead>Activity</TableHead>
               <TableHead className="text-right pr-4">Auth</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-slate-100/80">
+          <TableBody className="divide-y divide-slate-100/80 dark:divide-zinc-800/80">
             {users.map((s) => (
-              <TableRow key={s.id} className="border-none hover:bg-slate-50/80 transition-colors">
+              <TableRow key={s.id} className="border-none hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors">
                 <TableCell className="pl-4 py-4">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9 rounded-2xl ring-1 ring-slate-200/60">
+                    <Avatar className="h-9 w-9 rounded-2xl ring-1 ring-slate-200/60 dark:ring-zinc-700">
                       <AvatarFallback className="rounded-2xl bg-gradient-to-tr from-indigo-500 to-violet-500 text-white text-xs font-bold">
                         {s.name
                           .split(" ")
@@ -248,27 +248,27 @@ export default function StaffUsersPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-xs font-bold text-slate-800">{s.name}</p>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-xs font-bold text-slate-800 dark:text-zinc-200">{s.name}</p>
+                      <p className="text-[11px] text-slate-400 dark:text-zinc-500">
                         {s.email} {s.phone ? `• ${s.phone}` : ""}
                       </p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                     <Shield className="h-3 w-3" />{" "}
                     {s.role === "admin" ? "Administrator" : "Operator"}
                   </span>
                 </TableCell>
                 <TableCell>
                   {s.active !== false && s.is_active !== false ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       Active
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 border border-slate-200">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-zinc-800 px-2.5 py-0.5 text-xs font-semibold text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700">
                       <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
                       Deactivated
                     </span>
@@ -279,13 +279,13 @@ export default function StaffUsersPage() {
                     <button
                       type="button"
                       onClick={() => openEdit(s)}
-                      className="text-xs font-semibold text-indigo-600 hover:underline inline-flex items-center gap-1"
+                      className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1"
                     >
                       <Pencil className="h-3 w-3" /> Edit
                     </button>
 
                     {s.id === currentUser?.id ? (
-                      <span className="text-[11px] text-slate-400 italic">Current User</span>
+                      <span className="text-[11px] text-slate-400 dark:text-zinc-500 italic">Current User</span>
                     ) : s.active !== false && s.is_active !== false ? (
                       <button
                         type="button"
@@ -324,12 +324,12 @@ export default function StaffUsersPage() {
 
       {/* Invite / Edit User Dialog */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dark:bg-[#18181b] dark:border-zinc-800">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-slate-900 dark:text-zinc-100">
               {form.id ? "Edit User Profile" : "Invite Studio Operator"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-slate-500 dark:text-zinc-400">
               {form.id
                 ? "Update this user's profile details and studio role."
                 : "Create login credentials for a photography staff member."}
@@ -340,7 +340,7 @@ export default function StaffUsersPage() {
             {error && (
               <div
                 role="alert"
-                className="rounded-md bg-red-50 p-2.5 text-xs font-semibold text-red-700 border border-red-200"
+                className="rounded-md bg-red-50 dark:bg-red-950/40 p-2.5 text-xs font-semibold text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900"
               >
                 {error}
               </div>
@@ -348,7 +348,7 @@ export default function StaffUsersPage() {
 
             <div className="grid gap-3">
               <div className="space-y-1">
-                <Label htmlFor="usr-name" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="usr-name" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                   Full Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -357,13 +357,13 @@ export default function StaffUsersPage() {
                   value={form.name}
                   onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))}
                   required
-                  className="text-xs"
+                  className="text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="usr-uname" className="text-xs font-semibold text-slate-700">
+                  <Label htmlFor="usr-uname" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                     Username <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -372,12 +372,12 @@ export default function StaffUsersPage() {
                     value={form.username}
                     onChange={(e) => setForm((c) => ({ ...c, username: e.target.value }))}
                     required
-                    className="text-xs"
+                    className="text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="usr-role" className="text-xs font-semibold text-slate-700">
+                  <Label htmlFor="usr-role" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                     Access Role
                   </Label>
                   <select
@@ -386,7 +386,7 @@ export default function StaffUsersPage() {
                     onChange={(e) =>
                       setForm((c) => ({ ...c, role: e.target.value as User["role"] }))
                     }
-                    className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-indigo-500"
+                    className="h-9 w-full rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-indigo-500"
                   >
                     <option value="staff">Staff / Operator</option>
                     <option value="admin">Administrator</option>
@@ -396,7 +396,7 @@ export default function StaffUsersPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="usr-email" className="text-xs font-semibold text-slate-700">
+                  <Label htmlFor="usr-email" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                     Email <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -406,12 +406,12 @@ export default function StaffUsersPage() {
                     value={form.email}
                     onChange={(e) => setForm((c) => ({ ...c, email: e.target.value }))}
                     required
-                    className="text-xs"
+                    className="text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="usr-phone" className="text-xs font-semibold text-slate-700">
+                  <Label htmlFor="usr-phone" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                     Phone Number
                   </Label>
                   <Input
@@ -419,13 +419,13 @@ export default function StaffUsersPage() {
                     placeholder="+251911223344"
                     value={form.phone}
                     onChange={(e) => setForm((c) => ({ ...c, phone: e.target.value }))}
-                    className="text-xs"
+                    className="text-xs dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="usr-pwd" className="text-xs font-semibold text-slate-700">
+                <Label htmlFor="usr-pwd" className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                   {form.id ? "New Password (leave empty to keep current)" : "Temporary Password"}
                 </Label>
                 <Input
@@ -436,17 +436,17 @@ export default function StaffUsersPage() {
                   placeholder={form.id ? "••••••••" : "At least 8 characters"}
                   value={form.password}
                   onChange={(e) => setForm((c) => ({ ...c, password: e.target.value }))}
-                  className="text-xs font-mono"
+                  className="text-xs font-mono dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                 />
               </div>
 
               {form.id && (
-                <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 p-3">
                   <div>
-                    <Label htmlFor="usr-active" className="text-xs font-semibold text-slate-800 cursor-pointer">
+                    <Label htmlFor="usr-active" className="text-xs font-semibold text-slate-800 dark:text-zinc-200 cursor-pointer">
                       Account Status
                     </Label>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-[10px] text-slate-500 dark:text-zinc-400">
                       {form.active
                         ? "Active (Operator can sign in to studio)"
                         : "Deactivated (Sign-in access revoked)"}
@@ -458,7 +458,7 @@ export default function StaffUsersPage() {
                     checked={form.active}
                     disabled={form.id === currentUser?.id}
                     onChange={(e) => setForm((c) => ({ ...c, active: e.target.checked }))}
-                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    className="h-4 w-4 rounded border-slate-300 accent-indigo-600 cursor-pointer"
                   />
                 </div>
               )}
@@ -470,6 +470,7 @@ export default function StaffUsersPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setInviteOpen(false)}
+                className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 Cancel
               </Button>
@@ -490,17 +491,17 @@ export default function StaffUsersPage() {
         open={Boolean(deactivateTargetUser)}
         onOpenChange={(open) => !open && setDeactivateTargetUser(null)}
       >
-        <DialogContent className="sm:max-w-[420px]">
+        <DialogContent className="sm:max-w-[420px] dark:bg-[#18181b] dark:border-zinc-800">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-rose-600">
               <UserX className="h-5 w-5" /> Deactivate Account
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 pt-1">
-              Are you sure you want to deactivate <strong className="text-slate-800">{deactivateTargetUser?.name}</strong> (@{deactivateTargetUser?.username})?
+            <DialogDescription className="text-xs text-slate-500 dark:text-zinc-400 pt-1">
+              Are you sure you want to deactivate <strong className="text-slate-800 dark:text-zinc-200">{deactivateTargetUser?.name}</strong> (@{deactivateTargetUser?.username})?
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-2 text-xs text-slate-600 space-y-2">
+          <div className="py-2 text-xs text-slate-600 dark:text-zinc-300 space-y-2">
             <p>
               This user will immediately be logged out of all active sessions and prevented from signing in until an administrator reactivates their account.
             </p>
@@ -513,6 +514,7 @@ export default function StaffUsersPage() {
               size="sm"
               onClick={() => setDeactivateTargetUser(null)}
               disabled={isToggling}
+              className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               Cancel
             </Button>
@@ -539,26 +541,26 @@ export default function StaffUsersPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[400px] dark:bg-[#18181b] dark:border-zinc-800">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-zinc-100">
               <KeyRound className="h-5 w-5 text-indigo-600" /> Reset Operator PIN
             </DialogTitle>
-            <DialogDescription>
-              Generate a temporary emergency PIN for <strong>{resetTargetUser?.name}</strong>.
+            <DialogDescription className="text-slate-500 dark:text-zinc-400">
+              Generate a temporary emergency PIN for <strong className="text-slate-800 dark:text-zinc-200">{resetTargetUser?.name}</strong>.
             </DialogDescription>
           </DialogHeader>
 
           {resetPinSuccess ? (
             <div className="space-y-3 py-2 text-center">
-              <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4">
-                <p className="text-xs text-emerald-800 font-medium">
+              <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-4">
+                <p className="text-xs text-emerald-800 dark:text-emerald-300 font-medium">
                   Temporary 6-Digit PIN Generated:
                 </p>
-                <p className="text-2xl font-mono font-bold text-emerald-700 tracking-widest mt-1">
+                <p className="text-2xl font-mono font-bold text-emerald-700 dark:text-emerald-300 tracking-widest mt-1">
                   {resetPinSuccess}
                 </p>
-                <p className="text-[11px] text-emerald-600 mt-2">
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-2">
                   Share this temporary PIN with {resetTargetUser?.name}.
                 </p>
               </div>
@@ -577,7 +579,7 @@ export default function StaffUsersPage() {
             </div>
           ) : (
             <div className="space-y-4 py-2">
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-slate-600 dark:text-zinc-300">
                 Are you sure you want to reset the operator access credentials for this account?
               </p>
               <DialogFooter>
@@ -586,6 +588,7 @@ export default function StaffUsersPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setResetTargetUser(null)}
+                  className="dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
                   Cancel
                 </Button>

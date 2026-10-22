@@ -158,28 +158,28 @@ export default function SalesReportsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
               Reports
             </h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 border border-indigo-500/20">
+            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 dark:bg-indigo-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 dark:border-indigo-800">
               <Sparkles className="h-3 w-3" /> Real-time
             </span>
           </div>
-          <p className="text-xs font-medium text-slate-400 mt-1">
+          <p className="text-xs font-medium text-slate-400 dark:text-zinc-400 mt-1">
             Review studio financial activity, payment breakdowns, and service revenues.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           {/* Segmented Filter */}
-          <div className="flex items-center rounded-full bg-slate-200/60 p-1 shadow-inner">
+          <div className="flex items-center rounded-full bg-slate-200/60 dark:bg-zinc-800 p-1 shadow-inner">
             <button
               type="button"
               onClick={() => setFilter("all")}
               className={`rounded-full px-3.5 py-1 text-xs font-semibold transition-all ${
                 filter === "all"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
+                  ? "bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-sm"
+                  : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200"
               }`}
             >
               Lifetime All
@@ -189,8 +189,8 @@ export default function SalesReportsPage() {
               onClick={() => setFilter("daily")}
               className={`rounded-full px-3.5 py-1 text-xs font-semibold transition-all ${
                 filter === "daily"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
+                  ? "bg-white dark:bg-zinc-700 text-slate-900 dark:text-zinc-100 shadow-sm"
+                  : "text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200"
               }`}
             >
               Daily Breakdown
@@ -201,7 +201,7 @@ export default function SalesReportsPage() {
             type="button"
             onClick={loadData}
             aria-label="Refresh financial reports"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white text-slate-600 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:bg-slate-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 dark:border-zinc-700 bg-white dark:bg-[#121214] text-slate-600 dark:text-zinc-300 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800"
           >
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
@@ -210,9 +210,9 @@ export default function SalesReportsPage() {
             type="button"
             onClick={handleExportCSV}
             disabled={activeOrders.length === 0}
-            className="flex h-9 items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-4 text-xs font-semibold text-slate-700 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:bg-slate-50 disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-full border border-slate-200/80 dark:border-zinc-700 bg-white dark:bg-[#121214] px-4 text-xs font-semibold text-slate-700 dark:text-zinc-200 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800 disabled:opacity-50"
           >
-            <Download className="h-3.5 w-3.5 text-slate-400" />
+            <Download className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
             <span>Export CSV</span>
           </button>
         </div>
@@ -221,86 +221,86 @@ export default function SalesReportsPage() {
       {/* Top 4 Clean Metric Cards */}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {/* Gross Bookings */}
-        <div className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+        <div className="rounded-3xl bg-white dark:bg-[#121214] p-6 shadow-sm border border-slate-100 dark:border-zinc-800 flex flex-col justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-400">
             Gross Bookings
           </span>
           <div className="my-2">
-            <div className="text-2xl font-black tracking-tight text-slate-900 tabular-nums">
+            <div className="text-2xl font-black tracking-tight text-slate-900 dark:text-zinc-100 tabular-nums">
               ETB {Number(metrics.gross).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          <p className="text-xs font-medium text-slate-400">
+          <p className="text-xs font-medium text-slate-400 dark:text-zinc-500">
             {metrics.orderCount} active {metrics.orderCount === 1 ? "order" : "orders"}
           </p>
         </div>
 
         {/* Total Collected */}
-        <div className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+        <div className="rounded-3xl bg-white dark:bg-[#121214] p-6 shadow-sm border border-slate-100 dark:border-zinc-800 flex flex-col justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
             Total Collected
           </span>
           <div className="my-2">
-            <div className="text-2xl font-black tracking-tight text-emerald-600 tabular-nums">
+            <div className="text-2xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums">
               ETB {Number(metrics.collected).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          <p className="text-xs font-medium text-slate-400">Realized studio income</p>
+          <p className="text-xs font-medium text-slate-400 dark:text-zinc-500">Realized studio income</p>
         </div>
 
         {/* Outstanding Due */}
-        <div className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-rose-500">
+        <div className="rounded-3xl bg-white dark:bg-[#121214] p-6 shadow-sm border border-slate-100 dark:border-zinc-800 flex flex-col justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400">
             Outstanding Due
           </span>
           <div className="my-2">
-            <div className="text-2xl font-black tracking-tight text-rose-500 tabular-nums">
+            <div className="text-2xl font-black tracking-tight text-rose-500 dark:text-rose-400 tabular-nums">
               ETB {Number(metrics.due).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          <p className="text-xs font-medium text-slate-400">Uncollected client balances</p>
+          <p className="text-xs font-medium text-slate-400 dark:text-zinc-500">Uncollected client balances</p>
         </div>
 
         {/* Telebirr Volume */}
-        <div className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+        <div className="rounded-3xl bg-white dark:bg-[#121214] p-6 shadow-sm border border-slate-100 dark:border-zinc-800 flex flex-col justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
             Telebirr Volume
           </span>
           <div className="my-2">
-            <div className="text-2xl font-black tracking-tight text-indigo-600 tabular-nums">
+            <div className="text-2xl font-black tracking-tight text-indigo-600 dark:text-indigo-400 tabular-nums">
               ETB {Number(metrics.telebirr).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          <p className="text-xs font-medium text-slate-400">Digital mobile wallet</p>
+          <p className="text-xs font-medium text-slate-400 dark:text-zinc-500">Digital mobile wallet</p>
         </div>
       </div>
 
       {/* Two Column Section */}
       <div className="grid gap-6 lg:grid-cols-2 items-start">
         {/* Left: Revenue by Photo Service */}
-        <div className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+        <div className="rounded-3xl bg-white dark:bg-[#121214] p-6 shadow-sm border border-slate-100 dark:border-zinc-800 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-zinc-800">
             <TrendingUp className="h-4 w-4 text-amber-500" />
-            <h2 className="text-sm font-bold text-slate-900">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
               Revenue by Photo Service
             </h2>
           </div>
 
           {serviceStats.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-400">
+            <div className="py-12 text-center text-xs text-slate-400 dark:text-zinc-500">
               No service transactions recorded for this period.
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 text-xs">
+            <div className="divide-y divide-slate-100 dark:divide-zinc-800 text-xs">
               {serviceStats.map((item) => (
                 <div key={item.name} className="flex items-center justify-between py-3">
                   <div>
-                    <p className="font-bold text-slate-800">{item.name}</p>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="font-bold text-slate-800 dark:text-zinc-200">{item.name}</p>
+                    <p className="text-[11px] text-slate-400 dark:text-zinc-500">
                       {item.count} {item.count === 1 ? "unit" : "units"} delivered
                     </p>
                   </div>
-                  <span className="font-mono font-bold text-slate-900 tabular-nums">
+                  <span className="font-mono font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
                     ETB {Number(item.revenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -310,59 +310,59 @@ export default function SalesReportsPage() {
         </div>
 
         {/* Right: Payment Methods Breakdown */}
-        <div className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+        <div className="rounded-3xl bg-white dark:bg-[#121214] p-6 shadow-sm border border-slate-100 dark:border-zinc-800 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-zinc-800">
             <Wallet className="h-4 w-4 text-indigo-500" />
-            <h2 className="text-sm font-bold text-slate-900">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
               Payment Methods Breakdown
             </h2>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3 pt-1">
             {/* Telebirr */}
-            <div className="rounded-2xl bg-indigo-50/50 p-4 border border-indigo-100/60">
+            <div className="rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 p-4 border border-indigo-100/60 dark:border-indigo-900/40">
               <div className="flex items-center gap-1.5">
-                <Smartphone className="h-3.5 w-3.5 text-indigo-600" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+                <Smartphone className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                   Telebirr
                 </span>
               </div>
-              <div className="text-sm font-black text-slate-900 tabular-nums mt-1.5">
+              <div className="text-sm font-black text-slate-900 dark:text-zinc-100 tabular-nums mt-1.5">
                 ETB {Number(metrics.telebirr).toFixed(2)}
               </div>
             </div>
 
             {/* Cash */}
-            <div className="rounded-2xl bg-emerald-50/50 p-4 border border-emerald-100/60">
+            <div className="rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/30 p-4 border border-emerald-100/60 dark:border-emerald-900/40">
               <div className="flex items-center gap-1.5">
-                <Banknote className="h-3.5 w-3.5 text-emerald-600" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                <Banknote className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                   Physical Cash
                 </span>
               </div>
-              <div className="text-sm font-black text-slate-900 tabular-nums mt-1.5">
+              <div className="text-sm font-black text-slate-900 dark:text-zinc-100 tabular-nums mt-1.5">
                 ETB {Number(metrics.cash).toFixed(2)}
               </div>
             </div>
 
             {/* CBE / Bank */}
-            <div className="rounded-2xl bg-violet-50/50 p-4 border border-violet-100/60">
+            <div className="rounded-2xl bg-violet-50/50 dark:bg-violet-950/30 p-4 border border-violet-100/60 dark:border-violet-900/40">
               <div className="flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5 text-violet-600" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-violet-600">
+                <Building2 className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">
                   CBE Birr & Bank
                 </span>
               </div>
-              <div className="text-sm font-black text-slate-900 tabular-nums mt-1.5">
+              <div className="text-sm font-black text-slate-900 dark:text-zinc-100 tabular-nums mt-1.5">
                 ETB {Number(metrics.cbe).toFixed(2)}
               </div>
             </div>
           </div>
 
           {/* Compliance note */}
-          <div className="pt-6 flex items-center justify-between text-[11px] text-slate-400">
+          <div className="pt-6 flex items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500">
             <span>Ethiopian Fiscal Compliance</span>
-            <span className="font-semibold text-slate-600">
+            <span className="font-semibold text-slate-600 dark:text-zinc-300">
               Studio VAT / TOT Ledger Active (UTC+3)
             </span>
           </div>
