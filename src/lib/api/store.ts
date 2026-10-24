@@ -35,8 +35,50 @@ function isBrowser(): boolean {
   return typeof window !== "undefined" && !process.env.VITEST;
 }
 
+function runStorageMigrations(): void {
+  if (typeof window === "undefined") return;
+  try {
+    // 1. Purge legacy mock album alb-1 (Bethlehem) from client localStorage if present
+    const rawAlbums = localStorage.getItem(STORAGE_KEY_PREFIX + "albums");
+    if (rawAlbums) {
+      const albums: Album[] = JSON.parse(rawAlbums);
+      const filtered = albums.filter(
+        (a) => a.id !== "alb-1" && a.token !== "bethlehem-wedding-2026"
+      );
+      if (filtered.length !== albums.length) {
+        localStorage.setItem(STORAGE_KEY_PREFIX + "albums", JSON.stringify(filtered));
+      }
+    }
+
+    // 2. Purge associated media files for alb-1
+    const rawMedia = localStorage.getItem(STORAGE_KEY_PREFIX + "media");
+    if (rawMedia) {
+      const media: MediaFile[] = JSON.parse(rawMedia);
+      const filteredMedia = media.filter((m) => m && m.album_id !== "alb-1");
+      if (filteredMedia.length !== media.length) {
+        localStorage.setItem(STORAGE_KEY_PREFIX + "media", JSON.stringify(filteredMedia));
+      }
+    }
+
+    // 3. Clear any saved PIN or unlock tokens for bethlehem
+    localStorage.removeItem("addis_album_pin_bethlehem-wedding-2026");
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem("album_unlocked_bethlehem-wedding-2026");
+    }
+  } catch {
+    // Suppress migration parsing issues
+  }
+}
+
+if (typeof window !== "undefined") {
+  runStorageMigrations();
+}
+
 function getStored<T>(key: string, initial: T): T {
   if (typeof window === "undefined") return initial;
+  if (key === "albums" || key === "media") {
+    runStorageMigrations();
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY_PREFIX + key);
     return raw ? JSON.parse(raw) : initial;
@@ -673,16 +715,20 @@ export const studioStore = {
 
   // --- Albums ---
   getAlbums: (): Album[] => {
-    return getStored<Album[]>("albums", INITIAL_ALBUMS);
+    return getStored<Album[]>("albums", INITIAL_ALBUMS).filter(
+      (a) => a && a.id !== "alb-1" && a.token !== "bethlehem-wedding-2026"
+    );
   },
 
   getAlbumByToken: (token: string): Album | undefined => {
-    const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
+    if (token === "bethlehem-wedding-2026") return undefined;
+    const albums = studioStore.getAlbums();
     return albums.find((a) => a.token === token);
   },
 
   getAlbumById: (id: string): Album | undefined => {
-    const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
+    if (id === "alb-1") return undefined;
+    const albums = studioStore.getAlbums();
     return albums.find((a) => a.id === id);
   },
 
@@ -853,21 +899,24 @@ export const studioStore = {
           created_at: a.created_at || new Date().toISOString(),
         }));
 
-        const currentAlbums = getStored<Album[]>("albums", INITIAL_ALBUMS);
-        const merged: Album[] = mapped.map((remote) => {
-          const local = currentAlbums.find((l) => l.id === remote.id || l.token === remote.token);
-          if (local) {
-            return {
-              ...remote,
-              used_bytes: Math.max(Number(remote.used_bytes) || 0, Number(local.used_bytes) || 0),
-              file_count: Math.max(Number(remote.file_count) || 0, Number(local.file_count) || 0),
-              cover_image_url: remote.cover_image_url || local.cover_image_url,
-            };
-          }
-          return remote;
-        });
+        const currentAlbums = studioStore.getAlbums();
+        const merged: Album[] = mapped
+          .filter((remote) => remote.id !== "alb-1" && remote.token !== "bethlehem-wedding-2026")
+          .map((remote) => {
+            const local = currentAlbums.find((l) => l.id === remote.id || l.token === remote.token);
+            if (local) {
+              return {
+                ...remote,
+                used_bytes: Math.max(Number(remote.used_bytes) || 0, Number(local.used_bytes) || 0),
+                file_count: Math.max(Number(remote.file_count) || 0, Number(local.file_count) || 0),
+                cover_image_url: remote.cover_image_url || local.cover_image_url,
+              };
+            }
+            return remote;
+          });
 
         for (const local of currentAlbums) {
+          if (local.id === "alb-1" || local.token === "bethlehem-wedding-2026") continue;
           if (!merged.some((m) => m.id === local.id || m.token === local.token)) {
             merged.push(local);
             if (isBrowser()) {
@@ -898,9 +947,10 @@ export const studioStore = {
 
   // --- Media Files ---
   getMediaFiles: (albumId: string): MediaFile[] => {
+    if (albumId === "alb-1") return [];
     const media = getStored<MediaFile[]>("media", INITIAL_MEDIA);
     return media
-      .filter((m) => m && m.album_id === albumId)
+      .filter((m) => m && m.album_id === albumId && m.album_id !== "alb-1")
       .map((m) => {
         const fn = m.filename || "";
         const isVideo = fn.toLowerCase().endsWith(".mp4") || fn.toLowerCase().endsWith(".mov");

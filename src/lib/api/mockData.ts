@@ -379,24 +379,6 @@ export const INITIAL_REQUESTS: ClientRequest[] = [
 
 export const INITIAL_ALBUMS: Album[] = [
   {
-    id: "alb-1",
-    title: "Bethlehem & Dawit Wedding Ceremony",
-    token: "bethlehem-wedding-2026",
-    customer_id: "cust-3",
-    customer_name: "Bethlehem Assefa",
-    event_date: "2026-09-20",
-    is_locked: true,
-    pin_set: true,
-    quota_bytes: 1073741824, // 1 GB
-    used_bytes: 482344960, // ~460 MB
-    file_count: 48,
-    allow_download: true,
-    allow_zip: true,
-    expires_at: "2026-12-20T23:59:59Z",
-    cover_image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80",
-    created_at: "2026-09-21T10:00:00Z",
-  },
-  {
     id: "alb-2",
     title: "Kidus Girma Graduation Portrait Highlights",
     token: "kidus-grad-2026",
@@ -417,44 +399,6 @@ export const INITIAL_ALBUMS: Album[] = [
 ];
 
 export const INITIAL_MEDIA: MediaFile[] = [
-  {
-    id: "med-1",
-    album_id: "alb-1",
-    filename: "Church_Entrance_001.jpg",
-    file_size: 8421376,
-    mime_type: "image/jpeg",
-    url: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=85",
-    thumbnail_url: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=400&q=80",
-    width: 3840,
-    height: 2560,
-    upload_status: "completed",
-    created_at: "2026-09-21T10:05:00Z",
-  },
-  {
-    id: "med-2",
-    album_id: "alb-1",
-    filename: "Rings_Exchange_Detail.jpg",
-    file_size: 9248200,
-    mime_type: "image/jpeg",
-    url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1600&q=85",
-    thumbnail_url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=400&q=80",
-    width: 4000,
-    height: 2667,
-    upload_status: "completed",
-    created_at: "2026-09-21T10:07:00Z",
-  },
-  {
-    id: "med-3",
-    album_id: "alb-1",
-    filename: "Reception_First_Dance.mp4",
-    file_size: 45000000,
-    mime_type: "video/mp4",
-    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    thumbnail_url: "https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=400&q=80",
-    duration_seconds: 45,
-    upload_status: "completed",
-    created_at: "2026-09-21T10:15:00Z",
-  },
   {
     id: "med-4",
     album_id: "alb-2",
