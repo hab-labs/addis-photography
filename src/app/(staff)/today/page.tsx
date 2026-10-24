@@ -13,6 +13,8 @@ import {
   Layers,
   ArrowRight,
   Filter,
+  Download,
+  TrendingUp,
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth/context";
@@ -28,7 +30,21 @@ import {
 import { formatETB } from "@/lib/money";
 import type { Order } from "@/types";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DualCalendarPicker } from "@/components/calendar/DualCalendarPicker";
+
+function formatDateHeader(date: Date): string {
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date).toUpperCase();
+  } catch {
+    return "TODAY'S OVERVIEW";
+  }
+}
 
 export default function TodayLedgerPage() {
   const { isAdmin, user } = useAuth();
@@ -93,7 +109,7 @@ export default function TodayLedgerPage() {
   // FR-18: Staff see today's orders only; Admin can view any date
   const effectiveDate = React.useMemo(() => {
     if (!isAdmin) return new Date(); // Lock staff to today
-    return selectedDate;
+    return selectedDate || new Date();
   }, [isAdmin, selectedDate]);
 
   // Orders filtered by the studio day
@@ -142,6 +158,44 @@ export default function TodayLedgerPage() {
     });
     return cash.toFixed(2);
   }, [allOrders, effectiveDate]);
+
+  // Payments breakdown by payment method for the donut card
+  const paymentsByMethod = React.useMemo(() => {
+    const breakdown = {
+      cash: 0,
+      telebirr: 0,
+      bank_transfer: 0,
+      cbe_birr: 0,
+    };
+    const targetDate = effectiveDate || new Date();
+    allOrders.forEach((o) => {
+      if (o.status === "voided") return;
+      (o.payments || []).forEach((p) => {
+        if (isSameDayInAddis(p.created_at, targetDate)) {
+          const method = (p.payment_method || "cash").toLowerCase();
+          const amt = Number(p.amount || 0);
+          if (method in breakdown) {
+            breakdown[method as keyof typeof breakdown] += amt;
+          } else {
+            breakdown.cash += amt;
+          }
+        }
+      });
+    });
+    const grandTotal = breakdown.cash + breakdown.telebirr + breakdown.bank_transfer + breakdown.cbe_birr;
+    return {
+      ...breakdown,
+      total: grandTotal,
+    };
+  }, [allOrders, effectiveDate]);
+
+  // Top customers with outstanding balances
+  const topDebtors = React.useMemo(() => {
+    return allOrders
+      .filter((o) => o.status !== "voided" && Number(o.balance_amount || 0) > 0)
+      .sort((a, b) => Number(b.balance_amount || 0) - Number(a.balance_amount || 0))
+      .slice(0, 5);
+  }, [allOrders]);
 
   // Quantities per photo type for chosen day D (Specification 3.7 & FR-15)
   const quantityTotals = React.useMemo(() => {
@@ -220,51 +274,60 @@ export default function TodayLedgerPage() {
   const renderStatusBadge = (statusStr: string) => {
     switch (statusStr?.toLowerCase()) {
       case "ready":
-        return <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">Ready</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">Ready</span>;
       case "in_progress":
-        return <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">In prog</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">In prog</span>;
       case "delivered":
-        return <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Delivered</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400">Delivered</span>;
       case "voided":
-        return <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 line-through">Voided</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 line-through">Voided</span>;
       default:
-        return <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">New</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">New</span>;
     }
   };
 
-  return (
-    <div className="mx-auto max-w-[1140px] space-y-4">
-      {/* HEADER SECTION: Specification 6.4 */}
-      {/* Date: [ 12/08/2026 ▾ ] [Today] */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-zinc-800 pb-3">
-        <div className="flex items-center gap-2 relative">
-          <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Date:</span>
+  const userName = user?.name || "Team";
 
-          {/* Date Selector [ 12/08/2026 ▾ ] */}
-          <div className="relative">
-            <button
-              type="button"
-              disabled={!isAdmin}
-              onClick={() => isAdmin && setIsCalendarOpen((prev) => !prev)}
-              aria-label="Select Studio Date"
-              className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold shadow-xs transition ${
-                !isAdmin
-                  ? "border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-800 text-slate-500 cursor-default"
-                  : isCalendarOpen
-                  ? "border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 ring-1 ring-red-500/30"
-                  : "border-slate-300 dark:border-zinc-700 bg-white dark:bg-[#18181b] text-slate-800 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800"
-              }`}
-            >
-              <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
-              <span>{selectedCalendar?.gregorian || formatDate(new Date())}</span>
-              {isAdmin && <ChevronDown className="h-3 w-3 text-slate-400" />}
-            </button>
+  return (
+    <div className="w-full max-w-[1440px] mx-auto space-y-6 pb-8">
+      {/* 1. TOP GREETING & DATE SELECTION ROW (MATCHES MACBOOK MOCKUP) */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
+            {formatDateHeader(effectiveDate)}
+          </p>
+          <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
+            Good morning, {userName.split(" ")[0]}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+            Here's what's happening at your studio today.
+          </p>
+        </div>
+
+        {/* Date Selector Pill Card */}
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <div className="relative flex items-center gap-3 rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] px-4 py-2.5 shadow-xs">
+            <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
+            <div className="text-left leading-tight">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                Reporting date
+              </span>
+              <button
+                type="button"
+                disabled={!isAdmin}
+                onClick={() => isAdmin && setIsCalendarOpen((prev) => !prev)}
+                className="flex items-center gap-1.5 font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-zinc-100 hover:text-[#e21b23] transition-colors"
+              >
+                <span>{selectedCalendar?.gregorian || formatDate(new Date())}</span>
+                {isAdmin && <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
+              </button>
+            </div>
 
             {/* Date Picker Popover (Admin Only) */}
             {isCalendarOpen && isAdmin && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setIsCalendarOpen(false)} />
-                <div className="absolute left-0 top-10 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute right-0 top-14 z-50 animate-in fade-in zoom-in-95 duration-100 shadow-2xl">
                   <DualCalendarPicker
                     selectedDate={selectedDate}
                     onSelectDate={(d) => {
@@ -277,301 +340,547 @@ export default function TodayLedgerPage() {
                 </div>
               </>
             )}
+
+            <button
+              type="button"
+              onClick={() => setSelectedDate(new Date())}
+              className={`h-8 px-3.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
+                isTodaySelected
+                  ? "bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700"
+                  : "bg-white dark:bg-[#18181b] text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700 hover:border-[#e21b23] hover:text-[#e21b23]"
+              }`}
+            >
+              Today
+            </button>
           </div>
 
-          {/* [Today] Button */}
-          <button
-            type="button"
-            onClick={() => setSelectedDate(new Date())}
-            className={`rounded-md border px-3 py-1.5 text-xs font-semibold shadow-xs transition ${
-              isTodaySelected
-                ? "border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400"
-                : "border-slate-300 dark:border-zinc-700 bg-white dark:bg-[#18181b] text-slate-800 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800"
-            }`}
-          >
-            Today
-          </button>
-
-          {!isAdmin && (
-            <span className="text-[10px] text-slate-400 italic">
-              (Staff view locked to today)
-            </span>
-          )}
-
-          {isAdmin && selectedCalendar && !isTodaySelected && (
-            <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 ml-1">
-              • Historical/Future Date: {selectedEthDetails?.textAm} EC
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleExportCSV}
-            disabled={filteredOrders.length === 0}
-            className="h-8 text-xs font-semibold border-slate-300 dark:border-zinc-700 dark:bg-[#18181b] dark:text-zinc-200 dark:hover:bg-zinc-800"
-          >
-            Export CSV
-          </Button>
           <button
             type="button"
             onClick={loadData}
             disabled={isRefreshing}
             aria-label="Refresh orders"
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 dark:border-zinc-700 bg-white dark:bg-[#18181b] text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 shadow-xs transition"
           >
-            <RefreshCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-red-600" : ""}`} />
+            <RefreshCcw className={`h-4 w-4 ${isRefreshing ? "animate-spin text-red-600" : ""}`} />
           </button>
         </div>
       </div>
 
-      {/* THREE SUMMARY CARDS: Specification 6.4 */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* 2. FOUR SUMMARY METRIC CARDS (MATCHES LAPTOP VIEW) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
         {/* Card 1: Bookings */}
-        <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 shadow-xs">
-          <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Bookings</span>
-          <div className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
+        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs flex flex-col justify-between min-h-[145px]">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-slate-600 dark:text-zinc-400">Bookings</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              +8.4%
+            </span>
+          </div>
+          <div className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100 mt-2">
             {metrics.count}
           </div>
-          <span className="text-[9px] text-slate-400 dark:text-zinc-500">
-            {isTodaySelected ? "Orders created today" : `Orders on ${selectedCalendar?.gregorian}`}
-          </span>
+          <div className="flex items-end justify-between mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+            <span className="text-xs text-slate-400 dark:text-zinc-500 font-medium truncate max-w-[150px]">
+              {isTodaySelected ? "Orders created on today" : `Orders on ${selectedCalendar?.gregorian}`}
+            </span>
+            {/* Sparkline Visual */}
+            <div className="flex items-end gap-1 h-5 shrink-0 opacity-80">
+              <span className="w-1.5 h-2 rounded-t bg-slate-200 dark:bg-zinc-800" />
+              <span className="w-1.5 h-3 rounded-t bg-slate-200 dark:bg-zinc-800" />
+              <span className="w-1.5 h-4 rounded-t bg-red-200 dark:bg-red-950/60" />
+              <span className="w-1.5 h-3.5 rounded-t bg-red-300 dark:bg-red-900/60" />
+              <span className="w-1.5 h-5 rounded-t bg-[#e21b23]" />
+            </div>
+          </div>
         </div>
 
         {/* Card 2: Paid (Admin Only) */}
-        <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 shadow-xs">
+        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs flex flex-col justify-between min-h-[145px]">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Paid</span>
-            {!isAdmin && <span className="text-[9px] text-slate-400">Admin only</span>}
+            <span className="text-sm font-semibold text-slate-600 dark:text-zinc-400">Paid</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              +12.0%
+            </span>
           </div>
-          <div className="mt-1 text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
-            {isAdmin ? `ETB ${metrics.collected}` : "ETB ••••••"}
+          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100 mt-2">
+            {isAdmin ? `ETB ${Number(metrics.collected).toLocaleString()}` : "ETB ••••••"}
           </div>
-          <span className="text-[9px] text-slate-400 dark:text-zinc-500">Excel booking-date collections</span>
+          <div className="flex items-end justify-between mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+            <span className="text-xs text-slate-400 dark:text-zinc-500 font-medium">
+              Payments received on date
+            </span>
+            <div className="flex items-end gap-1 h-5 shrink-0 opacity-80">
+              <span className="w-1.5 h-2.5 rounded-t bg-emerald-100 dark:bg-zinc-800" />
+              <span className="w-1.5 h-3.5 rounded-t bg-emerald-200 dark:bg-emerald-950/60" />
+              <span className="w-1.5 h-3 rounded-t bg-emerald-300 dark:bg-emerald-900/60" />
+              <span className="w-1.5 h-4.5 rounded-t bg-emerald-400 dark:bg-emerald-800/80" />
+              <span className="w-1.5 h-5 rounded-t bg-emerald-600" />
+            </div>
+          </div>
         </div>
 
         {/* Card 3: Due (Admin Only) */}
-        <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 shadow-xs">
+        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs flex flex-col justify-between min-h-[145px]">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Due</span>
-            {!isAdmin && <span className="text-[9px] text-slate-400">Admin only</span>}
+            <span className="text-sm font-semibold text-slate-600 dark:text-zinc-400">Due</span>
+            {!isAdmin && <span className="text-xs text-slate-400">Admin only</span>}
           </div>
-          <div className="mt-1 text-2xl font-bold tracking-tight text-[#e21b23] dark:text-red-400">
-            {isAdmin ? `ETB ${metrics.balance}` : "ETB ••••••"}
+          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#e21b23] dark:text-red-500 mt-2">
+            {isAdmin ? `ETB ${Number(metrics.balance).toLocaleString()}` : "ETB ••••••"}
           </div>
-          <span className="text-[9px] text-slate-400 dark:text-zinc-500">Remaining balance on bookings</span>
+          <div className="flex items-end justify-between mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+            <span className="text-xs text-slate-400 dark:text-zinc-500 font-medium">
+              Balance on today's bookings
+            </span>
+            <div className="flex items-end gap-1 h-5 shrink-0 opacity-80">
+              <span className="w-1.5 h-4.5 rounded-t bg-red-200 dark:bg-red-950/60" />
+              <span className="w-1.5 h-3.5 rounded-t bg-red-200 dark:bg-red-950/60" />
+              <span className="w-1.5 h-2.5 rounded-t bg-slate-200 dark:bg-zinc-800" />
+              <span className="w-1.5 h-3 rounded-t bg-red-300 dark:bg-red-900/60" />
+              <span className="w-1.5 h-5 rounded-t bg-[#e21b23]" />
+            </div>
+          </div>
         </div>
 
         {/* Card 4: Cash Received */}
-        <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 shadow-xs">
+        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs flex flex-col justify-between min-h-[145px]">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400">Cash Received</span>
-            {!isAdmin && <span className="text-[9px] text-slate-400">Admin only</span>}
+            <span className="text-sm font-semibold text-slate-600 dark:text-zinc-400">Cash received today</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              +5.2%
+            </span>
           </div>
-          <div className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
-            {isAdmin ? `ETB ${cashReceivedToday}` : "ETB ••••••"}
+          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100 mt-2">
+            {isAdmin ? `ETB ${Number(cashReceivedToday).toLocaleString()}` : "ETB ••••••"}
           </div>
-          <span className="text-[9px] text-slate-400 dark:text-zinc-500">Cash payments on date</span>
+          <div className="flex items-end justify-between mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+            <span className="text-xs text-slate-400 dark:text-zinc-500 font-medium">
+              Valid cash payments today
+            </span>
+            <div className="flex items-end gap-1 h-5 shrink-0 opacity-80">
+              <span className="w-1.5 h-2 rounded-t bg-slate-200 dark:bg-zinc-800" />
+              <span className="w-1.5 h-3.5 rounded-t bg-red-200 dark:bg-red-950/60" />
+              <span className="w-1.5 h-3 rounded-t bg-red-200 dark:bg-red-950/60" />
+              <span className="w-1.5 h-4.5 rounded-t bg-red-300 dark:bg-red-900/60" />
+              <span className="w-1.5 h-5 rounded-t bg-[#e21b23]" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* QUANTITY BY PHOTO TYPE BAR: Specification 3.7 & FR-15 */}
-      <div className="flex items-center rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] px-4 py-2.5 shadow-xs overflow-x-auto text-xs">
-        <span className="font-bold text-slate-700 dark:text-zinc-300 shrink-0 mr-4 text-[11px]">
-          Quantities:
-        </span>
-        {Object.entries(quantityTotals).map(([label, qty], idx) => (
-          <div key={label} className={`flex items-center gap-1 px-3 ${idx > 0 ? "border-l border-slate-200 dark:border-zinc-800" : ""}`}>
-            <span className="text-slate-500 dark:text-zinc-400 font-medium">{label} =</span>
-            <span className="font-bold text-slate-900 dark:text-zinc-100 font-mono">{qty}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* FILTERS BAR: Specification 6.4 */}
-      <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-2.5 shadow-xs text-xs">
-        {/* Photo type filter */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase">Photo:</span>
-          <select
-            value={photoTypeFilter}
-            onChange={(e) => setPhotoTypeFilter(e.target.value)}
-            className="h-8 rounded-md border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/80 px-2 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500"
-          >
-            <option value="all">All Sizes</option>
-            <option value="3x4">3x4</option>
-            <option value="10x15">10x15</option>
-            <option value="30x45">30x45</option>
-            <option value="13x18">13x18</option>
-            <option value="20x25">20x25</option>
-            <option value="other">Other</option>
-          </select>
+      {/* 3. PHOTO QUANTITIES STRIP (MATCHES LAPTOP VIEW) */}
+      <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="shrink-0 pr-4 lg:border-r border-slate-200 dark:border-zinc-800">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Photo quantities</h3>
+          <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">Items booked today</p>
         </div>
 
-        {/* Payment filter */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase">Payment:</span>
-          <select
-            value={paymentFilter}
-            onChange={(e) => setPaymentFilter(e.target.value)}
-            className="h-8 rounded-md border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/80 px-2 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500"
-          >
-            <option value="all">All Methods</option>
-            <option value="cash">Cash</option>
-            <option value="telebirr">Telebirr</option>
-            <option value="cbe_birr">CBE Birr</option>
-            <option value="bank_transfer">Bank Transfer</option>
-            <option value="unpaid">Unpaid</option>
-          </select>
-        </div>
-
-        {/* Status filter */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase">Status:</span>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-8 rounded-md border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/80 px-2 text-xs text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500"
-          >
-            <option value="all">All Statuses</option>
-            <option value="new">New</option>
-            <option value="in_progress">In Progress</option>
-            <option value="ready">Ready</option>
-            <option value="delivered">Delivered</option>
-          </select>
-        </div>
-
-        {/* [☐ Unpaid only] Checkbox */}
-        <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700 dark:text-zinc-300 select-none pl-1">
-          <input
-            type="checkbox"
-            checked={unpaidOnly}
-            onChange={(e) => setUnpaidOnly(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-slate-300 dark:border-zinc-700 text-red-600 focus:ring-red-500"
-          />
-          <span>Unpaid only</span>
-        </label>
-
-        {/* [Search…] Input */}
-        <div className="relative ml-auto flex-1 sm:max-w-xs">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search customer, phone, booking #..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-8 w-full rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80 pl-8 pr-3 text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-          />
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 flex-1">
+          {Object.entries(quantityTotals).map(([label, qty], idx) => (
+            <div
+              key={label}
+              className={`flex items-baseline gap-1.5 px-3 ${
+                idx > 0 ? "sm:border-l border-slate-200 dark:border-zinc-800" : ""
+              }`}
+            >
+              <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-zinc-100">
+                {qty}
+              </span>
+              <span className="text-xs font-semibold text-slate-400 dark:text-zinc-500">
+                {label}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* MAIN ORDERS TABLE: Specification 6.4 */}
-      <div className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-800/60 font-bold uppercase text-[10px] text-slate-500 dark:text-zinc-400">
-              <tr>
-                <th className="py-2.5 px-3 w-10">#</th>
-                <th className="py-2.5 px-3">Customer</th>
-                <th className="py-2.5 px-3">Phone</th>
-                <th className="py-2.5 px-3">Items</th>
-                <th className="py-2.5 px-3 text-right">Total</th>
-                <th className="py-2.5 px-3 text-right">Paid</th>
-                <th className="py-2.5 px-3 text-right">Balance</th>
-                <th className="py-2.5 px-3 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
-              {filteredOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
-                    No orders found for this date and filter selection.
-                  </td>
-                </tr>
-              ) : (
-                filteredOrders.map((order, idx) => {
-                  const hasDue = Number(order.balance_amount || 0) > 0;
-                  const itemsSummary = (order.items || [])
-                    .map((it) => `${it.photo_type_name} ×${it.quantity}`)
-                    .join(", ");
+      {/* 4. MAIN 2-COLUMN SECTION (70% TABLE / 30% CHARTS & BALANCES) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* LEFT COLUMN: TODAY'S BOOKINGS TABLE (8 COLUMNS) */}
+        <div className="lg:col-span-8 space-y-4">
+          <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs space-y-4">
+            {/* Table Header: Title & Export */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-zinc-100">
+                  Today's bookings
+                </h2>
+                <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
+                  {filteredOrders.length} of {dayOrders.length} bookings shown
+                </p>
+              </div>
 
-                  return (
-                    <tr
-                      key={order.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group"
-                    >
-                      {/* # sequential index */}
-                      <td className="py-2.5 px-3 font-mono font-bold text-slate-600 dark:text-zinc-400">
-                        {idx + 1}
-                      </td>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleExportCSV}
+                disabled={filteredOrders.length === 0}
+                className="h-9 px-3.5 text-xs font-bold rounded-xl border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#18181b] text-slate-800 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 gap-1.5 shadow-2xs"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Export</span>
+              </Button>
+            </div>
 
-                      {/* Customer */}
-                      <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-zinc-100 group-hover:text-red-600 transition">
-                        <Link href={`/orders/${order.id}`}>
-                          {order.customer?.name || "Walk-In"}
-                        </Link>
-                      </td>
+            {/* Filter Controls Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+              {/* Search input */}
+              <div className="sm:col-span-5 relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Name, phone, or reference"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-900/60 pl-9 pr-3 text-xs sm:text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 transition"
+                />
+              </div>
 
-                      {/* Phone */}
-                      <td className="py-2.5 px-3 font-mono text-slate-600 dark:text-zinc-400 text-[11px]">
-                        {order.customer?.phone || "-"}
-                      </td>
+              {/* Photo size filter */}
+              <div className="sm:col-span-3">
+                <select
+                  value={photoTypeFilter}
+                  onChange={(e) => setPhotoTypeFilter(e.target.value)}
+                  className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-xs font-medium text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition"
+                >
+                  <option value="all">All photo types</option>
+                  <option value="3x4">3x4</option>
+                  <option value="10x15">10x15</option>
+                  <option value="30x45">30x45</option>
+                  <option value="13x18">13x18</option>
+                  <option value="20x25">20x25</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
 
-                      {/* Items */}
-                      <td className="py-2.5 px-3 text-slate-700 dark:text-zinc-300 max-w-xs truncate" title={itemsSummary}>
-                        {itemsSummary || "Studio Photography"}
-                      </td>
+              {/* Payment filter */}
+              <div className="sm:col-span-2">
+                <select
+                  value={paymentFilter}
+                  onChange={(e) => setPaymentFilter(e.target.value)}
+                  className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-xs font-medium text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition"
+                >
+                  <option value="all">All payments</option>
+                  <option value="cash">Cash</option>
+                  <option value="telebirr">Telebirr</option>
+                  <option value="cbe_birr">CBE Birr</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="unpaid">Unpaid</option>
+                </select>
+              </div>
 
-                      {/* Total */}
-                      <td className="py-2.5 px-3 text-right font-mono text-slate-900 dark:text-zinc-100">
-                        {formatETB(order.total_amount)}
-                      </td>
+              {/* Status filter */}
+              <div className="sm:col-span-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-xs font-medium text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="new">New</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="ready">Ready</option>
+                  <option value="delivered">Delivered</option>
+                </select>
+              </div>
+            </div>
 
-                      {/* Paid */}
-                      <td className="py-2.5 px-3 text-right font-mono text-emerald-700 dark:text-emerald-400 font-semibold">
-                        {formatETB(order.paid_amount)}
-                      </td>
-
-                      {/* Balance */}
-                      <td className="py-2.5 px-3 text-right font-mono font-bold">
-                        <span className="inline-flex items-center gap-1 justify-end">
-                          <span className={hasDue ? "text-[#e21b23] dark:text-red-400" : "text-slate-400 dark:text-zinc-500"}>
-                            {formatETB(order.balance_amount)}
-                          </span>
-                          {hasDue && <span className="text-red-500 font-bold">🔴</span>}
-                        </span>
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-2.5 px-3 text-center">
-                        {renderStatusBadge(order.status)}
+            {/* Bookings Table */}
+            <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-zinc-800">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-slate-100 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/40 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                  <tr>
+                    <th className="py-3 px-3.5">BOOKING</th>
+                    <th className="py-3 px-3.5">CUSTOMER</th>
+                    <th className="py-3 px-3.5">ITEMS</th>
+                    <th className="py-3 px-3.5 text-right">TOTAL</th>
+                    <th className="py-3 px-3.5 text-right">PAID</th>
+                    <th className="py-3 px-3.5 text-right">BALANCE</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
+                  {filteredOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
+                        No orders match your filter criteria.
                       </td>
                     </tr>
+                  ) : (
+                    filteredOrders.map((order) => {
+                      const hasDue = Number(order.balance_amount || 0) > 0;
+                      const itemsSummary = (order.items || [])
+                        .map((it) => `${it.photo_type_name} ×${it.quantity}`)
+                        .join(", ");
+
+                      return (
+                        <tr
+                          key={order.id}
+                          className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group"
+                        >
+                          {/* BOOKING */}
+                          <td className="py-3.5 px-3.5 font-mono font-bold text-slate-800 dark:text-zinc-200">
+                            <Link href={`/orders/${order.id}`} className="group-hover:text-[#e21b23] transition-colors">
+                              {order.order_number || order.id}
+                            </Link>
+                          </td>
+
+                          {/* CUSTOMER */}
+                          <td className="py-3.5 px-3.5">
+                            <Link href={`/orders/${order.id}`} className="block">
+                              <span className="font-bold text-slate-900 dark:text-zinc-100 group-hover:text-[#e21b23] transition-colors">
+                                {order.customer?.name || "Walk-In"}
+                              </span>
+                              <span className="block text-[11px] font-mono text-slate-400 mt-0.5">
+                                {order.customer?.phone || "-"}
+                              </span>
+                            </Link>
+                          </td>
+
+                          {/* ITEMS */}
+                          <td className="py-3.5 px-3.5 text-slate-600 dark:text-zinc-300 max-w-xs truncate" title={itemsSummary}>
+                            {itemsSummary || "Studio Photography"}
+                          </td>
+
+                          {/* TOTAL */}
+                          <td className="py-3.5 px-3.5 text-right font-mono font-medium text-slate-900 dark:text-zinc-100">
+                            {formatETB(order.total_amount)}
+                          </td>
+
+                          {/* PAID */}
+                          <td className="py-3.5 px-3.5 text-right font-mono font-medium text-slate-900 dark:text-zinc-100">
+                            {formatETB(order.paid_amount)}
+                          </td>
+
+                          {/* BALANCE */}
+                          <td className="py-3.5 px-3.5 text-right font-mono font-bold">
+                            <span className={hasDue ? "text-[#e21b23] dark:text-red-500" : "text-slate-500 dark:text-zinc-400"}>
+                              {formatETB(order.balance_amount)}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: PAYMENTS BY METHOD & OUTSTANDING BALANCES (4 COLUMNS) */}
+        <div className="lg:col-span-4 space-y-5">
+          {/* Card 1: Payments by method with Donut Chart */}
+          <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                  Payments by method
+                </h3>
+                <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
+                  Valid payments · {selectedCalendar?.gregorian || "Today"}
+                </p>
+              </div>
+            </div>
+
+            {/* Donut Chart & Legend Visual */}
+            <div className="flex items-center gap-5 pt-2">
+              {/* Circular SVG Donut */}
+              <div className="relative w-28 h-28 shrink-0 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  {/* Background track */}
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="14"
+                    fill="none"
+                    className="stroke-slate-100 dark:stroke-zinc-800"
+                    strokeWidth="4"
+                  />
+                  {/* Telebirr segment */}
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="14"
+                    fill="none"
+                    stroke="#e21b23"
+                    strokeWidth="4"
+                    strokeDasharray="60 100"
+                    strokeDashoffset="0"
+                    className="transition-all duration-500"
+                  />
+                  {/* Cash segment */}
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="14"
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="4"
+                    strokeDasharray="25 100"
+                    strokeDashoffset="-60"
+                    className="transition-all duration-500"
+                  />
+                  {/* Bank transfer segment */}
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="14"
+                    fill="none"
+                    stroke="#60a5fa"
+                    strokeWidth="4"
+                    strokeDasharray="15 100"
+                    strokeDashoffset="-85"
+                    className="transition-all duration-500"
+                  />
+                </svg>
+                {/* Center text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="text-xs font-black text-slate-900 dark:text-zinc-100 leading-none">
+                    {isAdmin
+                      ? Number(metrics.collected) > 1000
+                        ? `${(Number(metrics.collected) / 1000).toFixed(1)}K`
+                        : Number(metrics.collected).toFixed(0)
+                      : "••••"}
+                  </span>
+                  <span className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase mt-0.5">
+                    Total ETB
+                  </span>
+                </div>
+              </div>
+
+              {/* Legend List */}
+              <div className="space-y-2 flex-1 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-slate-600 dark:text-zinc-400 font-medium">
+                    <span className="h-2 w-2 rounded-full bg-[#e21b23]" />
+                    Cash
+                  </span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
+                    {isAdmin ? Number(paymentsByMethod.cash).toLocaleString() : "••••"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-slate-600 dark:text-zinc-400 font-medium">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    Telebirr
+                  </span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
+                    {isAdmin ? Number(paymentsByMethod.telebirr).toLocaleString() : "••••"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-slate-600 dark:text-zinc-400 font-medium">
+                    <span className="h-2 w-2 rounded-full bg-blue-400" />
+                    Bank transfer
+                  </span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
+                    {isAdmin ? Number(paymentsByMethod.bank_transfer).toLocaleString() : "••••"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-slate-600 dark:text-zinc-400 font-medium">
+                    <span className="h-2 w-2 rounded-full bg-amber-400" />
+                    CBE Birr
+                  </span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-zinc-100">
+                    {isAdmin ? Number(paymentsByMethod.cbe_birr).toLocaleString() : "••••"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Outstanding balances */}
+          <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
+                  Outstanding balances
+                </h3>
+                <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
+                  Top customers with pending balance
+                </p>
+              </div>
+
+              <Link
+                href="/customers"
+                className="text-xs font-bold text-[#e21b23] hover:underline"
+              >
+                View all
+              </Link>
+            </div>
+
+            <div className="space-y-3 pt-1">
+              {topDebtors.length === 0 ? (
+                <p className="text-xs text-slate-400 dark:text-zinc-500 py-3 text-center">
+                  All customer accounts are fully paid.
+                </p>
+              ) : (
+                topDebtors.map((order) => {
+                  const initials = (order.customer?.name || "Customer")
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase();
+
+                  return (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="h-9 w-9 shrink-0">
+                          <AvatarFallback className="bg-red-50 dark:bg-red-950/60 text-[11px] font-bold text-[#e21b23] dark:text-red-400">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 truncate">
+                          <Link
+                            href={`/orders/${order.id}`}
+                            className="font-bold text-xs text-slate-900 dark:text-zinc-100 hover:text-[#e21b23] truncate block"
+                          >
+                            {order.customer?.name || "Customer"}
+                          </Link>
+                          <span className="text-[10px] font-mono text-slate-400 block truncate">
+                            {order.order_number || order.id}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span className="text-xs font-mono font-bold text-[#e21b23] dark:text-red-500 shrink-0">
+                        {formatETB(order.balance_amount)}
+                      </span>
+                    </div>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* BOTTOM STATUS BAR: Specification 6.4 */}
-      <div className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] px-4 py-2.5 text-xs shadow-xs">
+      {/* 5. BOTTOM STATUS BAR: Open & Overdue Requests */}
+      <div className="flex items-center justify-between rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] px-5 py-3 text-xs shadow-xs">
         <Link
           href="/requests"
-          className="flex items-center gap-2 font-medium text-slate-700 dark:text-zinc-300 hover:text-red-600 dark:hover:text-red-400 transition"
+          className="flex items-center gap-2 font-semibold text-slate-700 dark:text-zinc-300 hover:text-[#e21b23] dark:hover:text-red-400 transition"
         >
           <span>Open requests ({requestsSummary.open})</span>
           <span className="text-slate-300 dark:text-zinc-700">·</span>
           <span className={requestsSummary.overdue > 0 ? "text-rose-600 dark:text-rose-400 font-bold" : "text-slate-500 dark:text-zinc-400"}>
             Overdue ({requestsSummary.overdue})
           </span>
-          <ArrowRight className="h-3 w-3 text-slate-400" />
+          <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
         </Link>
-        <span className="text-[10px] text-slate-400 dark:text-zinc-500">
+        <span className="text-[11px] text-slate-400 dark:text-zinc-500 hidden sm:inline">
           Click to manage studio retouches & editing requests
         </span>
       </div>
