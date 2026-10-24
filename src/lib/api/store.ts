@@ -65,6 +65,23 @@ function runStorageMigrations(): void {
     if (typeof sessionStorage !== "undefined") {
       sessionStorage.removeItem("album_unlocked_bethlehem-wedding-2026");
     }
+
+    // 4. Correct legacy hardcoded file_count 14 for Kidus Girma (alb-2) in client localStorage
+    const currentRaw = localStorage.getItem(STORAGE_KEY_PREFIX + "albums");
+    if (currentRaw) {
+      const albums: Album[] = JSON.parse(currentRaw);
+      let changed = false;
+      const corrected = albums.map((a) => {
+        if (a.id === "alb-2" && a.file_count === 14) {
+          changed = true;
+          return { ...a, file_count: 1, used_bytes: 7850000 };
+        }
+        return a;
+      });
+      if (changed) {
+        localStorage.setItem(STORAGE_KEY_PREFIX + "albums", JSON.stringify(corrected));
+      }
+    }
   } catch {
     // Suppress migration parsing issues
   }
@@ -715,9 +732,17 @@ export const studioStore = {
 
   // --- Albums ---
   getAlbums: (): Album[] => {
-    return getStored<Album[]>("albums", INITIAL_ALBUMS).filter(
+    const albums = getStored<Album[]>("albums", INITIAL_ALBUMS).filter(
       (a) => a && a.id !== "alb-1" && a.token !== "bethlehem-wedding-2026"
     );
+    const media = getStored<MediaFile[]>("media", INITIAL_MEDIA);
+    return albums.map((a) => {
+      const actualFiles = media.filter((m) => m && m.album_id === a.id);
+      return {
+        ...a,
+        file_count: actualFiles.length > 0 ? actualFiles.length : (a.file_count === 14 ? 1 : a.file_count || 0),
+      };
+    });
   },
 
   getAlbumByToken: (token: string): Album | undefined => {
@@ -905,10 +930,12 @@ export const studioStore = {
           .map((remote) => {
             const local = currentAlbums.find((l) => l.id === remote.id || l.token === remote.token);
             if (local) {
+              const actualMedia = studioStore.getMediaFiles(remote.id);
+              const realCount = actualMedia.length > 0 ? actualMedia.length : (remote.file_count === 14 ? 1 : Number(remote.file_count) || 0);
               return {
                 ...remote,
                 used_bytes: Math.max(Number(remote.used_bytes) || 0, Number(local.used_bytes) || 0),
-                file_count: Math.max(Number(remote.file_count) || 0, Number(local.file_count) || 0),
+                file_count: realCount,
                 cover_image_url: remote.cover_image_url || local.cover_image_url,
               };
             }

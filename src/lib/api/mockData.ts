@@ -388,8 +388,8 @@ export const INITIAL_ALBUMS: Album[] = [
     is_locked: false,
     pin_set: false,
     quota_bytes: 1073741824, // 1 GB
-    used_bytes: 125829120, // ~120 MB
-    file_count: 14,
+    used_bytes: 7850000, // ~7.85 MB (med-4)
+    file_count: 1,
     allow_download: true,
     allow_zip: true,
     expires_at: "2026-11-30T23:59:59Z",
