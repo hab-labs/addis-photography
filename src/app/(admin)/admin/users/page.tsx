@@ -181,18 +181,16 @@ export default function StaffUsersPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="w-full max-w-[1440px] mx-auto space-y-6 pb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
-              Users
-            </h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 dark:bg-indigo-950/40 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 dark:border-indigo-800">
-              <UserCheck className="h-3 w-3" /> Team Access
-            </span>
-          </div>
-          <p className="text-xs font-medium text-slate-400 dark:text-zinc-400 mt-1">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
+            Staff & Permissions
+          </p>
+          <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
+            Users
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
             Manage studio operator accounts, access privileges, and authentication credentials.
           </p>
         </div>
@@ -204,10 +202,9 @@ export default function StaffUsersPage() {
             setForm({ id: "", name: "", username: "", email: "", phone: "", password: "", role: "staff", active: true });
             setInviteOpen(true);
           }}
-          size="sm"
-          className="h-9 gap-1.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs px-4 shadow-sm shadow-indigo-600/25"
+          className="h-10 px-4 gap-2 rounded-xl bg-[#e21b23] hover:bg-red-700 text-white font-bold text-sm shadow-sm"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="h-4 w-4" />
           <span>Invite Operator</span>
         </Button>
       </div>
@@ -215,14 +212,14 @@ export default function StaffUsersPage() {
       {successNotice && (
         <div
           role="status"
-          className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+          className="flex items-center gap-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 px-4 py-3 text-xs font-semibold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-xs"
         >
           <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           <span>{successNotice}</span>
         </div>
       )}
 
-      <div className="rounded-3xl bg-white dark:bg-[#121214] p-6 shadow-sm border border-slate-100 dark:border-zinc-800">
+      <div className="rounded-2xl bg-white dark:bg-[#141417] p-5 sm:p-6 shadow-xs border border-slate-200/90 dark:border-zinc-800 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="border-none text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-400 hover:bg-transparent">

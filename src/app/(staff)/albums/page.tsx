@@ -245,17 +245,17 @@ export default function ClientAlbumsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-[1100px] space-y-4">
-      <section className="flex items-end justify-between gap-4">
+    <div className="w-full max-w-[1440px] mx-auto space-y-6 pb-8">
+      <section className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#e31b23]">
-            Customer galleries
+          <p className="text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
+            Customer Galleries & QR Access
           </p>
-          <h1 className="mt-1 text-[25px] font-semibold leading-none text-slate-900 dark:text-zinc-100">
+          <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
             Albums
           </h1>
-          <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
-            Create, publish, and manage private customer collections.
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+            Create, publish, and manage private customer photo & video collections.
           </p>
         </div>
         <Button
@@ -263,50 +263,50 @@ export default function ClientAlbumsPage() {
             setDialogError("");
             setIsCreateOpen(true);
           }}
-          className="h-8 gap-1.5 rounded-md bg-[#e31b23] px-4 text-xs font-semibold shadow-sm hover:bg-[#c9151c]"
+          className="h-10 px-4 gap-2 rounded-xl bg-[#e21b23] text-white font-bold text-sm shadow-sm hover:bg-red-700 transition-all self-start sm:self-auto"
         >
-          <Plus className="h-3.5 w-3.5" />
-          New Album
+          <Plus className="h-4 w-4" />
+          <span>New Album</span>
         </Button>
       </section>
 
-      <section className="flex min-h-[52px] items-center gap-2 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] px-3 py-2 shadow-sm">
-        <div className="relative min-w-[170px] flex-1">
-          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
+      <section className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 sm:p-4 shadow-xs flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[200px] flex-1">
+          <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400 dark:text-zinc-500" />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search albums or customers"
-            className="h-8 w-full rounded-md border border-slate-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 pl-8 pr-2 text-[11px] text-slate-700 outline-none focus:border-red-300 focus:ring-1 focus:ring-red-200 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+            placeholder="Search albums or customers..."
+            className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-900/60 pl-10 pr-3 text-xs sm:text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 transition shadow-2xs"
           />
         </div>
-        <label className="relative min-w-[170px] flex-1">
+        <div className="w-[160px] relative">
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}
-            className="h-8 w-full appearance-none rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 pr-7 text-[11px] text-slate-600 dark:text-zinc-300 outline-none"
+            className="h-10 w-full appearance-none rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 pr-8 text-xs sm:text-sm font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
           >
             <option>All statuses</option>
             <option>Published</option>
             <option>Draft</option>
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
-        </label>
-        <label className="flex items-center gap-1.5 whitespace-nowrap text-[10px] text-slate-500 dark:text-zinc-400">
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-3.5 h-3.5 w-3.5 text-slate-400" />
+        </div>
+        <label className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-zinc-700 px-3 h-10 text-xs font-bold text-slate-700 dark:text-zinc-300 cursor-pointer shadow-2xs">
           <input
             type="checkbox"
             checked={expiringOnly}
             onChange={(event) => setExpiringOnly(event.target.checked)}
-            className="h-3 w-3 rounded border-slate-300 accent-[#e31b23]"
+            className="h-4 w-4 rounded border-slate-300 accent-[#e21b23]"
           />
-          Expiring soon
+          <span>Expiring soon</span>
         </label>
-        <span className="hidden text-[10px] text-slate-400 dark:text-zinc-500 sm:block">
-          {filteredAlbums.length} albums
+        <span className="text-xs font-bold font-mono tracking-wider text-slate-400 dark:text-zinc-500 uppercase shrink-0 pl-1">
+          {filteredAlbums.length} {filteredAlbums.length === 1 ? "ALBUM" : "ALBUMS"}
         </span>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredAlbums.map((album) => {
           const published = album.file_count > 0;
           const eventDateStr = formatCalendarPair(album.event_date).gregorian;
@@ -438,22 +438,22 @@ export default function ClientAlbumsPage() {
                 </div>
               </div>
 
-              <Link href={`/albums/${album.id}`} className="block p-2.5">
-                <h2 className="truncate text-[11px] font-semibold text-slate-800 dark:text-zinc-100 hover:text-[#e31b23] dark:hover:text-[#e31b23] transition-colors">
+              <Link href={`/albums/${album.id}`} className="block p-4 space-y-1">
+                <h2 className="truncate text-sm sm:text-base font-bold text-slate-900 dark:text-zinc-100 hover:text-[#e21b23] dark:hover:text-[#e21b23] transition-colors">
                   {album.title}
                 </h2>
-                <p className="mt-1 truncate text-[9px] text-slate-400 dark:text-zinc-500">{album.clientName}</p>
-                <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 dark:border-zinc-800 pt-2 text-[9px] text-slate-400 dark:text-zinc-500">
-                  <span className="flex items-center gap-1">
-                    <ImageIcon className="h-3 w-3" />
-                    {album.mediaCount} photos
+                <p className="truncate text-xs text-slate-500 dark:text-zinc-400 font-medium">{album.clientName}</p>
+                <div className="pt-2.5 flex items-center justify-between border-t border-slate-100 dark:border-zinc-800 text-xs text-slate-500 dark:text-zinc-400">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <ImageIcon className="h-3.5 w-3.5" />
+                    {album.mediaCount} {album.mediaCount === 1 ? "media" : "media"}
                   </span>
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1.5 font-mono">
                     {new Date(album.expires_at).getTime() - Date.now() <
                     1000 * 60 * 60 * 24 * 30 ? (
-                      <Clock3 className="h-3 w-3 text-amber-500" />
+                      <Clock3 className="h-3.5 w-3.5 text-amber-500" />
                     ) : (
-                      <CalendarDays className="h-3 w-3" />
+                      <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
                     )}
                     {eventDateStr}
                   </span>

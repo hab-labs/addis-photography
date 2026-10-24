@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { CalendarDays, ChevronDown, Search } from "lucide-react";
+import { Search, ChevronDown, ChevronLeft, ChevronRight, ShieldCheck, User } from "lucide-react";
 import { studioStore } from "@/lib/api/store";
 import type { AuditLog } from "@/types";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const actionLabels: Record<string, string> = {
   ORDER_CREATED: "Order created",
@@ -11,16 +12,21 @@ const actionLabels: Record<string, string> = {
   ORDER_DELIVERED: "Order delivered",
   STATUS_UPDATED: "Status updated",
   PIN_CONFIGURED: "PIN configured",
+  ALBUM_CREATED: "Album created",
+  USER_INVITED: "User invited",
 };
 
 function formatTimestamp(timestamp: string) {
-  const date = new Date(timestamp);
-  return {
-    date: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
-    time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
-  };
+  try {
+    const date = new Date(timestamp);
+    return {
+      date: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+    };
+  } catch {
+    return { date: "—", time: "—" };
+  }
 }
-
 
 export default function AuditLogPage() {
   const [logs, setLogs] = React.useState<AuditLog[]>([]);
@@ -28,13 +34,22 @@ export default function AuditLogPage() {
   const [userFilter, setUserFilter] = React.useState("All users");
   const [actionFilter, setActionFilter] = React.useState("All actions");
 
+  // Pagination
+  const PAGE_SIZE = 12;
+  const [currentPage, setCurrentPage] = React.useState(1);
+
   React.useEffect(() => {
     setLogs(studioStore.getAuditLogs());
     studioStore.syncAuditLogs().then(setLogs).catch(() => {});
   }, []);
 
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, userFilter, actionFilter]);
+
   const users = Array.from(new Set(logs.map((log) => log.actor_name)));
   const actions = Array.from(new Set(logs.map((log) => log.action)));
+
   const filteredLogs = logs.filter((log) => {
     const query = search.toLowerCase();
     const matchesSearch =
@@ -50,45 +65,80 @@ export default function AuditLogPage() {
     );
   });
 
-  return (
-    <div className="mx-auto max-w-[1100px] space-y-4">
-      <section>
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#e31b23]">
-          Accountability
-        </p>
-        <h1 className="mt-1 text-[25px] font-semibold leading-none text-slate-900 dark:text-zinc-100">Audit Log</h1>
-        <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
-          Review sensitive actions and operational changes.
-        </p>
-      </section>
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE));
+  const paginatedLogs = React.useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredLogs.slice(start, start + PAGE_SIZE);
+  }, [filteredLogs, currentPage]);
 
-      <section className="overflow-hidden rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] shadow-sm">
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-zinc-800 p-2">
-          <div className="relative min-w-[170px] flex-1">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  return (
+    <div className="w-full max-w-[1440px] mx-auto space-y-6 pb-8">
+      {/* 1. PAGE HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
+            Accountability & Security
+          </p>
+          <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
+            Audit Log
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+            Review sensitive operator actions, financial recordings, and system access history.
+          </p>
+        </div>
+
+        <span className="text-xs font-bold font-mono tracking-wider text-slate-400 dark:text-zinc-500 uppercase self-start sm:self-auto">
+          {filteredLogs.length.toLocaleString()} {filteredLogs.length === 1 ? "RECORD" : "RECORDS"}
+        </span>
+      </div>
+
+      {/* 2. FILTER & TABLE CARD */}
+      <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] shadow-xs overflow-hidden">
+        {/* Search & Filter Header Strip */}
+        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-zinc-800 flex flex-wrap items-center gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400 dark:text-zinc-500" />
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search action or record"
-              className="h-8 w-full rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-8 pr-2 text-[10px] text-slate-700 dark:text-zinc-100 outline-none focus:border-red-300 focus:ring-1 focus:ring-red-200 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search actor, action, or record..."
+              className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-900/60 pl-10 pr-3 text-xs sm:text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 transition shadow-2xs"
             />
           </div>
-          <label className="relative min-w-[150px] flex-1">
+
+          {/* User Filter */}
+          <div className="w-[160px] relative">
             <select
+              aria-label="Filter by user"
               value={userFilter}
-              onChange={(event) => setUserFilter(event.target.value)}
-              className="h-8 w-full appearance-none rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 pr-7 text-[10px] text-slate-600 dark:text-zinc-200 outline-none"
+              onChange={(e) => setUserFilter(e.target.value)}
+              className="h-10 w-full appearance-none rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 pr-8 text-xs sm:text-sm font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
             >
               <option>All users</option>
-              {users.map((user) => <option key={user}>{user}</option>)}
+              {users.map((user) => (
+                <option key={user}>{user}</option>
+              ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
-          </label>
-          <label className="relative min-w-[150px] flex-1">
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-3.5 h-3.5 w-3.5 text-slate-400" />
+          </div>
+
+          {/* Action Filter */}
+          <div className="w-[170px] relative">
             <select
+              aria-label="Filter by action"
               value={actionFilter}
-              onChange={(event) => setActionFilter(event.target.value)}
-              className="h-8 w-full appearance-none rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 pr-7 text-[10px] text-slate-600 dark:text-zinc-200 outline-none"
+              onChange={(e) => setActionFilter(e.target.value)}
+              className="h-10 w-full appearance-none rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 pr-8 text-xs sm:text-sm font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
             >
               <option>All actions</option>
               {actions.map((action) => (
@@ -97,57 +147,131 @@ export default function AuditLogPage() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
-          </label>
-          <button
-            type="button"
-            className="flex h-8 items-center gap-1.5 rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-[10px] font-semibold text-slate-600 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800"
-          >
-            <CalendarDays className="h-3.5 w-3.5" />
-            Date range
-          </button>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-3.5 h-3.5 w-3.5 text-slate-400" />
+          </div>
         </div>
 
+        {/* Audit Log Table */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-900/60 text-left text-[9px] font-semibold uppercase tracking-wide text-slate-400 dark:text-zinc-400">
-                <th className="px-2 py-2.5">Timestamp</th>
-                <th className="px-2 py-2.5">User</th>
-                <th className="px-2 py-2.5">Action</th>
-                <th className="px-2 py-2.5">Affected record</th>
-                <th className="px-2 py-2.5">Details</th>
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+              <tr>
+                <th className="py-3.5 px-4 w-44">Timestamp</th>
+                <th className="py-3.5 px-4">Operator</th>
+                <th className="py-3.5 px-4">Action</th>
+                <th className="py-3.5 px-4">Details</th>
+                <th className="py-3.5 px-4 text-right">Target Ref</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredLogs.map((log) => {
-                const timestamp = formatTimestamp(log.timestamp);
-                return (
-                  <tr key={log.id} className="border-b border-slate-100 dark:border-zinc-800 last:border-0 hover:bg-slate-50/60 dark:hover:bg-zinc-800/40">
-                    <td className="whitespace-nowrap px-2 py-3 text-[10px] font-semibold text-slate-700 dark:text-zinc-200">
-                      {timestamp.date}, {timestamp.time}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-3 text-[10px] text-slate-600 dark:text-zinc-300">{log.actor_name}</td>
-                    <td className="whitespace-nowrap px-2 py-3 text-[10px] text-slate-600 dark:text-zinc-300">
-                      {actionLabels[log.action] ?? log.action}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-3 text-[10px] text-slate-600 dark:text-zinc-300">
-                      {log.target_id}
-                    </td>
-                    <td className="px-2 py-3 text-[10px] text-slate-500 dark:text-zinc-400">{log.details}</td>
-                  </tr>
-                );
-              })}
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/80">
+              {paginatedLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
+                    No audit records match your filters.
+                  </td>
+                </tr>
+              ) : (
+                paginatedLogs.map((log) => {
+                  const stamp = formatTimestamp(log.timestamp);
+
+                  return (
+                    <tr
+                      key={log.id}
+                      className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors"
+                    >
+                      {/* Timestamp */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="block font-bold text-slate-900 dark:text-zinc-100 font-mono">
+                          {stamp.date}
+                        </span>
+                        <span className="block text-[11px] font-mono text-slate-400">
+                          {stamp.time}
+                        </span>
+                      </td>
+
+                      {/* Operator Avatar & Name */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-slate-100 dark:bg-zinc-800 text-[10px] font-bold text-slate-700 dark:text-zinc-300">
+                              {getInitials(log.actor_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-bold text-slate-800 dark:text-zinc-200">
+                            {log.actor_name}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Action Badge */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-zinc-800 px-2.5 py-1 text-[11px] font-bold text-slate-700 dark:text-zinc-300">
+                          {actionLabels[log.action] ?? log.action}
+                        </span>
+                      </td>
+
+                      {/* Details */}
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-zinc-300 font-medium max-w-md">
+                        {log.details}
+                      </td>
+
+                      {/* Target Ref */}
+                      <td className="py-3.5 px-4 text-right font-mono text-xs text-slate-500 dark:text-zinc-400 whitespace-nowrap">
+                        {log.target_id || "—"}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
 
-        {filteredLogs.length === 0 && (
-          <div className="border-t border-slate-100 dark:border-zinc-800 py-10 text-center text-xs text-slate-400 dark:text-zinc-500">
-            No audit records match your filters.
+        {/* 3. PAGINATION ROW */}
+        <div className="px-5 py-4 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
+          <span>
+            Showing {filteredLogs.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–
+            {Math.min(currentPage * PAGE_SIZE, filteredLogs.length)} of {filteredLogs.length.toLocaleString()}
+          </span>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              aria-label="Previous page"
+              className="h-8 w-8 rounded-lg border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-600 dark:text-zinc-300 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 7).map((pg) => (
+              <button
+                key={pg}
+                type="button"
+                onClick={() => setCurrentPage(pg)}
+                className={`h-8 w-8 rounded-lg text-xs font-bold transition ${
+                  currentPage === pg
+                    ? "bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs"
+                    : "border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
+                }`}
+              >
+                {pg}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              aria-label="Next page"
+              className="h-8 w-8 rounded-lg border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-600 dark:text-zinc-300 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
-        )}
-      </section>
+        </div>
+      </div>
     </div>
   );
 }

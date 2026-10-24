@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Save, Upload, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, Save, ShieldCheck, Sparkles, Sliders, Palette, HardDrive, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,11 +10,11 @@ import type { StudioSettings } from "@/types";
 
 type SettingsTab = "Studio Profile" | "Album Defaults" | "Uploads & Storage" | "Order & Delivery";
 
-const tabs: SettingsTab[] = [
-  "Studio Profile",
-  "Album Defaults",
-  "Uploads & Storage",
-  "Order & Delivery",
+const tabs: { label: SettingsTab; icon: React.ComponentType<{ className?: string }> }[] = [
+  { label: "Studio Profile", icon: Palette },
+  { label: "Album Defaults", icon: Sliders },
+  { label: "Uploads & Storage", icon: HardDrive },
+  { label: "Order & Delivery", icon: Receipt },
 ];
 
 export default function StudioSettingsPage() {
@@ -35,170 +35,177 @@ export default function StudioSettingsPage() {
   const saveSettings = () => {
     studioStore.updateSettings(settings);
     setSaved(true);
-    window.setTimeout(() => setSaved(false), 2000);
+    window.setTimeout(() => setSaved(false), 2500);
   };
 
   return (
-    <div className="mx-auto max-w-[1100px] space-y-4">
-      <section className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+    <div className="w-full max-w-[1440px] mx-auto space-y-6 pb-8">
+      {/* 1. PAGE HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#e31b23]">
-            Studio preferences
+          <p className="text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
+            Studio Preferences
           </p>
-          <h1 className="mt-1 text-[25px] font-semibold leading-none text-slate-900 dark:text-zinc-100">
+          <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
             Settings
           </h1>
-          <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
-            Configure studio identity, album security defaults, and delivery receipt notes.
+          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+            Configure studio brand identity, client gallery security defaults, and delivery receipt notes.
           </p>
         </div>
 
         {saved && (
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-            <Check className="h-3.5 w-3.5" /> Changes saved to studio storage
+          <div className="inline-flex items-center gap-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-xs animate-in fade-in">
+            <Check className="h-4 w-4" />
+            <span>Changes saved to studio storage</span>
           </div>
         )}
-      </section>
+      </div>
 
-      <div className="grid items-start gap-3 lg:grid-cols-[145px_minmax(0,552px)]">
-        <nav className="space-y-1" aria-label="Settings sections">
-          {tabs.map((tab) => (
+      {/* 2. MAIN 2-COLUMN SETTINGS SECTION */}
+      <div className="grid items-start gap-6 lg:grid-cols-[240px_1fr]">
+        {/* Navigation Sidebar Tabs */}
+        <nav className="space-y-1.5" aria-label="Settings navigation">
+          {tabs.map(({ label, icon: Icon }) => (
             <button
-              key={tab}
+              key={label}
               type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`w-full rounded-md px-2 py-2 text-left text-[10px] font-medium transition ${
-                activeTab === tab
-                  ? "bg-white dark:bg-zinc-800 font-semibold text-[#e31b23] dark:text-red-400 shadow-sm ring-1 ring-slate-200 dark:ring-zinc-700"
-                  : "text-slate-500 dark:text-zinc-400 hover:bg-white/70 dark:hover:bg-zinc-800/50 hover:text-slate-800 dark:hover:text-zinc-200"
+              onClick={() => setActiveTab(label)}
+              className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition-all ${
+                activeTab === label
+                  ? "bg-white dark:bg-[#141417] text-[#e21b23] dark:text-red-400 shadow-xs border border-slate-200/90 dark:border-zinc-800"
+                  : "text-slate-600 dark:text-zinc-400 hover:bg-white/60 dark:hover:bg-zinc-800/40 hover:text-slate-900 dark:hover:text-zinc-100"
               }`}
             >
-              {tab}
+              <Icon className="h-4 w-4 shrink-0" />
+              <span>{label}</span>
             </button>
           ))}
         </nav>
 
-        <section className="overflow-hidden rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121214] shadow-sm">
+        {/* Form Content Card */}
+        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] shadow-xs overflow-hidden">
           {activeTab === "Studio Profile" && (
-            <>
-              <div className="px-4 pb-3 pt-4">
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Studio profile</h2>
-                <p className="mt-1 text-[10px] text-slate-400 dark:text-zinc-500">
+            <div className="p-6 space-y-6">
+              <div className="border-b border-slate-100 dark:border-zinc-800 pb-4">
+                <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100">Studio Profile</h2>
+                <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
                   Information shown on customer public albums, invoices, and collection receipts.
                 </p>
               </div>
 
-              <div className="space-y-3 px-4 pb-4">
-                <div className="flex items-center justify-between rounded-md bg-[#111111] dark:bg-zinc-900 border dark:border-zinc-800 px-3 py-2.5">
-                  <div className="flex items-center gap-2.5">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* Brand Card Preview */}
+              <div className="flex items-center justify-between rounded-2xl bg-[#101010] p-4 text-white">
+                <div className="flex items-center gap-3.5">
+                  <div className="h-12 w-12 rounded-full overflow-hidden border border-white/10 bg-[#0b0b0b] p-1">
                     <img
                       src={settings.logo_url || "/addis-photography-logo.png"}
                       alt="Addis Photography logo"
-                      className="h-8 w-8 rounded-full object-contain"
-                    />
-                    <div className="leading-none">
-                      <p className="text-sm font-bold text-white">
-                        {settings.studio_name || "Addis Photography"}
-                      </p>
-                      <p className="mt-1 text-[5px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                        Photography Studio
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-slate-400 bg-white/10 px-2.5 py-1 rounded">
-                    Official Brand
-                  </span>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="set-name" className="text-[10px] font-medium text-slate-600 dark:text-zinc-300">
-                      Studio name
-                    </Label>
-                    <Input
-                      id="set-name"
-                      value={settings.studio_name}
-                      onChange={(e) => handleChange("studio_name", e.target.value)}
-                      className="h-8 rounded-md border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-none focus:border-red-300 focus:ring-1 focus:ring-red-200"
+                      className="h-full w-full object-contain"
                     />
                   </div>
-
-                  <div className="space-y-1">
-                    <Label htmlFor="set-accent" className="text-[10px] font-medium text-slate-600 dark:text-zinc-300">
-                      Accent color
-                    </Label>
-                    <div className="flex gap-2">
-                      <input
-                        id="set-accent"
-                        type="color"
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        aria-label="Accent color"
-                        className="h-8 w-8 cursor-pointer rounded-md border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-0.5"
-                      />
-                      <Input
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className="h-8 flex-1 rounded-md border-slate-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 px-2.5 text-[11px] font-medium shadow-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label htmlFor="set-phone" className="text-[10px] font-medium text-slate-600 dark:text-zinc-300">
-                      Phone number
-                    </Label>
-                    <Input
-                      id="set-phone"
-                      value={settings.phone}
-                      onChange={(e) => handleChange("phone", e.target.value)}
-                      className="h-8 rounded-md border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-none focus:border-red-300 focus:ring-1 focus:ring-red-200"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label htmlFor="set-email" className="text-[10px] font-medium text-slate-600 dark:text-zinc-300">
-                      Email address
-                    </Label>
-                    <Input
-                      id="set-email"
-                      type="email"
-                      value={settings.email}
-                      onChange={(e) => handleChange("email", e.target.value)}
-                      className="h-8 rounded-md border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-none focus:border-red-300 focus:ring-1 focus:ring-red-200"
-                    />
+                  <div>
+                    <p className="text-base font-extrabold text-white">
+                      {settings.studio_name || "Addis Photography"}
+                    </p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Photography Studio • Addis Ababa
+                    </p>
                   </div>
                 </div>
+                <span className="text-xs font-mono font-bold text-slate-300 bg-white/10 px-3 py-1 rounded-full">
+                  Official Brand
+                </span>
+              </div>
 
-                <div className="space-y-1">
-                  <Label htmlFor="set-addr" className="text-[10px] font-medium text-slate-600 dark:text-zinc-300">
-                    Studio physical address
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="set-name" className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Studio Name *
                   </Label>
                   <Input
-                    id="set-addr"
-                    value={settings.address}
-                    onChange={(e) => handleChange("address", e.target.value)}
-                    className="h-8 rounded-md border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-[11px] font-medium text-slate-700 dark:text-zinc-200 shadow-none focus:border-red-300 focus:ring-1 focus:ring-red-200"
+                    id="set-name"
+                    value={settings.studio_name}
+                    onChange={(e) => handleChange("studio_name", e.target.value)}
+                    className="h-10 text-sm rounded-xl dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="set-accent" className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Accent Color
+                  </Label>
+                  <div className="flex gap-2">
+                    <input
+                      id="set-accent"
+                      type="color"
+                      value={accentColor}
+                      onChange={(e) => setAccentColor(e.target.value)}
+                      aria-label="Accent color"
+                      className="h-10 w-10 cursor-pointer rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-1"
+                    />
+                    <Input
+                      value={accentColor}
+                      onChange={(e) => setAccentColor(e.target.value)}
+                      className="h-10 flex-1 font-mono text-sm rounded-xl dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="set-phone" className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Studio Phone Number
+                  </Label>
+                  <Input
+                    id="set-phone"
+                    value={settings.phone}
+                    onChange={(e) => handleChange("phone", e.target.value)}
+                    className="h-10 text-sm rounded-xl dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="set-email" className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Studio Email Address
+                  </Label>
+                  <Input
+                    id="set-email"
+                    type="email"
+                    value={settings.email}
+                    onChange={(e) => handleChange("email", e.target.value)}
+                    className="h-10 text-sm rounded-xl dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   />
                 </div>
               </div>
-            </>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="set-addr" className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  Studio Physical Address
+                </Label>
+                <Input
+                  id="set-addr"
+                  value={settings.address}
+                  onChange={(e) => handleChange("address", e.target.value)}
+                  className="h-10 text-sm rounded-xl dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+                  placeholder="e.g. Bole Medhanialem, Edna Mall Area, Addis Ababa"
+                />
+              </div>
+            </div>
           )}
 
           {activeTab === "Album Defaults" && (
-            <div className="space-y-4 p-4">
-              <div>
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Album defaults</h2>
-                <p className="mt-1 text-[10px] text-slate-400 dark:text-zinc-500">
-                  Choose the default storage quota and retention policy for new customer galleries.
+            <div className="p-6 space-y-6">
+              <div className="border-b border-slate-100 dark:border-zinc-800 pb-4">
+                <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100">Album Defaults</h2>
+                <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                  Choose default storage quotas, retention grace periods, and PIN protection rules.
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label htmlFor="set-quota" className="text-[10px] font-medium text-slate-600 dark:text-zinc-300">
-                    Default album quota (MB)
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="set-quota" className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Default Album Quota (MB)
                   </Label>
                   <Input
                     id="set-quota"
@@ -207,13 +214,13 @@ export default function StudioSettingsPage() {
                     onChange={(e) =>
                       handleChange("default_album_quota_mb", Number(e.target.value) || 1024)
                     }
-                    className="h-8 rounded-md border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-[11px] font-medium text-slate-700 dark:text-zinc-200"
+                    className="h-10 text-sm font-mono rounded-xl dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <Label htmlFor="set-ret" className="text-[10px] font-medium text-slate-600 dark:text-zinc-300">
-                    Retention period (days)
+                <div className="space-y-1.5">
+                  <Label htmlFor="set-ret" className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Retention Period (Days)
                   </Label>
                   <Input
                     id="set-ret"
@@ -222,49 +229,52 @@ export default function StudioSettingsPage() {
                     onChange={(e) =>
                       handleChange("default_retention_days", Number(e.target.value) || 90)
                     }
-                    className="h-8 rounded-md border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-[11px] font-medium text-slate-700 dark:text-zinc-200"
+                    className="h-10 text-sm font-mono rounded-xl dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                   />
                 </div>
               </div>
 
-              <label className="flex cursor-pointer items-center gap-2 text-[11px] text-slate-600 dark:text-zinc-300">
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 dark:border-zinc-700 p-3.5 text-xs font-semibold text-slate-700 dark:text-zinc-300">
                 <input
                   type="checkbox"
                   checked={settings.require_pin_for_albums}
                   onChange={(event) =>
                     handleChange("require_pin_for_albums", event.target.checked)
                   }
-                  className="h-3.5 w-3.5 rounded border-slate-300 accent-[#e31b23]"
+                  className="h-4 w-4 rounded border-slate-300 accent-[#e21b23]"
                 />
-                Require 4–6 digit security PIN by default for new client galleries
+                <span>Require 4–6 digit security PIN by default for new client galleries</span>
               </label>
 
-              <div className="grid gap-3 border-t border-slate-100 dark:border-zinc-800 pt-3 sm:grid-cols-2">
-                <div>
-                  <p className="text-[10px] font-medium text-slate-600 dark:text-zinc-400">Private album access</p>
-                  <div className="mt-2 rounded-md border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-2 text-[11px] font-semibold text-[#e31b23] dark:text-red-400">
-                    4–6 digit numeric PIN with rate limit lockout
-                  </div>
+              <div className="grid gap-3 pt-2 sm:grid-cols-2">
+                <div className="rounded-xl border border-red-200/60 dark:border-red-950 bg-red-50/50 dark:bg-red-950/20 p-4">
+                  <p className="text-xs font-bold text-[#e21b23] dark:text-red-400">Private Album Security</p>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400">
+                    4–6 digit numeric PIN with 15-minute lockout protection after 5 failed attempts.
+                  </p>
                 </div>
-                <div>
-                  <p className="text-[10px] font-medium text-slate-600 dark:text-zinc-400">Dual calendar display</p>
-                  <div className="mt-2 rounded-md border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-2 text-[11px] font-semibold text-[#e31b23] dark:text-red-400">
-                    Gregorian • Ethiopian (ዓ.ም)
-                  </div>
+                <div className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 p-4">
+                  <p className="text-xs font-bold text-slate-900 dark:text-zinc-100">Dual Calendar Display</p>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-zinc-400">
+                    Gregorian (dd/mm/yyyy) and Ethiopian (ዓ.ም) calendars active across all receipts and albums.
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === "Uploads & Storage" && (
-            <div className="space-y-4 p-4">
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Uploads & storage</h2>
-              <p className="text-[10px] text-slate-400 dark:text-zinc-500">
-                Manage chunked media engine limits and client file upload settings.
-              </p>
-              <div className="space-y-1">
-                <Label htmlFor="set-up-quota" className="text-[10px] font-medium text-slate-600 dark:text-zinc-300">
-                  Default storage limit per album (MB)
+            <div className="p-6 space-y-6">
+              <div className="border-b border-slate-100 dark:border-zinc-800 pb-4">
+                <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100">Uploads & Storage Engine</h2>
+                <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                  Manage chunked media engine limits and client file upload settings.
+                </p>
+              </div>
+
+              <div className="space-y-1.5 max-w-sm">
+                <Label htmlFor="set-up-quota" className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  Default Storage Limit Per Album (MB)
                 </Label>
                 <Input
                   id="set-up-quota"
@@ -273,46 +283,52 @@ export default function StudioSettingsPage() {
                   onChange={(e) =>
                     handleChange("default_album_quota_mb", Number(e.target.value) || 1024)
                   }
-                  className="h-8 max-w-xs rounded-md border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-[11px] font-medium text-slate-700 dark:text-zinc-200"
+                  className="h-10 text-sm font-mono rounded-xl dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
                 />
               </div>
-              <div className="rounded-md bg-slate-50 dark:bg-zinc-900 border dark:border-zinc-800 p-3 text-[10px] text-slate-500 dark:text-zinc-400">
-                Chunked uploads slice large files into 2 MB objects with SHA-256 integrity and automatic resume.
+
+              <div className="rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800 p-4 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+                Chunked uploads slice large files into 2 MB objects with SHA-256 integrity verification, pause/resume support, and automatic background transcode to 720p H.264.
               </div>
             </div>
           )}
 
           {activeTab === "Order & Delivery" && (
-            <div className="space-y-4 p-4">
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Order & delivery</h2>
-              <p className="text-[10px] text-slate-400 dark:text-zinc-500">
-                Configure the legal footer printed on customer receipts and delivery notices.
-              </p>
-              <div className="space-y-1">
-                <Label htmlFor="set-footer" className="text-[10px] font-medium text-slate-600 dark:text-zinc-300">
-                  Receipt footer note
+            <div className="p-6 space-y-6">
+              <div className="border-b border-slate-100 dark:border-zinc-800 pb-4">
+                <h2 className="text-base font-bold text-slate-900 dark:text-zinc-100">Order & Delivery Preferences</h2>
+                <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                  Configure the legal notes printed on customer receipts and pickup notices.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="set-footer" className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  Receipt Footer Note
                 </Label>
                 <Input
                   id="set-footer"
                   value={settings.receipt_footer}
                   onChange={(e) => handleChange("receipt_footer", e.target.value)}
-                  className="h-8 rounded-md border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-[11px] font-medium text-slate-700 dark:text-zinc-200"
+                  className="h-10 text-sm rounded-xl dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+                  placeholder="e.g. Thank you for choosing Addis Photography Studio. All sales final."
                 />
               </div>
             </div>
           )}
 
-          <div className="border-t border-slate-200 dark:border-zinc-800 px-4 py-3">
+          {/* Footer Save Button */}
+          <div className="border-t border-slate-100 dark:border-zinc-800 px-6 py-4 flex justify-end">
             <Button
               type="button"
               onClick={saveSettings}
-              className="h-8 gap-1.5 rounded-md bg-[#e31b23] px-3.5 text-[10px] font-semibold text-white hover:bg-[#c9151c]"
+              className="h-10 px-5 gap-2 rounded-xl bg-[#e21b23] text-white font-bold text-sm shadow-sm hover:bg-red-700 transition-all"
             >
-              {saved ? <Check className="h-3 w-3" /> : <Save className="h-3 w-3" />}
-              {saved ? "Saved" : "Save Changes"}
+              {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+              <span>{saved ? "Saved" : "Save Changes"}</span>
             </Button>
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );
