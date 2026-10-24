@@ -297,29 +297,10 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                       </div>
                     </div>
                     <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
-                    <button
-                      type="button"
-                      onClick={toggleTheme}
-                      className="flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/80"
-                    >
-                      <span className="flex items-center gap-2">
-                        {resolvedTheme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-500" />}
-                        Theme Mode
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase">
-                        {resolvedTheme}
-                      </span>
-                    </button>
                     <Link href="/profile" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/80">
                       <UserCircle className="h-4 w-4" />
                       Account overview
                     </Link>
-                    {isAdmin && (
-                      <Link href="/admin/settings" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/80">
-                        <Settings className="h-4 w-4" />
-                        Account settings
-                      </Link>
-                    )}
                     <button
                       type="button"
                       onClick={() => logout()}
