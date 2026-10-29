@@ -113,6 +113,8 @@ export interface Album {
   token: string;
   customer_id: string;
   customer_name: string;
+  category?: string;
+  access_persons?: number;
   event_date: string;
   is_locked: boolean;
   pin_set: boolean;
@@ -123,6 +125,17 @@ export interface Album {
   allow_zip: boolean;
   expires_at: string;
   cover_image_url?: string;
+  created_at: string;
+}
+
+export interface PublicPortfolioItem {
+  id: string;
+  title: string;
+  category: "PORTRAITS" | "WEDDINGS" | "CELEBRATIONS" | "EDITORIAL";
+  image_url: string;
+  caption?: string;
+  aspect_ratio?: "portrait" | "landscape" | "square";
+  featured?: boolean;
   created_at: string;
 }
 

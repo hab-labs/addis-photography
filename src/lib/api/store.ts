@@ -12,6 +12,7 @@ import {
   StudioSettings,
   OrderStatus,
   PaymentMethod,
+  PublicPortfolioItem,
 } from "@/types";
 import {
   INITIAL_CUSTOMERS,
@@ -23,6 +24,7 @@ import {
   INITIAL_USERS,
   INITIAL_AUDIT_LOGS,
   INITIAL_SETTINGS,
+  INITIAL_PORTFOLIO,
 } from "./mockData";
 import Decimal from "decimal.js";
 import { calculateBalance, calculateLineTotal, calculateOrderTotal, toDecimal } from "../money";
@@ -854,6 +856,11 @@ export const studioStore = {
     customer_name: string;
     event_date: string;
     pin?: string;
+    category?: string;
+    access_persons?: number;
+    cover_image_url?: string;
+    allow_download?: boolean;
+    allow_zip?: boolean;
   }): Album => {
     if (data.pin && !/^\d{4,6}$/.test(data.pin)) {
       throw new Error("Album PIN must contain 4 to 6 digits.");
@@ -865,14 +872,17 @@ export const studioStore = {
       token: data.token.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
       customer_id: data.customer_id || "",
       customer_name: data.customer_name,
+      category: data.category || "PRIVATE COLLECTION",
+      access_persons: data.access_persons || 1,
+      cover_image_url: data.cover_image_url || undefined,
       event_date: data.event_date,
       is_locked: !!data.pin,
       pin_set: !!data.pin,
       quota_bytes: 1073741824, // 1 GB
       used_bytes: 0,
       file_count: 0,
-      allow_download: false,
-      allow_zip: false,
+      allow_download: data.allow_download ?? true,
+      allow_zip: data.allow_zip ?? true,
       expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date().toISOString(),
     };
@@ -892,6 +902,8 @@ export const studioStore = {
         event_date: data.event_date,
         visibility: data.pin ? "private" : "public",
         pin: data.pin,
+        allow_download: newAlb.allow_download,
+        allow_zip: newAlb.allow_zip,
       })
         .then(() => studioStore.syncAlbums().catch(() => {}))
         .catch(console.error);
@@ -1106,6 +1118,29 @@ export const studioStore = {
       // Fallback
     }
     return studioStore.getMediaFiles(albumId);
+  },
+
+  // --- Public Portfolio Showcase ---
+  getPublicPortfolio: (): PublicPortfolioItem[] => {
+    return getStored<PublicPortfolioItem[]>("portfolio", INITIAL_PORTFOLIO);
+  },
+
+  addPublicPortfolioItem: (item: Omit<PublicPortfolioItem, "id" | "created_at">): PublicPortfolioItem => {
+    const portfolio = studioStore.getPublicPortfolio();
+    const newItem: PublicPortfolioItem = {
+      ...item,
+      id: `port-${Date.now()}`,
+      created_at: new Date().toISOString(),
+    };
+    setStored("portfolio", [newItem, ...portfolio]);
+    return newItem;
+  },
+
+  deletePublicPortfolioItem: (id: string): boolean => {
+    const portfolio = studioStore.getPublicPortfolio();
+    const updated = portfolio.filter((p) => p.id !== id);
+    setStored("portfolio", updated);
+    return true;
   },
 
   // --- Users / Operators ---
