@@ -1207,6 +1207,12 @@ export const studioStore = {
     return livePublicPortfolio;
   },
 
+  setLivePortfolio: (items: PublicPortfolioItem[]): void => {
+    if (Array.isArray(items) && items.length > 0) {
+      livePublicPortfolio = items;
+    }
+  },
+
   syncPublicPortfolio: async (): Promise<PublicPortfolioItem[]> => {
     try {
       const res = await api.get<{ portfolio: PublicPortfolioItem[] }>("/api/portfolio");
