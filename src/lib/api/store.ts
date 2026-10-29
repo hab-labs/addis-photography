@@ -84,6 +84,9 @@ function runStorageMigrations(): void {
         localStorage.setItem(STORAGE_KEY_PREFIX + "albums", JSON.stringify(corrected));
       }
     }
+
+    // 5. Purge any legacy localStorage portfolio cache (now live server synced)
+    localStorage.removeItem(STORAGE_KEY_PREFIX + "portfolio");
   } catch {
     // Suppress migration parsing issues
   }
@@ -183,6 +186,9 @@ function mapBackendOrder(o: any): Order {
 
 let isSyncing = false;
 let lastSyncTime = 0;
+
+// In-memory cache for public portfolio (Live server-synced, zero localStorage)
+let livePublicPortfolio: PublicPortfolioItem[] = [...INITIAL_PORTFOLIO];
 
 export const studioStore = {
   // --- Customers ---
@@ -1120,26 +1126,69 @@ export const studioStore = {
     return studioStore.getMediaFiles(albumId);
   },
 
-  // --- Public Portfolio Showcase ---
+  // --- Public Portfolio Showcase (Live Server Synced - Zero localStorage) ---
   getPublicPortfolio: (): PublicPortfolioItem[] => {
-    return getStored<PublicPortfolioItem[]>("portfolio", INITIAL_PORTFOLIO);
+    return livePublicPortfolio;
   },
 
-  addPublicPortfolioItem: (item: Omit<PublicPortfolioItem, "id" | "created_at">): PublicPortfolioItem => {
-    const portfolio = studioStore.getPublicPortfolio();
+  syncPublicPortfolio: async (): Promise<PublicPortfolioItem[]> => {
+    try {
+      const res = await api.get<{ portfolio: PublicPortfolioItem[] }>("/api/portfolio");
+      if (res?.portfolio && Array.isArray(res.portfolio)) {
+        livePublicPortfolio = res.portfolio;
+        // Purge any stale legacy localStorage item if present so it never persists locally
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.removeItem(STORAGE_KEY_PREFIX + "portfolio");
+          } catch {}
+        }
+        return res.portfolio;
+      }
+    } catch (err) {
+      console.warn("Failed to sync portfolio from server:", err);
+    }
+    return livePublicPortfolio;
+  },
+
+  addPublicPortfolioItem: async (
+    item: Omit<PublicPortfolioItem, "id" | "created_at">
+  ): Promise<PublicPortfolioItem> => {
     const newItem: PublicPortfolioItem = {
       ...item,
       id: `port-${Date.now()}`,
       created_at: new Date().toISOString(),
     };
-    setStored("portfolio", [newItem, ...portfolio]);
+
+    // Update in-memory state immediately for instantaneous UI feedback
+    livePublicPortfolio = [newItem, ...livePublicPortfolio];
+
+    // Persist directly to server / Neon PostgreSQL database
+    if (isBrowser()) {
+      try {
+        const res = await api.post<{ item: PublicPortfolioItem }>("/api/portfolio", newItem);
+        if (res?.item) {
+          await studioStore.syncPublicPortfolio().catch(() => {});
+          return res.item;
+        }
+      } catch (err) {
+        console.error("Failed to save portfolio item to database:", err);
+      }
+    }
     return newItem;
   },
 
-  deletePublicPortfolioItem: (id: string): boolean => {
-    const portfolio = studioStore.getPublicPortfolio();
-    const updated = portfolio.filter((p) => p.id !== id);
-    setStored("portfolio", updated);
+  deletePublicPortfolioItem: async (id: string): Promise<boolean> => {
+    livePublicPortfolio = livePublicPortfolio.filter((p) => p.id !== id);
+
+    // Delete directly from server / Neon PostgreSQL database
+    if (isBrowser()) {
+      try {
+        await api.delete(`/api/portfolio?id=${encodeURIComponent(id)}`);
+        await studioStore.syncPublicPortfolio().catch(() => {});
+      } catch (err) {
+        console.error("Failed to delete portfolio item from database:", err);
+      }
+    }
     return true;
   },
 

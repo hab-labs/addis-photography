@@ -35,8 +35,19 @@ export default function PublicPortfolioPage() {
   const [lightboxItem, setLightboxItem] = React.useState<PublicPortfolioItem | null>(null);
 
   React.useEffect(() => {
+    // Initial display
     const items = studioStore.getPublicPortfolio();
     setPortfolioItems(items);
+
+    // Live cross-device sync from server / Neon PostgreSQL database
+    studioStore
+      .syncPublicPortfolio()
+      .then((live) => {
+        if (live && live.length > 0) {
+          setPortfolioItems(live);
+        }
+      })
+      .catch(() => {});
 
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const showcaseUrl = `${origin}/a/portfolio`;
