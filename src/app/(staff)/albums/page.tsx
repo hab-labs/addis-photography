@@ -6,6 +6,8 @@ import Link from "next/link";
 import {
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   ImageIcon,
   Lock,
@@ -433,6 +435,56 @@ export default function ClientAlbumsPage() {
     return item.category === portfolioFilter;
   });
 
+  // Lightbox Navigation
+  const lightboxIndex = lightboxItem
+    ? filteredPortfolio.findIndex((item) => item.id === lightboxItem.id)
+    : -1;
+
+  const handlePrevPhoto = React.useCallback(
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      if (filteredPortfolio.length === 0) return;
+      const currentIdx = lightboxItem
+        ? filteredPortfolio.findIndex((item) => item.id === lightboxItem.id)
+        : -1;
+      const prevIdx =
+        currentIdx <= 0 ? filteredPortfolio.length - 1 : currentIdx - 1;
+      setLightboxItem(filteredPortfolio[prevIdx]);
+    },
+    [filteredPortfolio, lightboxItem]
+  );
+
+  const handleNextPhoto = React.useCallback(
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      if (filteredPortfolio.length === 0) return;
+      const currentIdx = lightboxItem
+        ? filteredPortfolio.findIndex((item) => item.id === lightboxItem.id)
+        : -1;
+      const nextIdx =
+        currentIdx === -1 || currentIdx >= filteredPortfolio.length - 1
+          ? 0
+          : currentIdx + 1;
+      setLightboxItem(filteredPortfolio[nextIdx]);
+    },
+    [filteredPortfolio, lightboxItem]
+  );
+
+  React.useEffect(() => {
+    if (!lightboxItem) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        handlePrevPhoto();
+      } else if (e.key === "ArrowRight") {
+        handleNextPhoto();
+      } else if (e.key === "Escape") {
+        setLightboxItem(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxItem, handlePrevPhoto, handleNextPhoto]);
+
   // Generate Initials Avatar
   const getInitials = (name: string): string => {
     const parts = name.trim().split(" ");
@@ -539,42 +591,42 @@ export default function ClientAlbumsPage() {
         </section>
 
         {/* Share Section (Screenshot 4) */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center rounded-3xl border border-zinc-800/80 bg-[#121214] p-8 sm:p-12 shadow-xl">
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center rounded-3xl border border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-[#121214] p-8 sm:p-12 shadow-xl">
           <div className="lg:col-span-7 space-y-5">
-            <span className="text-[11px] font-bold tracking-[0.25em] text-zinc-400 uppercase block font-mono">
+            <span className="text-[11px] font-bold tracking-[0.25em] text-slate-500 dark:text-zinc-400 uppercase block font-mono">
               SHARE THE EXPERIENCE
             </span>
-            <h2 className="text-3xl sm:text-4xl font-serif text-white tracking-tight font-medium">
+            <h2 className="text-3xl sm:text-4xl font-serif text-slate-900 dark:text-white tracking-tight font-medium">
               Scan. Discover. Remember.
             </h2>
-            <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-light">
+            <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 leading-relaxed font-light">
               Invite customers and guests to explore the studio's public portfolio instantly. No account or PIN is required for this showcase.
             </p>
 
             <div className="pt-2 max-w-lg">
-              <div className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/90 p-1.5 pl-3.5">
-                <span className="text-xs font-mono text-zinc-400 truncate flex-1">
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900/90 p-1.5 pl-3.5">
+                <span className="text-xs font-mono text-slate-600 dark:text-zinc-400 truncate flex-1">
                   {typeof window !== "undefined" ? `${window.location.origin}/a/portfolio` : "https://addisphotography.et/a/portfolio"}
                 </span>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={handleCopyPortfolioLink}
-                  className="h-8 px-3 text-xs text-white hover:bg-zinc-800 gap-1.5"
+                  className="h-8 px-3 text-xs text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 gap-1.5"
                 >
                   <Copy className="h-3.5 w-3.5" />
                   <span>Copy</span>
                 </Button>
               </div>
-              <p className="mt-2 text-[11px] text-zinc-400 flex items-center gap-1.5">
-                <Check className="h-3 w-3 text-emerald-400" />
+              <p className="mt-2 text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+                <Check className="h-3 w-3 text-emerald-500 dark:text-emerald-400" />
                 <span>Only photos approved for public viewing appear here.</span>
               </p>
             </div>
           </div>
 
           <div className="lg:col-span-5 flex justify-center lg:justify-end">
-            <div className="w-full max-w-xs rounded-2xl border border-zinc-700 bg-[#18181b] p-6 text-center shadow-2xl space-y-4">
+            <div className="w-full max-w-xs rounded-2xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-[#18181b] p-6 text-center shadow-2xl space-y-4">
               {portfolioQrUrl ? (
                 <div className="rounded-xl bg-white p-4 mx-auto w-fit shadow-md">
                   <Image
@@ -586,19 +638,19 @@ export default function ClientAlbumsPage() {
                   />
                 </div>
               ) : (
-                <div className="h-44 w-44 rounded-xl bg-zinc-800 animate-pulse mx-auto" />
+                <div className="h-44 w-44 rounded-xl bg-slate-200 dark:bg-zinc-800 animate-pulse mx-auto" />
               )}
 
               <div>
-                <h3 className="font-serif text-base font-semibold text-white">Scan to view the album</h3>
-                <p className="text-[11px] text-zinc-400 mt-0.5">Point any phone camera at the QR code</p>
+                <h3 className="font-serif text-base font-semibold text-slate-900 dark:text-white">Scan to view the album</h3>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">Point any phone camera at the QR code</p>
               </div>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => portfolioQrUrl && downloadFile(portfolioQrUrl, "addis-studio-portfolio-qr.png")}
-                className="w-full border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 text-xs h-9 gap-1.5"
+                className="w-full border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs h-9 gap-1.5"
               >
                 <Download className="h-3.5 w-3.5" />
                 <span>Download QR Code</span>
@@ -609,18 +661,18 @@ export default function ClientAlbumsPage() {
 
         {/* Selected Work Masonry Grid (Screenshot 5) */}
         <section className="space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-zinc-800/80 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 dark:border-zinc-800/80 pb-6">
             <div>
-              <span className="text-[11px] font-bold tracking-[0.25em] text-zinc-400 uppercase block font-mono">
+              <span className="text-[11px] font-bold tracking-[0.25em] text-slate-500 dark:text-zinc-400 uppercase block font-mono">
                 SELECTED WORK
               </span>
-              <h2 className="text-3xl sm:text-5xl font-serif text-white tracking-tight mt-1 font-medium">
+              <h2 className="text-3xl sm:text-5xl font-serif text-slate-900 dark:text-white tracking-tight mt-1 font-medium">
                 Made to be felt.
               </h2>
             </div>
 
             {/* Category Filter Tabs */}
-            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-zinc-900/80 border border-zinc-800">
+            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800">
               {PORTFOLIO_CATEGORIES.map((cat) => {
                 const active = portfolioFilter === cat;
                 return (
@@ -630,7 +682,7 @@ export default function ClientAlbumsPage() {
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                       active
                         ? "bg-[#e21b23] text-white shadow-sm"
-                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                        : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-zinc-800/60"
                     }`}
                   >
                     {cat}
@@ -640,26 +692,27 @@ export default function ClientAlbumsPage() {
             </div>
           </div>
 
-          {/* Grid with hover animations */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Masonry Columns Grid - displays each photo naturally based on its original aspect ratio */}
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 [column-fill:_balance]">
             {filteredPortfolio.map((item) => (
               <div
                 key={item.id}
                 onClick={() => setLightboxItem(item)}
-                className="group relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800/80 cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 hover:border-zinc-700 aspect-[4/5]"
+                className="mb-6 break-inside-avoid group relative overflow-hidden rounded-2xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/80 cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 hover:border-slate-300 dark:hover:border-zinc-700"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.image_url}
                   alt={item.title}
-                  className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+                  className="w-full h-auto block object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  loading="lazy"
                 />
 
                 {/* Dark gradient overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none" />
 
                 {/* Hover content */}
-                <div className="absolute inset-x-0 bottom-0 p-6 flex flex-col justify-end translate-y-2 group-hover:translate-y-0 transition-transform duration-300 space-y-1.5">
+                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 flex flex-col justify-end translate-y-2 group-hover:translate-y-0 transition-transform duration-300 space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-[#e21b23]">
                     {item.category}
                   </span>
@@ -677,35 +730,68 @@ export default function ClientAlbumsPage() {
           </div>
         </section>
 
-        {/* Lightbox Modal */}
+        {/* Lightbox Modal with Forward / Backward Navigation */}
         {lightboxItem && (
           <div
             onClick={() => setLightboxItem(null)}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md animate-in fade-in duration-200"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md animate-in fade-in duration-200 select-none"
           >
+            {/* Close Button */}
             <button
               onClick={() => setLightboxItem(null)}
-              className="absolute top-5 right-5 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              aria-label="Close"
+              className="absolute top-5 right-5 z-50 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
+
+            {/* Previous Photo Button */}
+            {filteredPortfolio.length > 1 && (
+              <button
+                onClick={handlePrevPhoto}
+                aria-label="Previous photograph"
+                className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-50 h-11 w-11 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-md border border-white/20 transition-all hover:scale-110 active:scale-95 shadow-2xl"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+            )}
+
+            {/* Next Photo Button */}
+            {filteredPortfolio.length > 1 && (
+              <button
+                onClick={handleNextPhoto}
+                aria-label="Next photograph"
+                className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-50 h-11 w-11 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-md border border-white/20 transition-all hover:scale-110 active:scale-95 shadow-2xl"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            )}
+
+            {/* Center Image Container */}
             <div
               onClick={(e) => e.stopPropagation()}
-              className="max-w-4xl max-h-[85vh] flex flex-col items-center space-y-3"
+              className="max-w-5xl max-h-[90vh] flex flex-col items-center space-y-3 px-4"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={lightboxItem.image_url}
                 alt={lightboxItem.title}
-                className="max-h-[75vh] w-auto rounded-xl object-contain shadow-2xl"
+                className="max-h-[78vh] max-w-[85vw] w-auto h-auto rounded-xl object-contain shadow-2xl"
               />
-              <div className="text-center">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#e21b23]">
-                  {lightboxItem.category}
-                </span>
-                <h3 className="font-serif text-xl font-medium text-white">{lightboxItem.title}</h3>
+              <div className="text-center space-y-1">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#e21b23]">
+                    {lightboxItem.category}
+                  </span>
+                  {lightboxIndex >= 0 && (
+                    <span className="text-[10px] font-mono text-zinc-400 bg-white/10 px-2 py-0.5 rounded-full border border-white/10">
+                      {lightboxIndex + 1} / {filteredPortfolio.length}
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-serif text-lg sm:text-xl font-medium text-white">{lightboxItem.title}</h3>
                 {lightboxItem.caption && (
-                  <p className="text-xs text-zinc-400 mt-0.5">{lightboxItem.caption}</p>
+                  <p className="text-xs text-zinc-400 max-w-lg mx-auto">{lightboxItem.caption}</p>
                 )}
               </div>
             </div>
@@ -1189,11 +1275,11 @@ export default function ClientAlbumsPage() {
             </div>
 
             {/* PIN Protection Setting */}
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5 space-y-3">
+            <div className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 p-3.5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-[#e21b23]" />
-                  <span className="text-xs font-bold text-white">4-Digit Security PIN</span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">4-Digit Security PIN</span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -1202,7 +1288,7 @@ export default function ClientAlbumsPage() {
                     onChange={(e) => setRequirePin(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#e21b23]"></div>
+                  <div className="w-9 h-5 bg-zinc-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#e21b23]"></div>
                 </label>
               </div>
 
@@ -1213,14 +1299,14 @@ export default function ClientAlbumsPage() {
                     placeholder="Enter 4-6 digit numeric PIN"
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                    className="h-10 text-xs font-mono tracking-widest text-center dark:bg-zinc-950 dark:border-zinc-700 dark:text-white"
+                    className="h-10 text-xs font-mono tracking-widest text-center bg-white dark:bg-zinc-950 border-slate-200 dark:border-zinc-700 text-slate-900 dark:text-white"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => setPin(Math.floor(1000 + Math.random() * 9000).toString())}
-                    className="h-10 text-xs border-zinc-700 hover:bg-zinc-800 text-zinc-300 shrink-0"
+                    className="h-10 text-xs border-slate-200 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 shrink-0"
                   >
                     Randomize
                   </Button>
@@ -1230,24 +1316,24 @@ export default function ClientAlbumsPage() {
 
             {/* Download & Zip Access toggles */}
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <label className="flex items-center gap-2 p-2.5 rounded-lg border border-zinc-800 bg-zinc-900/40 cursor-pointer">
+              <label className="flex items-center gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/40 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={allowDownload}
                   onChange={(e) => setAllowDownload(e.target.checked)}
-                  className="rounded border-zinc-700 accent-[#e21b23]"
+                  className="rounded border-zinc-300 dark:border-zinc-700 accent-[#e21b23]"
                 />
-                <span className="font-semibold text-zinc-300">Allow photo downloads</span>
+                <span className="font-semibold text-slate-700 dark:text-zinc-300">Allow photo downloads</span>
               </label>
 
-              <label className="flex items-center gap-2 p-2.5 rounded-lg border border-zinc-800 bg-zinc-900/40 cursor-pointer">
+              <label className="flex items-center gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/40 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={allowZip}
                   onChange={(e) => setAllowZip(e.target.checked)}
-                  className="rounded border-zinc-700 accent-[#e21b23]"
+                  className="rounded border-zinc-300 dark:border-zinc-700 accent-[#e21b23]"
                 />
-                <span className="font-semibold text-zinc-300">Allow ZIP archive</span>
+                <span className="font-semibold text-slate-700 dark:text-zinc-300">Allow ZIP archive</span>
               </label>
             </div>
 
@@ -1258,7 +1344,7 @@ export default function ClientAlbumsPage() {
                 size="sm"
                 onClick={() => setIsCreateOpen(false)}
                 disabled={isSaving}
-                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                className="border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
               >
                 Cancel
               </Button>
@@ -1286,7 +1372,7 @@ export default function ClientAlbumsPage() {
           MODAL: MANAGE PUBLIC ALBUM (Add/Delete Posts for Staff & Admin)
           ========================================================================= */}
       <Dialog open={isManagePublicOpen} onOpenChange={setIsManagePublicOpen}>
-        <DialogContent className="sm:max-w-2xl dark:bg-[#121214] dark:border-zinc-800 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl bg-white dark:bg-[#121214] border-slate-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-2 text-[#e21b23]">
               <SlidersHorizontal className="h-4 w-4" />
@@ -1301,13 +1387,13 @@ export default function ClientAlbumsPage() {
           </DialogHeader>
 
           {/* Manage Tabs */}
-          <div className="flex items-center border-b border-zinc-800 gap-2 pt-2">
+          <div className="flex items-center border-b border-slate-200 dark:border-zinc-800 gap-2 pt-2">
             <button
               onClick={() => setManageTab("list")}
               className={`pb-2 px-3 text-xs font-bold border-b-2 transition-all ${
                 manageTab === "list"
-                  ? "border-[#e21b23] text-white"
-                  : "border-transparent text-zinc-400 hover:text-white"
+                  ? "border-[#e21b23] text-slate-900 dark:text-white"
+                  : "border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               Current Showcase ({portfolioItems.length})
@@ -1316,8 +1402,8 @@ export default function ClientAlbumsPage() {
               onClick={() => setManageTab("new")}
               className={`pb-2 px-3 text-xs font-bold border-b-2 transition-all ${
                 manageTab === "new"
-                  ? "border-[#e21b23] text-white"
-                  : "border-transparent text-zinc-400 hover:text-white"
+                  ? "border-[#e21b23] text-slate-900 dark:text-white"
+                  : "border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               + Add New Photograph
@@ -1329,7 +1415,7 @@ export default function ClientAlbumsPage() {
               {portfolioItems.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:border-zinc-700 transition"
+                  className="flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 hover:border-slate-300 dark:hover:border-zinc-700 transition"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1342,9 +1428,9 @@ export default function ClientAlbumsPage() {
                       <span className="text-[10px] font-bold text-[#e21b23] uppercase">
                         {item.category}
                       </span>
-                      <h4 className="text-sm font-semibold text-white truncate">{item.title}</h4>
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-white truncate">{item.title}</h4>
                       {item.caption && (
-                        <p className="text-xs text-zinc-400 truncate max-w-sm">{item.caption}</p>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 truncate max-w-sm">{item.caption}</p>
                       )}
                     </div>
                   </div>
@@ -1364,21 +1450,21 @@ export default function ClientAlbumsPage() {
           ) : (
             <form onSubmit={handleAddPublicPost} className="space-y-4 py-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-zinc-300">Photograph Title *</Label>
+                <Label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Photograph Title *</Label>
                 <Input
                   placeholder="e.g. Royal Reception at Sheraton Addis"
                   value={newPostTitle}
                   onChange={(e) => setNewPostTitle(e.target.value)}
-                  className="h-10 text-xs dark:bg-zinc-900 dark:border-zinc-800 dark:text-white"
+                  className="h-10 text-xs bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-zinc-300">Category *</Label>
+                <Label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Category *</Label>
                 <select
                   value={newPostCategory}
                   onChange={(e) => setNewPostCategory(e.target.value as any)}
-                  className="h-10 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 text-xs font-semibold text-white outline-none focus:border-[#e21b23]"
+                  className="h-10 w-full rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 text-xs font-semibold text-slate-900 dark:text-white outline-none focus:border-[#e21b23]"
                 >
                   <option value="WEDDINGS">WEDDINGS</option>
                   <option value="PORTRAITS">PORTRAITS</option>
@@ -1389,11 +1475,11 @@ export default function ClientAlbumsPage() {
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-zinc-300">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
                     Upload Photograph <span className="text-[#e21b23]">*</span>
                   </Label>
                   {selectedFileMeta && (
-                    <span className="text-[10px] text-zinc-400 font-mono">
+                    <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
                       {selectedFileMeta.name} ({selectedFileMeta.size})
                     </span>
                   )}
@@ -1419,23 +1505,23 @@ export default function ClientAlbumsPage() {
                     className={`rounded-2xl border-2 border-dashed p-6 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center space-y-2.5 ${
                       isDragging
                         ? "border-[#e21b23] bg-[#e21b23]/10"
-                        : "border-zinc-700 hover:border-[#e21b23] bg-zinc-900/60 hover:bg-zinc-900"
+                        : "border-slate-300 dark:border-zinc-700 hover:border-[#e21b23] bg-slate-50 dark:bg-zinc-900/60 hover:bg-slate-100 dark:hover:bg-zinc-900"
                     }`}
                   >
                     <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e21b23]/15 border border-[#e21b23]/30 text-[#e21b23]">
                       <Upload className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-white">
+                      <p className="text-xs font-semibold text-slate-900 dark:text-white">
                         Click to upload or drag & drop photograph
                       </p>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
                         Supports high-resolution JPG, PNG, WEBP, or HEIC (up to 25MB)
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="relative rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 group">
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-700 bg-zinc-950 group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={newPostImageUrl}
@@ -1483,12 +1569,12 @@ export default function ClientAlbumsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-zinc-300">Caption / Notes</Label>
+                <Label className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Caption / Notes</Label>
                 <Input
                   placeholder="e.g. Captured with prime 85mm portrait lighting"
                   value={newPostCaption}
                   onChange={(e) => setNewPostCaption(e.target.value)}
-                  className="h-10 text-xs dark:bg-zinc-900 dark:border-zinc-800 dark:text-white"
+                  className="h-10 text-xs bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white"
                 />
               </div>
 
@@ -1498,7 +1584,7 @@ export default function ClientAlbumsPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setManageTab("list")}
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                  className="border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
                 >
                   Cancel
                 </Button>
@@ -1514,11 +1600,11 @@ export default function ClientAlbumsPage() {
             </form>
           )}
 
-          <DialogFooter className="pt-3 border-t border-zinc-800">
+          <DialogFooter className="pt-3 border-t border-slate-200 dark:border-zinc-800">
             <Button
               size="sm"
               onClick={() => setIsManagePublicOpen(false)}
-              className="bg-zinc-800 hover:bg-zinc-700 text-white"
+              className="bg-slate-900 hover:bg-slate-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white font-medium"
             >
               Done
             </Button>

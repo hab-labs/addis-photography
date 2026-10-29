@@ -6,6 +6,8 @@ import Link from "next/link";
 import {
   Camera,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Download,
   Eye,
@@ -55,6 +57,55 @@ export default function PublicPortfolioPage() {
     if (activeCategory === "ALL") return true;
     return item.category === activeCategory;
   });
+
+  const lightboxIndex = lightboxItem
+    ? filteredItems.findIndex((item) => item.id === lightboxItem.id)
+    : -1;
+
+  const handlePrevPhoto = React.useCallback(
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      if (filteredItems.length === 0) return;
+      const currentIdx = lightboxItem
+        ? filteredItems.findIndex((item) => item.id === lightboxItem.id)
+        : -1;
+      const prevIdx =
+        currentIdx <= 0 ? filteredItems.length - 1 : currentIdx - 1;
+      setLightboxItem(filteredItems[prevIdx]);
+    },
+    [filteredItems, lightboxItem]
+  );
+
+  const handleNextPhoto = React.useCallback(
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      if (filteredItems.length === 0) return;
+      const currentIdx = lightboxItem
+        ? filteredItems.findIndex((item) => item.id === lightboxItem.id)
+        : -1;
+      const nextIdx =
+        currentIdx === -1 || currentIdx >= filteredItems.length - 1
+          ? 0
+          : currentIdx + 1;
+      setLightboxItem(filteredItems[nextIdx]);
+    },
+    [filteredItems, lightboxItem]
+  );
+
+  React.useEffect(() => {
+    if (!lightboxItem) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        handlePrevPhoto();
+      } else if (e.key === "ArrowRight") {
+        handleNextPhoto();
+      } else if (e.key === "Escape") {
+        setLightboxItem(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxItem, handlePrevPhoto, handleNextPhoto]);
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-[#e21b23] selection:text-white">
@@ -242,26 +293,27 @@ export default function PublicPortfolioPage() {
             </div>
           </div>
 
-          {/* Grid with hover animations */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Masonry Columns Grid - displays each photo naturally based on its original aspect ratio */}
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 [column-fill:_balance]">
             {filteredItems.map((item) => (
               <div
                 key={item.id}
                 onClick={() => setLightboxItem(item)}
-                className="group relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800/80 cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 hover:border-zinc-700 aspect-[4/5]"
+                className="mb-6 break-inside-avoid group relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800/80 cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 hover:border-zinc-700"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.image_url}
                   alt={item.title}
-                  className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+                  className="w-full h-auto block object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  loading="lazy"
                 />
 
                 {/* Dark gradient overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none" />
 
                 {/* Hover content */}
-                <div className="absolute inset-x-0 bottom-0 p-6 flex flex-col justify-end translate-y-2 group-hover:translate-y-0 transition-transform duration-300 space-y-1.5">
+                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 flex flex-col justify-end translate-y-2 group-hover:translate-y-0 transition-transform duration-300 space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-[#e21b23]">
                     {item.category}
                   </span>
@@ -280,35 +332,68 @@ export default function PublicPortfolioPage() {
         </section>
       </main>
 
-      {/* Lightbox Modal */}
+      {/* Lightbox Modal with Forward / Backward Navigation */}
       {lightboxItem && (
         <div
           onClick={() => setLightboxItem(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md animate-in fade-in duration-200 select-none"
         >
+          {/* Close Button */}
           <button
             onClick={() => setLightboxItem(null)}
-            className="absolute top-5 right-5 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            aria-label="Close"
+            className="absolute top-5 right-5 z-50 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
+
+          {/* Previous Photo Button */}
+          {filteredItems.length > 1 && (
+            <button
+              onClick={handlePrevPhoto}
+              aria-label="Previous photograph"
+              className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-50 h-11 w-11 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-md border border-white/20 transition-all hover:scale-110 active:scale-95 shadow-2xl"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Next Photo Button */}
+          {filteredItems.length > 1 && (
+            <button
+              onClick={handleNextPhoto}
+              aria-label="Next photograph"
+              className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-50 h-11 w-11 sm:h-12 sm:w-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-md border border-white/20 transition-all hover:scale-110 active:scale-95 shadow-2xl"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Center Image Container */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className="max-w-4xl max-h-[85vh] flex flex-col items-center space-y-3"
+            className="max-w-5xl max-h-[90vh] flex flex-col items-center space-y-3 px-4"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={lightboxItem.image_url}
               alt={lightboxItem.title}
-              className="max-h-[75vh] w-auto rounded-xl object-contain shadow-2xl"
+              className="max-h-[78vh] max-w-[85vw] w-auto h-auto rounded-xl object-contain shadow-2xl"
             />
-            <div className="text-center">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#e21b23]">
-                {lightboxItem.category}
-              </span>
-              <h3 className="font-serif text-xl font-medium text-white">{lightboxItem.title}</h3>
+            <div className="text-center space-y-1">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#e21b23]">
+                  {lightboxItem.category}
+                </span>
+                {lightboxIndex >= 0 && (
+                  <span className="text-[10px] font-mono text-zinc-400 bg-white/10 px-2 py-0.5 rounded-full border border-white/10">
+                    {lightboxIndex + 1} / {filteredItems.length}
+                  </span>
+                )}
+              </div>
+              <h3 className="font-serif text-lg sm:text-xl font-medium text-white">{lightboxItem.title}</h3>
               {lightboxItem.caption && (
-                <p className="text-xs text-zinc-400 mt-0.5">{lightboxItem.caption}</p>
+                <p className="text-xs text-zinc-400 max-w-lg mx-auto">{lightboxItem.caption}</p>
               )}
             </div>
           </div>
