@@ -114,6 +114,8 @@ export default function ClientAlbumsPage() {
   const [selectedFileMeta, setSelectedFileMeta] = React.useState<{ name: string; size: string } | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const [isSavingPost, setIsSavingPost] = React.useState(false);
+  const [isPostSuccess, setIsPostSuccess] = React.useState(false);
+  const [publicModalNotice, setPublicModalNotice] = React.useState<string | null>(null);
   const [manageTab, setManageTab] = React.useState<"list" | "new">("list");
   const publicFileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -351,12 +353,45 @@ export default function ClientAlbumsPage() {
     }
     const reader = new FileReader();
     reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setNewPostImageUrl(dataUrl);
-      setSelectedFileMeta({
-        name: file.name,
-        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-      });
+      const rawDataUrl = event.target?.result as string;
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX_DIM = 1600;
+        let width = img.width;
+        let height = img.height;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          setNewPostImageUrl(compressedDataUrl);
+        } else {
+          setNewPostImageUrl(rawDataUrl);
+        }
+        setSelectedFileMeta({
+          name: file.name,
+          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+        });
+      };
+      img.onerror = () => {
+        setNewPostImageUrl(rawDataUrl);
+        setSelectedFileMeta({
+          name: file.name,
+          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+        });
+      };
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -388,10 +423,25 @@ export default function ClientAlbumsPage() {
       return;
     }
 
+    const postTitle = newPostTitle.trim();
+    const tempItem: PublicPortfolioItem = {
+      id: `port-${Date.now()}`,
+      title: postTitle,
+      category: newPostCategory,
+      image_url: newPostImageUrl.trim(),
+      caption: newPostCaption.trim() || undefined,
+      aspect_ratio: "portrait",
+      featured: true,
+      created_at: new Date().toISOString(),
+    };
+
+    // 1. Optimistically update local state immediately so showcase and stats update instantaneously (0ms)
+    setPortfolioItems((prev) => [tempItem, ...prev]);
+
     try {
       setIsSavingPost(true);
-      await studioStore.addPublicPortfolioItem({
-        title: newPostTitle.trim(),
+      const savedItem = await studioStore.addPublicPortfolioItem({
+        title: postTitle,
         category: newPostCategory,
         image_url: newPostImageUrl.trim(),
         caption: newPostCaption.trim() || undefined,
@@ -399,15 +449,36 @@ export default function ClientAlbumsPage() {
         featured: true,
       });
 
-      await loadPortfolio();
+      // Synchronize with server canonical item
+      setPortfolioItems((prev) => [
+        savedItem,
+        ...prev.filter((p) => p.id !== tempItem.id && p.id !== savedItem.id),
+      ]);
+
+      // 2. Show clear confirmation message both on the button and at the top of the dialog
+      setIsPostSuccess(true);
+      setPublicModalNotice(`"${postTitle}" published successfully to public showcase!`);
+      setActionNotice(`"${postTitle}" published live to showcase.`);
+
+      // 3. Clear inputs
       setNewPostTitle("");
       setNewPostImageUrl("");
       setNewPostCaption("");
       setSelectedFileMeta(null);
-      setManageTab("list");
-      setActionNotice("Photograph published live to showcase and synced across devices.");
-      setTimeout(() => setActionNotice(null), 3500);
+
+      // 4. Smoothly switch to showcase list tab after brief visual feedback
+      setTimeout(() => {
+        setIsPostSuccess(false);
+        setManageTab("list");
+      }, 700);
+
+      setTimeout(() => {
+        setPublicModalNotice(null);
+        setActionNotice(null);
+      }, 5000);
     } catch {
+      // Revert optimistic addition if server fails
+      setPortfolioItems((prev) => prev.filter((p) => p.id !== tempItem.id));
       alert("Failed to publish photograph.");
     } finally {
       setIsSavingPost(false);
@@ -416,10 +487,14 @@ export default function ClientAlbumsPage() {
 
   const handleDeletePublicPost = async (id: string, postTitle: string) => {
     if (!confirm(`Remove "${postTitle}" from the public showcase?`)) return;
+    setPortfolioItems((prev) => prev.filter((p) => p.id !== id));
     await studioStore.deletePublicPortfolioItem(id);
-    await loadPortfolio();
+    setPublicModalNotice(`Removed "${postTitle}" from public showcase.`);
     setActionNotice(`Removed "${postTitle}" from public showcase.`);
-    setTimeout(() => setActionNotice(null), 3500);
+    setTimeout(() => {
+      setPublicModalNotice(null);
+      setActionNotice(null);
+    }, 4000);
   };
 
   // Filtered Private Albums
@@ -1418,6 +1493,23 @@ export default function ClientAlbumsPage() {
             </button>
           </div>
 
+          {/* In-Modal Success/Action Notification */}
+          {publicModalNotice && (
+            <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/15 p-3 text-xs font-semibold text-emerald-400 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 shrink-0 text-emerald-400" />
+                <span>{publicModalNotice}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPublicModalNotice(null)}
+                className="text-emerald-400/70 hover:text-emerald-400"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
           {manageTab === "list" ? (
             <div className="space-y-3 py-3">
               {portfolioItems.map((item) => (
@@ -1599,10 +1691,26 @@ export default function ClientAlbumsPage() {
                 <Button
                   type="submit"
                   size="sm"
-                  disabled={isSavingPost}
-                  className="bg-[#e21b23] hover:bg-[#c4161d] text-white font-semibold"
+                  disabled={isSavingPost || isPostSuccess}
+                  className={`font-semibold transition-all ${
+                    isPostSuccess
+                      ? "bg-emerald-600 hover:bg-emerald-600 text-white"
+                      : "bg-[#e21b23] hover:bg-[#c4161d] text-white"
+                  }`}
                 >
-                  {isSavingPost ? "Publishing..." : "Publish to Showcase"}
+                  {isSavingPost ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Publishing...
+                    </span>
+                  ) : isPostSuccess ? (
+                    <span className="flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5" />
+                      Published Live!
+                    </span>
+                  ) : (
+                    "Publish to Showcase"
+                  )}
                 </Button>
               </div>
             </form>
@@ -1622,7 +1730,7 @@ export default function ClientAlbumsPage() {
 
       {/* Action Notification Banner */}
       {actionNotice && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-700 px-4 py-3 text-xs font-semibold text-white shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-5 right-5 z-[100] flex items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-700 px-4 py-3 text-xs font-semibold text-white shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200">
           <Check className="h-4 w-4 text-emerald-400" />
           <span>{actionNotice}</span>
         </div>

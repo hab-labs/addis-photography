@@ -1243,7 +1243,11 @@ export const studioStore = {
       try {
         const res = await api.post<{ item: PublicPortfolioItem }>("/api/portfolio", newItem);
         if (res?.item) {
-          await studioStore.syncPublicPortfolio().catch(() => {});
+          livePublicPortfolio = [
+            res.item,
+            ...livePublicPortfolio.filter((p) => p.id !== newItem.id && p.id !== res.item.id),
+          ];
+          studioStore.syncPublicPortfolio().catch(() => {});
           return res.item;
         }
       } catch (err) {
@@ -1260,7 +1264,7 @@ export const studioStore = {
     if (isBrowser()) {
       try {
         await api.delete(`/api/portfolio?id=${encodeURIComponent(id)}`);
-        await studioStore.syncPublicPortfolio().catch(() => {});
+        studioStore.syncPublicPortfolio().catch(() => {});
       } catch (err) {
         console.error("Failed to delete portfolio item from database:", err);
       }
