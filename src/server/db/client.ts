@@ -1,17 +1,9 @@
-import { Pool as PgPool, PoolClient } from "pg";
-import { Pool as NeonPool, neon, neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
-import dns from "node:dns";
+import { Pool, PoolClient } from "pg";
 import bcrypt from "bcryptjs";
 import fs from "node:fs";
 import path from "node:path";
 
 import { SCHEMA_SQL } from "./schema-sql";
-
-if (typeof (dns as any).setDefaultResultOrder === "function") {
-  (dns as any).setDefaultResultOrder("ipv4first");
-}
-neonConfig.webSocketConstructor = ws;
 
 export interface QueryResult<T = any> {
   rows: T[];
@@ -23,8 +15,7 @@ export interface TransactionClient {
 }
 
 class DatabaseManager {
-  private pool: any = null;
-  private neonSql: any = null;
+  private pool: Pool | null = null;
   private isConnected = false;
   private memoryStore: Map<string, any[]>;
   private isMemoryMode = false;
@@ -49,26 +40,15 @@ class DatabaseManager {
       ) || candidates.find((c) => Boolean(c && typeof c === "string" && c.trim()));
 
     if (connectionString) {
-      if (connectionString.includes("neon.tech")) {
-        try {
-          this.neonSql = neon(connectionString);
-        } catch {}
-      }
       const globalAny = globalThis as any;
       if (!globalAny.__addis_pg_pool__) {
         const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
-        if (connectionString.includes("neon.tech")) {
-          globalAny.__addis_pg_pool__ = new NeonPool({
-            connectionString,
-          });
-        } else {
-          globalAny.__addis_pg_pool__ = new PgPool({
-            connectionString,
-            max: 10,
-            idleTimeoutMillis: 30000,
-            ssl: isLocal ? false : { rejectUnauthorized: false },
-          });
-        }
+        globalAny.__addis_pg_pool__ = new Pool({
+          connectionString,
+          max: 10,
+          idleTimeoutMillis: 30000,
+          ssl: isLocal ? false : { rejectUnauthorized: false },
+        });
       }
       this.pool = globalAny.__addis_pg_pool__;
       this.isMemoryMode = false;
@@ -115,7 +95,6 @@ class DatabaseManager {
       "settings",
       "sessions",
       "album_unlock_sessions",
-      "portfolio",
     ];
     tables.forEach((t) => this.memoryStore.set(t, []));
   }
@@ -139,16 +118,6 @@ class DatabaseManager {
           await this.pool.query(`
             ALTER TABLE albums ADD COLUMN IF NOT EXISTS cover_url VARCHAR(512) NULL;
             ALTER TABLE media ADD COLUMN IF NOT EXISTS data_url TEXT NULL;
-            CREATE TABLE IF NOT EXISTS portfolio (
-              id VARCHAR(64) PRIMARY KEY,
-              title VARCHAR(255) NOT NULL,
-              category VARCHAR(64) NOT NULL,
-              image_url TEXT NOT NULL,
-              caption TEXT,
-              aspect_ratio VARCHAR(32) DEFAULT 'portrait',
-              featured BOOLEAN DEFAULT true,
-              created_at TIMESTAMPTZ DEFAULT NOW()
-            );
           `);
         } catch {}
       } catch (err: any) {
@@ -328,24 +297,9 @@ class DatabaseManager {
   public async query<T = any>(text: string, params: any[] = []): Promise<QueryResult<T>> {
     await this.ensureReady();
 
-    if (!this.isMemoryMode) {
-      if (this.neonSql) {
-        try {
-          const rows = await this.neonSql.query(text, params);
-          return { rows: rows as T[], rowCount: rows.length };
-        } catch (neonErr) {
-          if (this.pool) {
-            const res = await this.pool.query(text, params);
-            return { rows: res.rows, rowCount: res.rowCount ?? 0 };
-          }
-          throw neonErr;
-        }
-      }
-
-      if (this.pool) {
-        const res = await this.pool.query(text, params);
-        return { rows: res.rows, rowCount: res.rowCount ?? 0 };
-      }
+    if (!this.isMemoryMode && this.pool) {
+      const res = await this.pool.query(text, params);
+      return { rows: res.rows, rowCount: res.rowCount ?? 0 };
     }
 
     return this.executeMemoryQuery<T>(text, params);
@@ -354,46 +308,21 @@ class DatabaseManager {
   public async transaction<T>(callback: (client: TransactionClient) => Promise<T>): Promise<T> {
     await this.ensureReady();
 
-    if (!this.isMemoryMode) {
-      if (this.pool) {
-        try {
-          const client = await this.pool.connect();
-          try {
-            await client.query("BEGIN");
-            const txClient: TransactionClient = {
-              query: <R = any>(text: string, params?: any[]) => (client as any).query(text, params) as Promise<QueryResult<R>>,
-            };
-            const result = await callback(txClient);
-            await client.query("COMMIT");
-            return result;
-          } catch (err) {
-            await client.query("ROLLBACK");
-            throw err;
-          } finally {
-            client.release();
-          }
-        } catch (poolErr) {
-          if (this.neonSql) {
-            const txClient: TransactionClient = {
-              query: async <R = any>(text: string, params?: any[]) => {
-                const rows = await this.neonSql.query(text, params || []);
-                return { rows: rows as R[], rowCount: rows.length };
-              },
-            };
-            return await callback(txClient);
-          }
-          throw poolErr;
-        }
-      }
-
-      if (this.neonSql) {
+    if (!this.isMemoryMode && this.pool) {
+      const client = await this.pool.connect();
+      try {
+        await client.query("BEGIN");
         const txClient: TransactionClient = {
-          query: async <R = any>(text: string, params?: any[]) => {
-            const rows = await this.neonSql.query(text, params || []);
-            return { rows: rows as R[], rowCount: rows.length };
-          },
+          query: <R = any>(text: string, params?: any[]) => (client as any).query(text, params) as Promise<QueryResult<R>>,
         };
-        return await callback(txClient);
+        const result = await callback(txClient);
+        await client.query("COMMIT");
+        return result;
+      } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+      } finally {
+        client.release();
       }
     }
 

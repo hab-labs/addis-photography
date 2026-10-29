@@ -1125,22 +1125,7 @@ export const studioStore = {
     return getStored<PublicPortfolioItem[]>("portfolio", INITIAL_PORTFOLIO);
   },
 
-  syncPublicPortfolio: async (): Promise<PublicPortfolioItem[]> => {
-    try {
-      const res = await api.get<{ portfolio: PublicPortfolioItem[] }>("/api/portfolio");
-      if (res?.portfolio && Array.isArray(res.portfolio)) {
-        setStored("portfolio", res.portfolio);
-        return res.portfolio;
-      }
-    } catch (err) {
-      console.warn("Failed to sync portfolio from server:", err);
-    }
-    return studioStore.getPublicPortfolio();
-  },
-
-  addPublicPortfolioItem: async (
-    item: Omit<PublicPortfolioItem, "id" | "created_at">
-  ): Promise<PublicPortfolioItem> => {
+  addPublicPortfolioItem: (item: Omit<PublicPortfolioItem, "id" | "created_at">): PublicPortfolioItem => {
     const portfolio = studioStore.getPublicPortfolio();
     const newItem: PublicPortfolioItem = {
       ...item,
@@ -1148,34 +1133,13 @@ export const studioStore = {
       created_at: new Date().toISOString(),
     };
     setStored("portfolio", [newItem, ...portfolio]);
-
-    if (isBrowser()) {
-      try {
-        const res = await api.post<{ item: PublicPortfolioItem }>("/api/portfolio", newItem);
-        if (res?.item) {
-          await studioStore.syncPublicPortfolio().catch(() => {});
-          return res.item;
-        }
-      } catch (err) {
-        console.error("Failed to save portfolio item to database:", err);
-      }
-    }
     return newItem;
   },
 
-  deletePublicPortfolioItem: async (id: string): Promise<boolean> => {
+  deletePublicPortfolioItem: (id: string): boolean => {
     const portfolio = studioStore.getPublicPortfolio();
     const updated = portfolio.filter((p) => p.id !== id);
     setStored("portfolio", updated);
-
-    if (isBrowser()) {
-      try {
-        await api.delete(`/api/portfolio?id=${encodeURIComponent(id)}`);
-        await studioStore.syncPublicPortfolio().catch(() => {});
-      } catch (err) {
-        console.error("Failed to delete portfolio item from database:", err);
-      }
-    }
     return true;
   },
 
