@@ -38,6 +38,16 @@ export default function PublicPortfolioPage() {
     const items = studioStore.getPublicPortfolio();
     setPortfolioItems(items);
 
+    // Fetch live showcase items from Neon database
+    studioStore
+      .syncPublicPortfolio()
+      .then((live) => {
+        if (live && live.length > 0) {
+          setPortfolioItems(live);
+        }
+      })
+      .catch(() => {});
+
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const showcaseUrl = `${origin}/a/portfolio`;
     generateQrPng(showcaseUrl).then(setQrUrl).catch(() => {});

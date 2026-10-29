@@ -144,7 +144,10 @@ export default function ClientAlbumsPage() {
   const [actionNotice, setActionNotice] = React.useState<string | null>(null);
 
   // Load albums & portfolio data
-  const loadAlbums = React.useCallback(() => {
+  const loadAlbums = React.useCallback(async () => {
+    try {
+      await studioStore.syncAlbums();
+    } catch {}
     const rawAlbums = studioStore.getAlbums();
     const mapped: ClientAlbum[] = rawAlbums.map((album: StoreAlbum) => {
       const date = formatCalendarPair(album.created_at || album.event_date);
@@ -164,7 +167,14 @@ export default function ClientAlbumsPage() {
     setAlbums(mapped);
   }, []);
 
-  const loadPortfolio = React.useCallback(() => {
+  const loadPortfolio = React.useCallback(async () => {
+    try {
+      const live = await studioStore.syncPublicPortfolio();
+      if (live && live.length > 0) {
+        setPortfolioItems(live);
+        return;
+      }
+    } catch {}
     const items = studioStore.getPublicPortfolio();
     setPortfolioItems(items);
   }, []);
@@ -175,6 +185,7 @@ export default function ClientAlbumsPage() {
     setCustomers(studioStore.getCustomers());
     studioStore.syncCustomers().then(setCustomers).catch(() => {});
     studioStore.syncAlbums().then(() => loadAlbums()).catch(() => {});
+    studioStore.syncPublicPortfolio().then(() => loadPortfolio()).catch(() => {});
 
     // Generate public showcase QR
     const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -266,7 +277,7 @@ export default function ClientAlbumsPage() {
     }
   };
 
-  const handleCreatePrivateGallery = (e: React.FormEvent) => {
+  const handleCreatePrivateGallery = async (e: React.FormEvent) => {
     e.preventDefault();
     setDialogError("");
 
@@ -315,7 +326,8 @@ export default function ClientAlbumsPage() {
         allow_zip: allowZip,
       });
 
-      loadAlbums();
+      await studioStore.syncAlbums().catch(() => {});
+      await loadAlbums();
       setIsCreateOpen(false);
       setTitle("");
       setCustomerId("");
@@ -369,7 +381,7 @@ export default function ClientAlbumsPage() {
     }
   };
 
-  const handleAddPublicPost = (e: React.FormEvent) => {
+  const handleAddPublicPost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPostTitle.trim()) {
       alert("Please enter a title for the showcase photograph.");
@@ -382,7 +394,7 @@ export default function ClientAlbumsPage() {
 
     try {
       setIsSavingPost(true);
-      studioStore.addPublicPortfolioItem({
+      await studioStore.addPublicPortfolioItem({
         title: newPostTitle.trim(),
         category: newPostCategory,
         image_url: newPostImageUrl.trim(),
@@ -391,13 +403,13 @@ export default function ClientAlbumsPage() {
         featured: true,
       });
 
-      loadPortfolio();
+      await loadPortfolio();
       setNewPostTitle("");
       setNewPostImageUrl("");
       setNewPostCaption("");
       setSelectedFileMeta(null);
       setManageTab("list");
-      setActionNotice("Photograph published to public showcase.");
+      setActionNotice("Photograph published live to Neon database & public showcase.");
       setTimeout(() => setActionNotice(null), 3500);
     } catch {
       alert("Failed to publish photograph.");
@@ -406,10 +418,10 @@ export default function ClientAlbumsPage() {
     }
   };
 
-  const handleDeletePublicPost = (id: string, postTitle: string) => {
+  const handleDeletePublicPost = async (id: string, postTitle: string) => {
     if (!confirm(`Remove "${postTitle}" from the public showcase?`)) return;
-    studioStore.deletePublicPortfolioItem(id);
-    loadPortfolio();
+    await studioStore.deletePublicPortfolioItem(id);
+    await loadPortfolio();
     setActionNotice(`Removed "${postTitle}" from public showcase.`);
     setTimeout(() => setActionNotice(null), 3500);
   };
