@@ -109,8 +109,11 @@ export default function ClientAlbumsPage() {
   const [newPostCategory, setNewPostCategory] = React.useState<"PORTRAITS" | "WEDDINGS" | "CELEBRATIONS" | "EDITORIAL">("WEDDINGS");
   const [newPostImageUrl, setNewPostImageUrl] = React.useState("");
   const [newPostCaption, setNewPostCaption] = React.useState("");
+  const [selectedFileMeta, setSelectedFileMeta] = React.useState<{ name: string; size: string } | null>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
   const [isSavingPost, setIsSavingPost] = React.useState(false);
   const [manageTab, setManageTab] = React.useState<"list" | "new">("list");
+  const publicFileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Dedicated Private Album Dialog State
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -331,6 +334,39 @@ export default function ClientAlbumsPage() {
     }
   };
 
+  const processUploadedFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload a valid image file (JPG, PNG, WEBP, or HEIC).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setNewPostImageUrl(dataUrl);
+      setSelectedFileMeta({
+        name: file.name,
+        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePublicFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processUploadedFile(file);
+    }
+  };
+
+  const handlePublicFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processUploadedFile(file);
+    }
+  };
+
   const handleAddPublicPost = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPostTitle.trim()) {
@@ -338,7 +374,7 @@ export default function ClientAlbumsPage() {
       return;
     }
     if (!newPostImageUrl.trim()) {
-      alert("Please provide a photograph image URL.");
+      alert("Please upload a photograph for the public showcase.");
       return;
     }
 
@@ -357,6 +393,7 @@ export default function ClientAlbumsPage() {
       setNewPostTitle("");
       setNewPostImageUrl("");
       setNewPostCaption("");
+      setSelectedFileMeta(null);
       setManageTab("list");
       setActionNotice("Photograph published to public showcase.");
       setTimeout(() => setActionNotice(null), 3500);
@@ -1351,21 +1388,96 @@ export default function ClientAlbumsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-zinc-300">Image URL *</Label>
-                <Input
-                  placeholder="https://images.unsplash.com/photo-..."
-                  value={newPostImageUrl}
-                  onChange={(e) => setNewPostImageUrl(e.target.value)}
-                  className="h-10 text-xs dark:bg-zinc-900 dark:border-zinc-800 dark:text-white"
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-zinc-300">
+                    Upload Photograph <span className="text-[#e21b23]">*</span>
+                  </Label>
+                  {selectedFileMeta && (
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      {selectedFileMeta.name} ({selectedFileMeta.size})
+                    </span>
+                  )}
+                </div>
+
+                <input
+                  type="file"
+                  ref={publicFileInputRef}
+                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  onChange={handlePublicFileChange}
+                  className="hidden"
                 />
-                {newPostImageUrl && (
-                  <div className="h-36 w-full rounded-xl overflow-hidden border border-zinc-800 mt-2">
+
+                {!newPostImageUrl ? (
+                  <div
+                    onClick={() => publicFileInputRef.current?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handlePublicFileDrop}
+                    className={`rounded-2xl border-2 border-dashed p-6 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center space-y-2.5 ${
+                      isDragging
+                        ? "border-[#e21b23] bg-[#e21b23]/10"
+                        : "border-zinc-700 hover:border-[#e21b23] bg-zinc-900/60 hover:bg-zinc-900"
+                    }`}
+                  >
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e21b23]/15 border border-[#e21b23]/30 text-[#e21b23]">
+                      <Upload className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-white">
+                        Click to upload or drag & drop photograph
+                      </p>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">
+                        Supports high-resolution JPG, PNG, WEBP, or HEIC (up to 25MB)
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-950 group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={newPostImageUrl}
-                      alt="Preview"
-                      className="h-full w-full object-cover"
+                      alt="Uploaded photograph preview"
+                      className="h-52 w-full object-cover object-center"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 flex flex-col justify-between p-3.5">
+                      <div className="flex justify-between items-center">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                          <Check className="h-3 w-3" />
+                          Ready to Publish
+                        </span>
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setNewPostImageUrl("");
+                            setSelectedFileMeta(null);
+                          }}
+                          className="h-7 w-7 p-0 rounded-full bg-black/60 hover:bg-black/90 text-white"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-zinc-300 font-mono truncate max-w-[200px]">
+                          {selectedFileMeta?.name || "Uploaded photo"}
+                        </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => publicFileInputRef.current?.click()}
+                          className="h-7 text-xs border-zinc-600 bg-black/60 text-white hover:bg-black/80"
+                        >
+                          Change Photo
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
