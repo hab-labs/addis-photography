@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Camera,
@@ -8,12 +9,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Download,
   Eye,
   Share2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { studioStore } from "@/lib/api/store";
+import { generateQrPng, downloadFile } from "@/lib/qr";
 import type { PublicPortfolioItem } from "@/types";
 
 const PORTFOLIO_CATEGORIES = [
@@ -27,6 +30,7 @@ const PORTFOLIO_CATEGORIES = [
 export default function PublicPortfolioPage() {
   const [portfolioItems, setPortfolioItems] = React.useState<PublicPortfolioItem[]>([]);
   const [activeCategory, setActiveCategory] = React.useState<string>("ALL");
+  const [qrUrl, setQrUrl] = React.useState<string>("");
   const [copiedLink, setCopiedLink] = React.useState(false);
   const [lightboxItem, setLightboxItem] = React.useState<PublicPortfolioItem | null>(null);
 
@@ -44,6 +48,10 @@ export default function PublicPortfolioPage() {
         }
       })
       .catch(() => {});
+
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const showcaseUrl = `${origin}/a/portfolio`;
+    generateQrPng(showcaseUrl).then(setQrUrl).catch(() => {});
   }, []);
 
   const handleCopyLink = async () => {
@@ -194,7 +202,74 @@ export default function PublicPortfolioPage() {
           </div>
         </section>
 
+        {/* Share Section (Screenshot 4) */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center rounded-3xl border border-zinc-800/80 bg-[#121214] p-8 sm:p-12 shadow-xl">
+          <div className="lg:col-span-7 space-y-5">
+            <span className="text-[11px] font-bold tracking-[0.25em] text-zinc-400 uppercase block font-mono">
+              SHARE THE EXPERIENCE
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-serif text-white tracking-tight font-medium">
+              Scan. Discover. Remember.
+            </h2>
+            <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-light">
+              Invite customers and guests to explore the studio's public portfolio instantly. No account or PIN is required for this showcase.
+            </p>
 
+            <div className="pt-2 max-w-lg">
+              <div className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/90 p-1.5 pl-3.5">
+                <span className="text-xs font-mono text-zinc-400 truncate flex-1">
+                  {typeof window !== "undefined" ? `${window.location.origin}/a/portfolio` : "https://addisphotography.et/a/portfolio"}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCopyLink}
+                  className="h-8 px-3 text-xs text-white hover:bg-zinc-800 gap-1.5"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  <span>Copy</span>
+                </Button>
+              </div>
+              <p className="mt-2 text-[11px] text-zinc-400 flex items-center gap-1.5">
+                <Check className="h-3 w-3 text-emerald-400" />
+                <span>Only photos approved for public viewing appear here.</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 flex justify-center lg:justify-end">
+            <div className="w-full max-w-xs rounded-2xl border border-zinc-700 bg-[#18181b] p-6 text-center shadow-2xl space-y-4">
+              {qrUrl ? (
+                <div className="rounded-xl bg-white p-4 mx-auto w-fit shadow-md">
+                  <Image
+                    src={qrUrl}
+                    alt="Showcase QR"
+                    width={180}
+                    height={180}
+                    className="rounded"
+                  />
+                </div>
+              ) : (
+                <div className="h-44 w-44 rounded-xl bg-zinc-800 animate-pulse mx-auto" />
+              )}
+
+              <div>
+                <h3 className="font-serif text-base font-semibold text-white">Scan to view the album</h3>
+                <p className="text-[11px] text-zinc-400 mt-0.5">Point any phone camera at the QR code</p>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => qrUrl && downloadFile(qrUrl, "addis-studio-portfolio-qr.png")}
+                className="w-full border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 text-xs h-9 gap-1.5"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Download QR Code</span>
+              </Button>
+            </div>
+          </div>
+        </section>
 
         {/* Selected Work Masonry Grid (Screenshot 5) */}
         <section className="space-y-8">
