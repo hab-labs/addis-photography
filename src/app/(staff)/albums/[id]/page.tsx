@@ -376,16 +376,21 @@ export default function AlbumDetailsPage() {
     }
   };
 
-  const handleSetCoverFromSelection = () => {
-    if (selectedMediaIds.size !== 1) return;
+  const handleSetCoverFromSelection = async () => {
+    if (!album || selectedMediaIds.size !== 1) return;
     const mediaId = Array.from(selectedMediaIds)[0];
     const item = mediaFiles.find((m) => m.id === mediaId);
     if (!item) return;
 
-    studioStore.setAlbumCover(album.id, item.url);
-    setSelectedMediaIds(new Set());
-    setRefreshTrigger((c) => c + 1);
-    showNotification("Album cover image updated.");
+    const targetUrl = item.path_web || (item.id ? `/api/media/stream/${item.id}` : item.url);
+    try {
+      await studioStore.setAlbumCover(album.id, targetUrl);
+      setSelectedMediaIds(new Set());
+      setRefreshTrigger((c) => c + 1);
+      showNotification("Album cover image updated.");
+    } catch {
+      showNotification("Could not update album cover.");
+    }
   };
 
   return (
@@ -412,7 +417,20 @@ export default function AlbumDetailsPage() {
               {album.title}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {album.cover_image_url && (
+              <div className="flex items-center gap-2 pr-2 border-r border-slate-200 dark:border-zinc-800">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                  Cover:
+                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={album.cover_image_url}
+                  alt="Cover"
+                  className="h-8 w-12 rounded object-cover border border-slate-200 dark:border-zinc-700 shadow-sm"
+                />
+              </div>
+            )}
             <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Status:</span>
             <Badge
               className={
@@ -808,7 +826,15 @@ export default function AlbumDetailsPage() {
               const mime = media?.mime_type || "";
               const fn = media?.filename || "";
               const isVideo = mime.startsWith("video") || fn.toLowerCase().endsWith(".mp4") || fn.toLowerCase().endsWith(".mov");
-              const isCover = album.cover_image_url === media.url;
+              const isCover = Boolean(
+                album?.cover_image_url &&
+                media &&
+                (album.cover_image_url === media.url ||
+                 album.cover_image_url === media.thumbnail_url ||
+                 (media.path_web && album.cover_image_url === media.path_web) ||
+                 (media.id && album.cover_image_url.includes(media.id)) ||
+                 (media.filename && album.cover_image_url.includes(encodeURIComponent(media.filename))))
+              );
               const isSelected = selectedMediaIds.has(media.id);
               const sizeMB = ((Number(media.file_size) || 0) / (1024 * 1024)).toFixed(1);
 
@@ -889,11 +915,17 @@ export default function AlbumDetailsPage() {
                       {!isCover && !isVideo && (
                         <button
                           type="button"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            studioStore.setAlbumCover(album.id, media.url);
-                            setRefreshTrigger((c) => c + 1);
-                            showNotification("Cover image set");
+                            if (!album) return;
+                            const targetUrl = media.path_web || (media.id ? `/api/media/stream/${media.id}` : media.url);
+                            try {
+                              await studioStore.setAlbumCover(album.id, targetUrl);
+                              setRefreshTrigger((c) => c + 1);
+                              showNotification("Cover image set");
+                            } catch {
+                              showNotification("Could not update album cover.");
+                            }
                           }}
                           className="hover:text-[#e21b23] font-medium"
                         >

@@ -307,6 +307,7 @@ export async function updateAlbumAccess(
     pin?: string;
     allow_download?: boolean;
     allow_zip?: boolean;
+    cover_image_url?: string | null;
     cover_url?: string | null;
   },
   actor: { id: string; name: string }
@@ -314,19 +315,35 @@ export async function updateAlbumAccess(
   const existing = await getAlbumById(id);
   if (!existing) throw new Error("Album not found.");
 
+  const targetId = existing.id;
+
+  // Retrieve raw pin_hash from DB to avoid wiping it out when updating other fields
+  const rawRow = await db.query(
+    `SELECT pin_hash FROM albums WHERE id = $1 LIMIT 1`,
+    [targetId]
+  );
+  const existingPinHash = rawRow.rows[0]?.pin_hash ?? null;
+
   const visibility = input.visibility || existing.visibility;
-  let pinHash: string | null = null;
-  if (visibility === "Private") {
-    if (input.pin) {
+  let pinHash = existingPinHash;
+  if (input.pin !== undefined) {
+    if (visibility === "Private") {
       if (!/^\d{4,6}$/.test(input.pin)) {
         throw new Error("Private albums require a 4 to 6 digit numeric PIN.");
       }
       pinHash = hashPin(input.pin);
+    } else {
+      pinHash = null;
     }
   }
 
   const title = input.title && input.title.trim() ? input.title.trim() : existing.title;
-  const coverUrl = input.cover_url !== undefined ? input.cover_url : existing.cover_url;
+  const coverUrl =
+    input.cover_image_url !== undefined
+      ? input.cover_image_url
+      : input.cover_url !== undefined
+      ? input.cover_url
+      : existing.cover_url;
 
   await db.query(
     `UPDATE albums SET title = $1, visibility = $2, pin_hash = $3, allow_download = $4, allow_zip = $5, cover_url = $6, updated_at = NOW() WHERE id = $7`,
@@ -337,21 +354,28 @@ export async function updateAlbumAccess(
       input.allow_download !== undefined ? input.allow_download : existing.allow_download,
       input.allow_zip !== undefined ? input.allow_zip : existing.allow_zip,
       coverUrl,
-      id,
+      targetId,
     ]
   );
 
-  // Specification 3.10 & 10.3: Switching to private or changing PIN IMMEDIATELY revokes all active unlock sessions
-  await db.query(`DELETE FROM album_unlock_sessions WHERE album_id = $1`, [id]);
+  // Switching to private with a new PIN or changing PIN revokes active unlock sessions
+  if (pinHash !== existingPinHash && pinHash !== null) {
+    await db.query(`DELETE FROM album_unlock_sessions WHERE album_id = $1`, [targetId]);
+  }
 
-  await logAudit(actor, "ALBUM_ACCESS_UPDATED", "Album", id, {
+  const safeActor = {
+    id: actor?.id || "usr-admin",
+    name: actor?.name || "Staff",
+  };
+
+  await logAudit(safeActor, "ALBUM_ACCESS_UPDATED", "Album", targetId, {
     visibility,
     cover_url: coverUrl,
-    pin_changed: Boolean(pinHash),
+    pin_changed: pinHash !== existingPinHash,
     allow_download: input.allow_download,
   });
 
-  return (await getAlbumById(id))!;
+  return (await getAlbumById(targetId))!;
 }
 
 
@@ -485,6 +509,7 @@ export const albumService = {
         allow_download: input.allow_download,
         allow_zip: input.allow_zip,
         cover_url: coverUrl,
+        cover_image_url: coverUrl,
       },
       actor
     );

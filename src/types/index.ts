@@ -147,6 +147,8 @@ export interface MediaFile {
   mime_type: string;
   url: string;
   thumbnail_url?: string;
+  path_web?: string;
+  path_thumb?: string;
   data_url?: string;
   width?: number;
   height?: number;

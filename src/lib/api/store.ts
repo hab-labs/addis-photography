@@ -783,7 +783,7 @@ export const studioStore = {
     const deletedIds = getStored<string[]>("deleted_album_ids", []);
     if (deletedIds.includes(id)) return undefined;
     const albums = studioStore.getAlbums();
-    return albums.find((a) => a.id === id);
+    return albums.find((a) => a.id === id || a.token === id);
   },
 
   updateAlbumAccess: (
@@ -1121,17 +1121,41 @@ export const studioStore = {
     return true;
   },
 
-  setAlbumCover: (albumId: string, coverUrl: string): Album => {
+  setAlbumCover: async (albumId: string, coverUrl: string): Promise<Album> => {
+    let cleanCoverUrl = coverUrl;
+    if (coverUrl.startsWith("data:")) {
+      const allMedia = getStored<MediaFile[]>("media", INITIAL_MEDIA);
+      const matched = allMedia.find(
+        (m) => m && (m.url === coverUrl || m.thumbnail_url === coverUrl || m.data_url === coverUrl)
+      );
+      if (matched) {
+        cleanCoverUrl = matched.path_web || (matched.id ? `/api/media/stream/${matched.id}` : coverUrl);
+      }
+    }
+
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
-    const updated = albums.map((a) => (a.id === albumId ? { ...a, cover_image_url: coverUrl } : a));
+    let targetId = albumId;
+    const updated = albums.map((a) => {
+      if (a.id === albumId || a.token === albumId) {
+        targetId = a.id;
+        return { ...a, cover_image_url: cleanCoverUrl };
+      }
+      return a;
+    });
     setStored("albums", updated);
 
     if (isBrowser()) {
-      api.patch(`/api/albums/${albumId}`, { cover_image_url: coverUrl })
-        .then(() => studioStore.syncAlbums().catch(() => {}))
-        .catch(console.error);
+      try {
+        await api.patch(`/api/albums/${encodeURIComponent(targetId)}`, {
+          cover_image_url: cleanCoverUrl,
+          cover_url: cleanCoverUrl,
+        });
+        await studioStore.syncAlbums().catch(() => {});
+      } catch (err) {
+        console.error("Failed to patch album cover:", err);
+      }
     }
-    return updated.find((a) => a.id === albumId)!;
+    return updated.find((a) => a.id === targetId || a.token === targetId) || updated[0];
   },
 
   async syncMediaFiles(albumId: string): Promise<MediaFile[]> {

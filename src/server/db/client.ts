@@ -129,7 +129,8 @@ class DatabaseManager {
         await this.pool.query(sql);
         try {
           await this.pool.query(`
-            ALTER TABLE albums ADD COLUMN IF NOT EXISTS cover_url VARCHAR(512) NULL;
+            ALTER TABLE albums ADD COLUMN IF NOT EXISTS cover_url TEXT NULL;
+            ALTER TABLE albums ALTER COLUMN cover_url TYPE TEXT;
             ALTER TABLE media ADD COLUMN IF NOT EXISTS data_url TEXT NULL;
             CREATE TABLE IF NOT EXISTS portfolio (
               id VARCHAR(64) PRIMARY KEY,

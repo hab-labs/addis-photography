@@ -44,7 +44,7 @@ export async function PATCH(
         cover_image_url: coverImageUrl,
         cover_url: coverImageUrl,
       },
-      user.id
+      { id: user.id, name: user.name || "Staff" }
     );
 
 
