@@ -438,26 +438,6 @@ export const INITIAL_ALBUMS: Album[] = [
     cover_image_url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80",
     created_at: "2026-10-22T09:00:00Z",
   },
-  {
-    id: "alb-2",
-    title: "Kidus Girma Graduation Portrait Highlights",
-    category: "MILESTONE PORTRAITS",
-    access_persons: 1,
-    token: "kidus-grad-2026",
-    customer_id: "cust-4",
-    customer_name: "Kidus Girma",
-    event_date: "2026-09-29",
-    is_locked: true,
-    pin_set: true,
-    quota_bytes: 1073741824, // 1 GB
-    used_bytes: 7850000,
-    file_count: 1,
-    allow_download: true,
-    allow_zip: true,
-    expires_at: "2026-11-30T23:59:59Z",
-    cover_image_url: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80",
-    created_at: "2026-09-30T09:30:00Z",
-  },
 ];
 
 export const INITIAL_PORTFOLIO: PublicPortfolioItem[] = [
@@ -543,21 +523,7 @@ export const INITIAL_PORTFOLIO: PublicPortfolioItem[] = [
   },
 ];
 
-export const INITIAL_MEDIA: MediaFile[] = [
-  {
-    id: "med-4",
-    album_id: "alb-2",
-    filename: "Gown_Portrait_Campus.jpg",
-    file_size: 7850000,
-    mime_type: "image/jpeg",
-    url: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=85",
-    thumbnail_url: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=400&q=80",
-    width: 3840,
-    height: 2560,
-    upload_status: "completed",
-    created_at: "2026-09-30T09:35:00Z",
-  },
-];
+export const INITIAL_MEDIA: MediaFile[] = [];
 
 export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {

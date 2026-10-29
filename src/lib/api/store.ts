@@ -40,50 +40,59 @@ function isBrowser(): boolean {
 function runStorageMigrations(): void {
   if (typeof window === "undefined") return;
   try {
-    // 1. Purge legacy mock album alb-1 (Bethlehem) from client localStorage if present
+    // 1. Purge legacy mock albums alb-1 (Bethlehem) and alb-2 (Kidus Girma) from client localStorage
     const rawAlbums = localStorage.getItem(STORAGE_KEY_PREFIX + "albums");
     if (rawAlbums) {
       const albums: Album[] = JSON.parse(rawAlbums);
       const filtered = albums.filter(
-        (a) => a.id !== "alb-1" && a.token !== "bethlehem-wedding-2026"
+        (a) =>
+          a &&
+          a.id !== "alb-1" &&
+          a.token !== "bethlehem-wedding-2026" &&
+          a.id !== "alb-2" &&
+          a.token !== "kidus-grad-2026"
       );
       if (filtered.length !== albums.length) {
         localStorage.setItem(STORAGE_KEY_PREFIX + "albums", JSON.stringify(filtered));
       }
     }
 
-    // 2. Purge associated media files for alb-1
+    // 2. Purge associated media files for alb-1 and alb-2
     const rawMedia = localStorage.getItem(STORAGE_KEY_PREFIX + "media");
     if (rawMedia) {
       const media: MediaFile[] = JSON.parse(rawMedia);
-      const filteredMedia = media.filter((m) => m && m.album_id !== "alb-1");
+      const filteredMedia = media.filter(
+        (m) => m && m.album_id !== "alb-1" && m.album_id !== "alb-2"
+      );
       if (filteredMedia.length !== media.length) {
         localStorage.setItem(STORAGE_KEY_PREFIX + "media", JSON.stringify(filteredMedia));
       }
     }
 
-    // 3. Clear any saved PIN or unlock tokens for bethlehem
+    // 3. Clear any saved PIN or unlock tokens for legacy mock albums
     localStorage.removeItem("addis_album_pin_bethlehem-wedding-2026");
+    localStorage.removeItem("addis_album_pin_kidus-grad-2026");
     if (typeof sessionStorage !== "undefined") {
       sessionStorage.removeItem("album_unlocked_bethlehem-wedding-2026");
+      sessionStorage.removeItem("album_unlocked_kidus-grad-2026");
     }
 
-    // 4. Correct legacy hardcoded file_count 14 for Kidus Girma (alb-2) in client localStorage
-    const currentRaw = localStorage.getItem(STORAGE_KEY_PREFIX + "albums");
-    if (currentRaw) {
-      const albums: Album[] = JSON.parse(currentRaw);
-      let changed = false;
-      const corrected = albums.map((a) => {
-        if (a.id === "alb-2" && a.file_count === 14) {
-          changed = true;
-          return { ...a, file_count: 1, used_bytes: 7850000 };
-        }
-        return a;
-      });
-      if (changed) {
-        localStorage.setItem(STORAGE_KEY_PREFIX + "albums", JSON.stringify(corrected));
-      }
-    }
+    // 4. Ensure deleted_album_ids includes legacy mock IDs
+    const rawDeleted = localStorage.getItem(STORAGE_KEY_PREFIX + "deleted_album_ids");
+    const currentDeleted: string[] = rawDeleted ? JSON.parse(rawDeleted) : [];
+    const tombstoned = Array.from(
+      new Set([
+        ...currentDeleted,
+        "alb-1",
+        "bethlehem-wedding-2026",
+        "alb-2",
+        "kidus-grad-2026",
+      ])
+    );
+    localStorage.setItem(
+      STORAGE_KEY_PREFIX + "deleted_album_ids",
+      JSON.stringify(tombstoned)
+    );
 
     // 5. Purge any legacy localStorage portfolio cache (now live server synced)
     localStorage.removeItem(STORAGE_KEY_PREFIX + "portfolio");
@@ -740,8 +749,16 @@ export const studioStore = {
 
   // --- Albums ---
   getAlbums: (): Album[] => {
+    const deletedIds = getStored<string[]>("deleted_album_ids", []);
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS).filter(
-      (a) => a && a.id !== "alb-1" && a.token !== "bethlehem-wedding-2026"
+      (a) =>
+        a &&
+        a.id !== "alb-1" &&
+        a.token !== "bethlehem-wedding-2026" &&
+        a.id !== "alb-2" &&
+        a.token !== "kidus-grad-2026" &&
+        !deletedIds.includes(a.id) &&
+        !deletedIds.includes(a.token)
     );
     const media = getStored<MediaFile[]>("media", INITIAL_MEDIA);
     return albums.map((a) => {
@@ -754,13 +771,17 @@ export const studioStore = {
   },
 
   getAlbumByToken: (token: string): Album | undefined => {
-    if (token === "bethlehem-wedding-2026") return undefined;
+    if (token === "bethlehem-wedding-2026" || token === "kidus-grad-2026") return undefined;
+    const deletedIds = getStored<string[]>("deleted_album_ids", []);
+    if (deletedIds.includes(token)) return undefined;
     const albums = studioStore.getAlbums();
     return albums.find((a) => a.token === token);
   },
 
   getAlbumById: (id: string): Album | undefined => {
-    if (id === "alb-1") return undefined;
+    if (id === "alb-1" || id === "alb-2") return undefined;
+    const deletedIds = getStored<string[]>("deleted_album_ids", []);
+    if (deletedIds.includes(id)) return undefined;
     const albums = studioStore.getAlbums();
     return albums.find((a) => a.id === id);
   },
@@ -838,9 +859,22 @@ export const studioStore = {
   },
 
   deleteAlbum: async (id: string): Promise<boolean> => {
+    // 1. Tombstone in persistent deleted album IDs list
+    const deletedList = getStored<string[]>("deleted_album_ids", []);
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS);
+    const target = albums.find((a) => a.id === id);
+    const newDeleted = new Set([...deletedList, id]);
+    if (target?.token) newDeleted.add(target.token);
+    setStored("deleted_album_ids", Array.from(newDeleted));
+
+    // 2. Remove album from stored list
     const updated = albums.filter((a) => a.id !== id);
     setStored("albums", updated);
+
+    // 3. Purge associated media files
+    const rawMedia = getStored<MediaFile[]>("media", INITIAL_MEDIA);
+    const updatedMedia = rawMedia.filter((m) => m && m.album_id !== id);
+    setStored("media", updatedMedia);
 
     if (isBrowser()) {
       try {
@@ -942,9 +976,19 @@ export const studioStore = {
           created_at: a.created_at || new Date().toISOString(),
         }));
 
+        const deletedIds = getStored<string[]>("deleted_album_ids", []);
         const currentAlbums = studioStore.getAlbums();
         const merged: Album[] = mapped
-          .filter((remote) => remote.id !== "alb-1" && remote.token !== "bethlehem-wedding-2026")
+          .filter(
+            (remote) =>
+              remote &&
+              remote.id !== "alb-1" &&
+              remote.token !== "bethlehem-wedding-2026" &&
+              remote.id !== "alb-2" &&
+              remote.token !== "kidus-grad-2026" &&
+              !deletedIds.includes(remote.id) &&
+              !deletedIds.includes(remote.token)
+          )
           .map((remote) => {
             const local = currentAlbums.find((l) => l.id === remote.id || l.token === remote.token);
             if (local) {
@@ -961,7 +1005,15 @@ export const studioStore = {
           });
 
         for (const local of currentAlbums) {
-          if (local.id === "alb-1" || local.token === "bethlehem-wedding-2026") continue;
+          if (
+            local.id === "alb-1" ||
+            local.token === "bethlehem-wedding-2026" ||
+            local.id === "alb-2" ||
+            local.token === "kidus-grad-2026" ||
+            deletedIds.includes(local.id) ||
+            deletedIds.includes(local.token)
+          )
+            continue;
           if (!merged.some((m) => m.id === local.id || m.token === local.token)) {
             merged.push(local);
             if (isBrowser()) {

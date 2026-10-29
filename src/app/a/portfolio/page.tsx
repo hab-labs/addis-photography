@@ -182,7 +182,7 @@ export default function PublicPortfolioPage() {
 
             <div className="pt-4 flex items-baseline gap-3">
               <span className="text-4xl sm:text-5xl font-serif font-bold text-white tracking-tight">
-                1,420
+                {portfolioItems.length}
               </span>
               <span className="text-xs text-zinc-400 font-mono tracking-wider uppercase">
                 Curated Photographs

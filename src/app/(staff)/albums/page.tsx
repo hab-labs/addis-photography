@@ -577,7 +577,7 @@ export default function ClientAlbumsPage() {
 
             <div className="pt-4 flex items-baseline gap-3">
               <span className="text-4xl sm:text-5xl font-serif font-bold text-white tracking-tight">
-                1,420
+                {portfolioItems.length}
               </span>
               <span className="text-xs text-zinc-400 font-mono tracking-wider uppercase">
                 Curated Photographs
@@ -862,7 +862,7 @@ export default function ClientAlbumsPage() {
 
             <div className="flex items-center gap-4 pt-2">
               <span className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-tight">
-                1,420
+                {portfolioItems.length}
               </span>
               <div className="border-l border-zinc-700 pl-4 space-y-0.5">
                 <span className="text-xs text-zinc-300 font-semibold block">Photos in Portfolio</span>

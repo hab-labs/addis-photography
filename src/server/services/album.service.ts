@@ -385,8 +385,8 @@ export async function deleteAlbum(
   id: string,
   actor: { id: string; name: string; role: string }
 ): Promise<void> {
-  if (actor.role !== "admin") {
-    throw new Error("Forbidden: Only administrators can delete albums.");
+  if (actor.role !== "admin" && actor.role !== "staff") {
+    throw new Error("Forbidden: Administrator or staff privileges required.");
   }
 
   const existing = await getAlbumById(id);
