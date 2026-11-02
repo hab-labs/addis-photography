@@ -60,7 +60,8 @@ class DatabaseManager {
           max: 10,
           idleTimeoutMillis: 30000,
           ssl: isLocal ? false : { rejectUnauthorized: false },
-        });
+          family: 4,
+        } as any);
       }
       this.pool = globalAny.__addis_pg_pool__;
       this.isMemoryMode = false;
