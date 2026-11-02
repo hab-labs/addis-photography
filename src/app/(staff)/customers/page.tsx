@@ -129,15 +129,15 @@ export default function CustomersPage() {
   return (
     <div className="w-full max-w-[1440px] mx-auto space-y-6 pb-8">
       {/* 1. PAGE HEADER (MATCHES MACBOOK MOCKUP) */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
-            Customer directory
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
+            CUSTOMER DIRECTORY
           </p>
-          <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
+          <h1 className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
             Customers
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+          <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
             Manage customer profiles, orders, requests, and albums.
           </p>
         </div>
@@ -151,7 +151,7 @@ export default function CustomersPage() {
             setNewNotes("");
             setIsCreateOpen(true);
           }}
-          className="h-10 px-4 rounded-xl bg-[#e21b23] hover:bg-red-700 text-white font-bold text-sm shadow-sm gap-2 self-start sm:self-auto transition-all"
+          className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl bg-[#e21b23] hover:bg-red-700 text-white font-bold text-xs sm:text-sm shadow-xs gap-1.5 self-start sm:self-auto transition-all"
         >
           <Plus className="h-4 w-4" />
           <span>New Customer</span>
@@ -161,27 +161,27 @@ export default function CustomersPage() {
       {/* 2. CUSTOMER LIST CARD (MATCHES MACBOOK DESIGN) */}
       <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] shadow-xs overflow-hidden">
         {/* Search & Filter Header Strip */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex flex-1 items-center gap-3 max-w-xl">
+        <div className="p-3.5 sm:p-5 border-b border-slate-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-1 flex-col xs:flex-row items-stretch xs:items-center gap-2.5 sm:gap-3 max-w-xl">
             {/* Search Input */}
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400 dark:text-zinc-500" />
+              <Search className="absolute left-3.5 top-2.5 sm:top-3 h-4 w-4 text-slate-400 dark:text-zinc-500" />
               <input
                 type="text"
-                placeholder="Search by name or phone num..."
+                placeholder="Search by name or phone number..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-900/60 pl-10 pr-3 text-xs sm:text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 transition shadow-2xs"
+                className="h-9 sm:h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-900/60 pl-10 pr-3 text-xs sm:text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 transition shadow-2xs"
               />
             </div>
 
             {/* Filter Dropdown */}
-            <div className="w-[150px] shrink-0">
+            <div className="w-full xs:w-[150px] shrink-0">
               <select
                 aria-label="Filter customers"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-xs sm:text-sm font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
+                className="h-9 sm:h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-xs sm:text-sm font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
               >
                 <option value="all">All customers</option>
                 <option value="with_balance">With balance</option>
@@ -192,7 +192,7 @@ export default function CustomersPage() {
           </div>
 
           {/* Customer Total Count on Far Right */}
-          <span className="text-xs font-bold font-mono tracking-wider text-slate-400 dark:text-zinc-500 uppercase self-end sm:self-center shrink-0">
+          <span className="text-[11px] sm:text-xs font-bold font-mono tracking-wider text-slate-400 dark:text-zinc-500 uppercase self-end sm:self-center shrink-0">
             {filteredCustomers.length.toLocaleString()} {filteredCustomers.length === 1 ? "CUSTOMER" : "CUSTOMERS"}
           </span>
         </div>
@@ -211,20 +211,20 @@ export default function CustomersPage() {
                 <Link
                   key={cust.id}
                   href={`/customers/${cust.id}`}
-                  className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors group cursor-pointer"
+                  className="flex items-center justify-between gap-3 sm:gap-4 px-3.5 sm:px-5 py-3.5 sm:py-4 hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors group cursor-pointer"
                 >
                   {/* Left Column: Avatar + Name + Phone */}
-                  <div className="flex items-center gap-3.5 min-w-[240px] flex-1">
-                    <Avatar className="h-10 w-10 shrink-0">
+                  <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+                    <Avatar className="h-9 w-9 sm:h-10 sm:w-10 shrink-0">
                       <AvatarFallback className="bg-[#fce8e8] dark:bg-red-950/60 text-xs font-bold text-[#b82727] dark:text-red-400">
                         {getInitials(cust.name)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-zinc-100 group-hover:text-[#e21b23] transition-colors truncate">
                         {cust.name}
                       </div>
-                      <div className="text-xs font-mono text-slate-500 dark:text-zinc-400 mt-0.5">
+                      <div className="text-xs font-mono text-slate-500 dark:text-zinc-400 mt-0.5 truncate">
                         {cust.phone}
                       </div>
                     </div>
@@ -257,8 +257,8 @@ export default function CustomersPage() {
                   </div>
 
                   {/* Status Badge */}
-                  <div className="shrink-0">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                  <div className="hidden xs:block shrink-0">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[11px] sm:text-xs font-bold text-emerald-700 dark:text-emerald-400">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       Active
                     </span>
@@ -266,7 +266,7 @@ export default function CustomersPage() {
 
                   {/* Right Chevron Arrow */}
                   <div className="shrink-0 text-slate-300 dark:text-zinc-600 group-hover:text-[#e21b23] group-hover:translate-x-0.5 transition-all">
-                    <ChevronRight className="h-5 w-5" />
+                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
                 </Link>
               );
@@ -283,29 +283,32 @@ export default function CustomersPage() {
         </div>
 
         {/* 3. PAGINATION ROW (MATCHES MACBOOK MOCKUP) */}
-        <div className="px-5 py-4 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
-          <span>
+        <div className="px-3.5 sm:px-5 py-3.5 sm:py-4 border-t border-slate-100 dark:border-zinc-800 flex flex-col xs:flex-row items-center justify-between gap-2.5 text-xs text-slate-500 dark:text-zinc-400">
+          <span className="text-[11px] sm:text-xs">
             Showing {filteredCustomers.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–
             {Math.min(currentPage * PAGE_SIZE, filteredCustomers.length)} of {filteredCustomers.length.toLocaleString()}
           </span>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             <button
               type="button"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage <= 1}
               aria-label="Previous page"
-              className="h-8 w-8 rounded-lg border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-600 dark:text-zinc-300 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
+              className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-600 dark:text-zinc-300 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
 
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(
+              Math.max(0, currentPage - 3),
+              Math.min(totalPages, currentPage + 2)
+            ).map((pg) => (
               <button
                 key={pg}
                 type="button"
                 onClick={() => setCurrentPage(pg)}
-                className={`h-8 w-8 rounded-lg text-xs font-bold transition ${
+                className={`h-7 w-7 sm:h-8 sm:w-8 rounded-lg text-xs font-bold transition ${
                   currentPage === pg
                     ? "bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs"
                     : "border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
@@ -320,9 +323,9 @@ export default function CustomersPage() {
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage >= totalPages}
               aria-label="Next page"
-              className="h-8 w-8 rounded-lg border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-600 dark:text-zinc-300 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
+              className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg border border-slate-200 dark:border-zinc-700 flex items-center justify-center text-slate-600 dark:text-zinc-300 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           </div>
         </div>

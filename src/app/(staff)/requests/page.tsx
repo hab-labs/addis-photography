@@ -185,27 +185,27 @@ export default function RequestsPage() {
   return (
     <div className="w-full max-w-[1440px] mx-auto space-y-6 pb-8">
       {/* 1. TOP HEADER & WORKFLOW CONTROLS */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
             Studio Production Pipeline
           </p>
-          <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
+          <h1 className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
             Requests
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+          <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
             Track customer photo edits, print jobs, framing requests, and delivery status.
           </p>
         </div>
 
         {/* View Switcher & Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           {/* Segmented Controller (Board / List) */}
-          <div className="flex h-10 items-center rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-1 shadow-xs">
+          <div className="flex h-9 sm:h-10 items-center rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-1 shadow-xs">
             <button
               type="button"
               onClick={() => setViewMode("kanban")}
-              className={`flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-xs font-bold transition-all ${
+              className={`flex h-7 sm:h-8 items-center gap-1.5 rounded-lg px-2.5 sm:px-3.5 text-xs font-bold transition-all ${
                 viewMode === "kanban"
                   ? "bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs"
                   : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100"
@@ -217,7 +217,7 @@ export default function RequestsPage() {
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`flex h-8 items-center gap-1.5 rounded-lg px-3.5 text-xs font-bold transition-all ${
+              className={`flex h-7 sm:h-8 items-center gap-1.5 rounded-lg px-2.5 sm:px-3.5 text-xs font-bold transition-all ${
                 viewMode === "list"
                   ? "bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs"
                   : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100"
@@ -232,7 +232,7 @@ export default function RequestsPage() {
           <button
             type="button"
             onClick={() => setOverdueOnly(!overdueOnly)}
-            className={`flex h-10 items-center gap-2 rounded-xl border px-3.5 text-xs font-bold transition-all shadow-xs ${
+            className={`flex h-9 sm:h-10 items-center gap-1.5 sm:gap-2 rounded-xl border px-2.5 sm:px-3.5 text-xs font-bold transition-all shadow-xs ${
               overdueOnly
                 ? "bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-800 text-red-600 dark:text-red-400"
                 : "border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
@@ -241,7 +241,7 @@ export default function RequestsPage() {
             <span className={`h-3.5 w-3.5 rounded border flex items-center justify-center ${overdueOnly ? "border-red-600 bg-[#e21b23] text-white" : "border-slate-300 dark:border-zinc-600"}`}>
               {overdueOnly && <span className="text-[10px]">✓</span>}
             </span>
-            <span>Overdue only</span>
+            <span className="whitespace-nowrap">Overdue only</span>
           </button>
 
           {/* New Request Button */}
@@ -256,7 +256,7 @@ export default function RequestsPage() {
               setReqNotes("");
               setIsCreateOpen(true);
             }}
-            className="h-10 px-4 rounded-xl bg-[#e21b23] hover:bg-red-700 text-white font-bold text-sm shadow-sm gap-2"
+            className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl bg-[#e21b23] hover:bg-red-700 text-white font-bold text-xs sm:text-sm shadow-xs gap-1.5"
           >
             <Plus className="h-4 w-4" />
             <span>New Request</span>
@@ -265,19 +265,19 @@ export default function RequestsPage() {
       </div>
 
       {/* 2. SEARCH & FILTER STRIP */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 shadow-xs">
+      <div className="flex flex-col sm:flex-row items-center gap-3 rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3 sm:p-3.5 shadow-xs">
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400 dark:text-zinc-500" />
+          <Search className="absolute left-3.5 top-2.5 sm:top-3 h-4 w-4 text-slate-400 dark:text-zinc-500" />
           <input
             type="text"
-            placeholder="Search by customer, phone, order #, or service task..."
+            placeholder="Search by customer, phone, order #, or task..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-900/60 pl-10 pr-3 text-xs sm:text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 transition shadow-2xs"
+            className="h-9 sm:h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-900/60 pl-10 pr-3 text-xs sm:text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 transition shadow-2xs"
           />
         </div>
 
-        <span className="text-xs font-bold font-mono text-slate-400 dark:text-zinc-500 uppercase self-end sm:self-center shrink-0 pr-1">
+        <span className="text-[11px] sm:text-xs font-bold font-mono text-slate-400 dark:text-zinc-500 uppercase self-end sm:self-center shrink-0 pr-1">
           {filteredRequests.length} {filteredRequests.length === 1 ? "REQUEST" : "REQUESTS"}
         </span>
       </div>
@@ -373,12 +373,12 @@ export default function RequestsPage() {
         </div>
       ) : (
         /* Alternative Clean List View */
-        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs">
+        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3.5 sm:p-5 shadow-xs">
           <div className="divide-y divide-slate-100 dark:divide-zinc-800/80">
             {filteredRequests.map((item) => (
-              <div key={item.id} className="py-4 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 px-3 rounded-xl transition-colors">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2.5">
+              <div key={item.id} className="py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 px-2 sm:px-3 rounded-xl transition-colors">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-xs font-bold text-[#e21b23]">
                       #{item.orderNumber}
                     </span>
@@ -386,21 +386,23 @@ export default function RequestsPage() {
                       {item.customerName}
                     </span>
                     {item.isOverdue && item.status !== "delivered" && (
-                      <span className="rounded-full bg-rose-50 dark:bg-rose-950/40 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                      <span className="rounded-full bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
                         Overdue
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">
                     {item.service} • Assigned to {item.assignedStaff} • {item.phone}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <span className="text-xs font-mono font-medium text-slate-400 dark:text-zinc-500">{item.dueDate}</span>
-                  <span className="text-xs font-bold capitalize text-slate-700 dark:text-zinc-300">
-                    {item.status.replace("_", " ")}
-                  </span>
+                <div className="flex items-center justify-between sm:justify-end gap-3 pt-1 sm:pt-0 border-t border-slate-100 dark:border-zinc-800/60 sm:border-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-medium text-slate-400 dark:text-zinc-500">{item.dueDate}</span>
+                    <span className="text-xs font-bold capitalize text-slate-700 dark:text-zinc-300">
+                      {item.status.replace("_", " ")}
+                    </span>
+                  </div>
                   {item.status !== "delivered" && (
                     <button
                       type="button"

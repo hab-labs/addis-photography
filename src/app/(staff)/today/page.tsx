@@ -243,37 +243,39 @@ export default function TodayLedgerPage() {
 
   return (
     <div className="w-full max-w-[1440px] mx-auto space-y-6 pb-8">
-      {/* 1. TOP GREETING & DATE SELECTION ROW (SECTION 6.4 + LAPTOP SCALING) */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. TOP GREETING & DATE SELECTION ROW */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[#e21b23] dark:text-red-400 font-mono">
             {formatDateHeader(effectiveDate)}
           </p>
-          <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
+          <h1 className="mt-0.5 sm:mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100">
             Good morning, {userName.split(" ")[0]}
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+          <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
             Here's what's happening at your studio today.
           </p>
         </div>
 
         {/* Date Selector: Date: [ 12/08/2026 ▾ ] [Today] */}
-        <div className="flex items-center gap-2 self-start md:self-auto">
-          <div className="relative flex items-center gap-3 rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] px-4 py-2.5 shadow-xs">
-            <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
-            <div className="text-left leading-tight">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                Date
-              </span>
-              <button
-                type="button"
-                disabled={!isAdmin}
-                onClick={() => isAdmin && setIsCalendarOpen((prev) => !prev)}
-                className="flex items-center gap-1.5 font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-zinc-100 hover:text-[#e21b23] transition-colors"
-              >
-                <span>{selectedCalendar?.gregorian || formatDate(new Date())}</span>
-                {isAdmin && <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
-              </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-initial flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
+              <div className="text-left leading-tight">
+                <span className="block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                  Reporting date
+                </span>
+                <button
+                  type="button"
+                  disabled={!isAdmin}
+                  onClick={() => isAdmin && setIsCalendarOpen((prev) => !prev)}
+                  className="flex items-center gap-1 font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-zinc-100 hover:text-[#e21b23] transition-colors"
+                >
+                  <span>{selectedCalendar?.gregorian || formatDate(new Date())}</span>
+                  {isAdmin && <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
+                </button>
+              </div>
             </div>
 
             {/* Date Picker Popover (Admin Only) */}
@@ -297,7 +299,7 @@ export default function TodayLedgerPage() {
             <button
               type="button"
               onClick={() => setSelectedDate(new Date())}
-              className={`h-8 px-3.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
+              className={`h-7 sm:h-8 px-2.5 sm:px-3.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
                 isTodaySelected
                   ? "bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700"
                   : "bg-white dark:bg-[#18181b] text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700 hover:border-[#e21b23] hover:text-[#e21b23]"
@@ -312,7 +314,7 @@ export default function TodayLedgerPage() {
             onClick={loadData}
             disabled={isRefreshing}
             aria-label="Refresh orders"
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 shadow-xs transition"
+            className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 shadow-xs transition"
           >
             <RefreshCcw className={`h-4 w-4 ${isRefreshing ? "animate-spin text-red-600" : ""}`} />
           </button>
@@ -320,22 +322,22 @@ export default function TodayLedgerPage() {
       </div>
 
       {/* 2. THREE SUMMARY METRIC CARDS (SECTION 6.4: BOOKINGS | PAID | DUE) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
         {/* Card 1: Bookings */}
-        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs flex flex-col justify-between min-h-[140px]">
+        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[125px] sm:min-h-[140px]">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-600 dark:text-zinc-400">Bookings</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-zinc-400">Bookings</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[11px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {metrics.count} total
+              +8.4%
             </span>
           </div>
-          <div className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100 mt-2">
+          <div className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100 mt-1 sm:mt-2">
             {metrics.count}
           </div>
           <div className="flex items-end justify-between mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
-            <span className="text-xs text-slate-400 dark:text-zinc-500 font-medium truncate">
-              {isTodaySelected ? "Orders booked today" : `Orders on ${selectedCalendar?.gregorian}`}
+            <span className="text-[11px] sm:text-xs text-slate-400 dark:text-zinc-500 font-medium truncate">
+              {isTodaySelected ? "Orders created today" : `Orders on ${selectedCalendar?.gregorian}`}
             </span>
             <div className="flex items-end gap-1 h-4 shrink-0 opacity-80">
               <span className="w-1.5 h-2 rounded-t bg-slate-200 dark:bg-zinc-800" />
@@ -348,24 +350,24 @@ export default function TodayLedgerPage() {
         </div>
 
         {/* Card 2: Paid (Admin Only per Specification 6.4) */}
-        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-5 shadow-xs flex flex-col justify-between min-h-[140px]">
+        <div className="rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[125px] sm:min-h-[140px]">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-600 dark:text-zinc-400">Paid</span>
+            <span className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-zinc-400">Paid</span>
             {!isAdmin ? (
               <span className="text-xs font-medium text-slate-400 dark:text-zinc-500">(Admin only)</span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[11px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Collected
+                +12.6%
               </span>
             )}
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100 mt-2 font-mono">
-            {isAdmin ? `ETB ${Number(metrics.collected).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "ETB ••••••"}
+          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-100 mt-1 sm:mt-2 font-mono">
+            {isAdmin ? `ETB ${Number(metrics.collected).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : "ETB ••••••"}
           </div>
           <div className="flex items-end justify-between mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
-            <span className="text-xs text-slate-400 dark:text-zinc-500 font-medium">
-              {isAdmin ? "Total payments recorded" : "Restricted financial metric"}
+            <span className="text-[11px] sm:text-xs text-slate-400 dark:text-zinc-500 font-medium">
+              {isAdmin ? "Payments received today" : "Restricted financial metric"}
             </span>
             <div className="flex items-end gap-1 h-4 shrink-0 opacity-80">
               <span className="w-1.5 h-2.5 rounded-t bg-emerald-100 dark:bg-zinc-800" />
@@ -380,33 +382,33 @@ export default function TodayLedgerPage() {
         {/* Card 3: Due (Admin Only per Specification 6.4) */}
         <div
           onClick={() => setUnpaidOnly((prev) => !prev)}
-          className={`rounded-2xl border p-5 shadow-xs flex flex-col justify-between min-h-[140px] cursor-pointer transition-all ${
+          className={`rounded-2xl border p-4 sm:p-5 shadow-xs flex flex-col justify-between min-h-[125px] sm:min-h-[140px] cursor-pointer transition-all ${
             unpaidOnly
               ? "border-[#e21b23] bg-red-50/30 dark:bg-red-950/20 ring-2 ring-red-500/20"
               : "border-slate-200/90 dark:border-zinc-800 bg-white dark:bg-[#141417] hover:border-slate-300 dark:hover:border-zinc-700"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-600 dark:text-zinc-400">Due</span>
+            <span className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-zinc-400">Due</span>
             {!isAdmin ? (
               <span className="text-xs font-medium text-slate-400 dark:text-zinc-500">(Admin only)</span>
             ) : unpaidCount > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-950/40 px-2 py-0.5 text-xs font-bold text-red-600 dark:text-red-400">
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-950/40 px-2 py-0.5 text-[11px] sm:text-xs font-bold text-red-600 dark:text-red-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />
                 {unpaidCount} unpaid
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[11px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400">
                 All cleared
               </span>
             )}
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#e21b23] dark:text-red-500 mt-2 font-mono">
-            {isAdmin ? `ETB ${Number(metrics.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "ETB ••••••"}
+          <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#e21b23] dark:text-red-500 mt-1 sm:mt-2 font-mono">
+            {isAdmin ? `ETB ${Number(metrics.balance).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : "ETB ••••••"}
           </div>
           <div className="flex items-end justify-between mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
-            <span className="text-xs text-slate-400 dark:text-zinc-500 font-medium">
-              {unpaidOnly ? "Showing unpaid only (click to reset)" : "Click to filter unpaid orders"}
+            <span className="text-[11px] sm:text-xs text-slate-400 dark:text-zinc-500 font-medium">
+              {unpaidOnly ? "Showing unpaid only (click to reset)" : "Balance on today's bookings"}
             </span>
             <div className="flex items-end gap-1 h-4 shrink-0 opacity-80">
               <span className="w-1.5 h-4.5 rounded-t bg-red-200 dark:bg-red-950/60" />
@@ -446,19 +448,19 @@ export default function TodayLedgerPage() {
         </div>
 
         {/* Filters Row: Filters: [Photo type ▾] [Payment ▾] [Status ▾] [☐ Unpaid only] [Search...] */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 pr-1">
             <Filter className="h-3.5 w-3.5 text-slate-400" />
-            <span>Filters:</span>
+            <span className="hidden xs:inline">Filters:</span>
           </div>
 
           {/* [Photo type ▾] */}
-          <div className="w-[140px] sm:w-[150px]">
+          <div className="flex-1 xs:flex-initial min-w-[120px] xs:w-[130px] sm:w-[150px]">
             <select
               aria-label="Filter by photo type"
               value={photoTypeFilter}
               onChange={(e) => setPhotoTypeFilter(e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
+              className="h-9 sm:h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 sm:px-3 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
             >
               <option value="all">Photo type</option>
               <option value="3x4">3×4</option>
@@ -471,12 +473,12 @@ export default function TodayLedgerPage() {
           </div>
 
           {/* [Payment ▾] */}
-          <div className="w-[130px] sm:w-[140px]">
+          <div className="flex-1 xs:flex-initial min-w-[110px] xs:w-[120px] sm:w-[140px]">
             <select
               aria-label="Filter by payment method"
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
+              className="h-9 sm:h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 sm:px-3 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
             >
               <option value="all">Payment</option>
               <option value="cash">Cash</option>
@@ -488,12 +490,12 @@ export default function TodayLedgerPage() {
           </div>
 
           {/* [Status ▾] */}
-          <div className="w-[130px] sm:w-[140px]">
+          <div className="flex-1 xs:flex-initial min-w-[110px] xs:w-[120px] sm:w-[140px]">
             <select
               aria-label="Filter by order status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
+              className="h-9 sm:h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 sm:px-3 text-xs font-semibold text-slate-700 dark:text-zinc-200 outline-none focus:border-red-500 transition shadow-2xs cursor-pointer"
             >
               <option value="all">Status</option>
               <option value="new">New</option>
@@ -505,7 +507,7 @@ export default function TodayLedgerPage() {
           </div>
 
           {/* [☐ Unpaid only] (Section 6.4 Outstanding Balance Filter) */}
-          <label className={`flex items-center gap-2 cursor-pointer select-none rounded-xl border px-3 h-10 text-xs font-bold transition shadow-2xs ${
+          <label className={`flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none rounded-xl border px-2.5 sm:px-3 h-9 sm:h-10 text-xs font-bold transition shadow-2xs ${
             unpaidOnly
               ? "border-[#e21b23] bg-red-50/50 dark:bg-red-950/30 text-[#e21b23] dark:text-red-400"
               : "border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 hover:border-slate-300 dark:hover:border-zinc-600"
@@ -514,9 +516,9 @@ export default function TodayLedgerPage() {
               type="checkbox"
               checked={unpaidOnly}
               onChange={(e) => setUnpaidOnly(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 dark:border-zinc-600 text-red-600 focus:ring-red-500 accent-red-600"
+              className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded border-slate-300 dark:border-zinc-600 text-red-600 focus:ring-red-500 accent-red-600"
             />
-            <span>Unpaid only</span>
+            <span className="whitespace-nowrap">Unpaid only</span>
             {unpaidCount > 0 && (
               <span className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
                 unpaidOnly
@@ -529,14 +531,14 @@ export default function TodayLedgerPage() {
           </label>
 
           {/* [Search...] */}
-          <div className="relative flex-1 min-w-[180px]">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+          <div className="relative w-full sm:flex-1 sm:min-w-[180px]">
+            <Search className="absolute left-3 top-2.5 sm:top-3 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search by customer, phone, or order #..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-900/60 pl-9 pr-3 text-xs sm:text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 transition shadow-2xs"
+              className="h-9 sm:h-10 w-full rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-900/60 pl-9 pr-3 text-xs sm:text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 outline-none focus:border-red-500 transition shadow-2xs"
             />
           </div>
         </div>

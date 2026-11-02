@@ -198,32 +198,39 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
 
       {/* Main Island Window */}
       <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-[#f5f5f5] dark:bg-[#09090b]">
-        <header className="sticky top-0 z-30 flex min-h-[64px] flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-[#121214]/95 backdrop-blur-md px-6 py-3.5 sm:flex-nowrap transition-colors">
-          <div className="min-w-0">
-            <p className="text-xs font-medium tracking-[0.02em] text-slate-400 dark:text-zinc-500">Workspace / {(pathname.split("/").filter(Boolean).pop()?.replace("admin-", "") ?? "Today").replace(/^\w/, c => c.toUpperCase())}</p>
-            <p className="mt-0.5 text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">{pathname === "/today" ? "Today" : pathname.includes("admin/") ? pathname.split("/").pop()?.replace(/^\w/, c => c.toUpperCase()) : pathname.slice(1).replace(/^\w/, c => c.toUpperCase())}</p>
-          </div>
-
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        <header className="sticky top-0 z-30 flex min-h-[56px] sm:min-h-[64px] items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-[#121214]/95 backdrop-blur-md px-3 sm:px-6 py-2.5 sm:py-3.5 transition-colors">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* Mobile Hamburger Drawer Trigger */}
             <button
               type="button"
               aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-navigation-links"
               onClick={() => setMobileMenuOpen((open) => !open)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] text-slate-600 dark:text-zinc-300 shadow-sm md:hidden"
+              className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] text-slate-700 dark:text-zinc-200 shadow-xs md:hidden active:scale-95 transition-all"
             >
               {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
 
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-medium tracking-[0.02em] text-slate-400 dark:text-zinc-500 truncate hidden xs:block">
+                Workspace / {(pathname.split("/").filter(Boolean).pop()?.replace("admin-", "") ?? "Today").replace(/^\w/, c => c.toUpperCase())}
+              </p>
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100 truncate">
+                {pathname === "/today" ? "Today" : pathname.includes("admin/") ? pathname.split("/").pop()?.replace(/^\w/, c => c.toUpperCase()) : pathname.slice(1).replace(/^\w/, c => c.toUpperCase())}
+              </h1>
+            </div>
+          </div>
+
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Language Switcher */}
             <button
               type="button"
               onClick={() => setLocale(locale === "en" ? "am" : "en")}
               aria-label={`Switch language to ${locale === "en" ? "Amharic" : "English"}`}
-              className="flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] px-3 text-xs font-bold text-slate-700 dark:text-zinc-200 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+              className="flex h-8 sm:h-10 items-center gap-1 sm:gap-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] px-2 sm:px-3 text-[11px] sm:text-xs font-bold text-slate-700 dark:text-zinc-200 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
             >
-              <Globe className="h-4 w-4 text-slate-500 dark:text-zinc-400" />
+              <Globe className="h-3.5 w-3.5 text-slate-500 dark:text-zinc-400" />
               <span>{locale === "en" ? "አማርኛ" : "EN"}</span>
             </button>
 
@@ -233,26 +240,27 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
               onClick={toggleTheme}
               aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
               title={`Switch to ${resolvedTheme === "dark" ? "Light" : "Dark"} Mode`}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] text-slate-700 dark:text-zinc-200 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+              className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] text-slate-700 dark:text-zinc-200 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
             >
               {resolvedTheme === "dark" ? (
-                <Sun className="h-4 w-4 text-amber-400" />
+                <Sun className="h-3.5 w-3.5 text-amber-400" />
               ) : (
-                <Moon className="h-4 w-4 text-slate-600" />
+                <Moon className="h-3.5 w-3.5 text-slate-600" />
               )}
             </button>
 
-            <button aria-label="Notifications" className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] text-slate-600 dark:text-zinc-300 shadow-sm">
-              <Bell className="h-4 w-4" />
+            <button aria-label="Notifications" className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#1c1c1f] text-slate-600 dark:text-zinc-300 shadow-xs">
+              <Bell className="h-3.5 w-3.5" />
             </button>
 
-            {/* Top Navbar [+ New Order] button near account name per Section 6.4 */}
+            {/* Top Navbar [+ New Order] button near account name */}
             <Link
               href="/orders/new"
-              className="flex items-center gap-1.5 rounded-xl bg-[#e21b23] hover:bg-[#c9151c] text-white px-4 h-10 text-sm font-bold shadow-sm transition-all hover:shadow active:scale-95"
+              className="flex items-center gap-1 sm:gap-1.5 rounded-xl bg-[#e21b23] hover:bg-[#c9151c] text-white px-2.5 sm:px-4 h-8 sm:h-10 text-xs sm:text-sm font-bold shadow-xs transition-all hover:shadow active:scale-95"
             >
-              <PlusCircle className="h-4 w-4 shrink-0" />
-              <span>+ New Order</span>
+              <PlusCircle className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden xs:inline">+ New Order</span>
+              <span className="xs:hidden">New</span>
             </Link>
 
             <div className="relative">
@@ -261,14 +269,18 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                 aria-label="Open account menu"
                 aria-expanded={accountMenuOpen}
                 onClick={() => setAccountMenuOpen((open) => !open)}
-                className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2.5 rounded-xl px-1 sm:px-2 py-1 text-left hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors"
               >
-                <Avatar className="h-9 w-9"><AvatarFallback className="bg-[#f3d7d7] dark:bg-red-950/60 text-xs font-bold text-[#b82727] dark:text-red-400">{userInitials}</AvatarFallback></Avatar>
+                <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
+                  <AvatarFallback className="bg-[#f3d7d7] dark:bg-red-950/60 text-[10px] sm:text-xs font-bold text-[#b82727] dark:text-red-400">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="hidden leading-tight sm:block">
                   <div className="text-sm font-bold text-slate-900 dark:text-zinc-100">{userName}</div>
                   <div className="text-xs text-slate-500 dark:text-zinc-400">{userRole}</div>
                 </div>
-                <ChevronRight className={`h-4 w-4 text-slate-500 transition-transform ${accountMenuOpen ? "rotate-90" : ""}`} />
+                <ChevronRight className={`h-3.5 w-3.5 text-slate-500 transition-transform ${accountMenuOpen ? "rotate-90" : ""}`} />
               </button>
 
               {accountMenuOpen && (
@@ -279,8 +291,8 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                     onClick={() => setAccountMenuOpen(false)}
                     className="fixed inset-0 z-40 cursor-default"
                   />
-                  <div className="absolute right-0 top-11 z-50 w-60 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] p-2 text-left shadow-[0_8px_24px_rgba(15,23,42,0.16)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center gap-2 rounded-md bg-slate-50 dark:bg-zinc-800/60 px-3 py-2.5">
+                  <div className="absolute right-0 top-11 z-50 w-60 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] p-2 text-left shadow-xl dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
+                    <div className="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-zinc-800/60 px-3 py-2.5">
                       <Avatar className="h-9 w-9"><AvatarFallback className="bg-[#f3d7d7] dark:bg-red-950/60 text-xs font-bold text-[#b82727] dark:text-red-400">{userInitials}</AvatarFallback></Avatar>
                       <div className="min-w-0">
                         <p className="truncate text-xs font-bold text-slate-900 dark:text-zinc-100">{userName}</p>
@@ -289,14 +301,14 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                       </div>
                     </div>
                     <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
-                    <Link href="/profile" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/80">
+                    <Link href="/profile" className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/80">
                       <UserCircle className="h-4 w-4" />
                       Account overview
                     </Link>
                     <button
                       type="button"
                       onClick={() => logout()}
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                     >
                       <LogOut className="h-4 w-4" />
                       Log out
@@ -308,43 +320,131 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-5 pb-6 sm:p-6 md:p-6">
+        <main className="min-w-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
           {children}
         </main>
 
+        {/* Mobile Navigation Drawer - Matches exact mockup from user */}
         {mobileMenuOpen && (
-          <button
-            type="button"
-            aria-label="Close navigation menu"
-            onClick={() => setMobileMenuOpen(false)}
-            className="fixed inset-0 z-40 bg-black/30 md:hidden"
-          />
-        )}
+          <div className="fixed inset-0 z-50 md:hidden">
+            {/* Backdrop overlay */}
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+              onClick={() => setMobileMenuOpen(false)}
+            />
 
-        {mobileMenuOpen && (
-          <nav
-            id="mobile-navigation-links"
-            aria-label="Mobile navigation"
-            className="fixed right-3 top-[66px] z-50 w-[min(280px,calc(100vw-1.5rem))] rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#141417] p-3 shadow-[0_8px_24px_rgba(15,23,42,0.16)] md:hidden"
-          >
-            <div className="grid grid-cols-2 gap-1.5">
-              {mobileNavItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.title}
-                    href={item.href}
-                    className={`flex min-h-10 items-center gap-2 rounded-md px-3 text-xs font-semibold ${
-                      isActive ? "bg-red-50 text-red-600" : "text-slate-600 hover:bg-slate-50"
-                    }`}
+            {/* Left slide-out drawer matching the dark mockup */}
+            <div className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col justify-between bg-[#101010] p-4 text-slate-300 shadow-2xl animate-in slide-in-from-left duration-250">
+              <div className="space-y-5 overflow-y-auto">
+                {/* Drawer Header with Logo & Close */}
+                <div className="flex items-center justify-between border-b border-[#262626] pb-4 px-1">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#0b0b0b] p-1 shadow-[0_0_0_2px_rgba(255,255,255,0.03)]">
+                      <img
+                        src="/addis-photography-logo.png"
+                        alt="Addis Photography logo"
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                    <div className="leading-none">
+                      <h2 className="text-lg font-black tracking-tight text-white">Addis</h2>
+                      <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.2em] text-slate-400">PHOTOGRAPHY STUDIO</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white"
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{item.title}</span>
-                  </Link>
-                );
-              })}
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Operations Navigation */}
+                <nav className="space-y-1">
+                  {navOperations.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.title}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`group flex h-11 items-center gap-3.5 rounded-xl px-4 text-sm font-semibold transition-all duration-150 ${
+                          isActive
+                            ? "bg-[#e21b23] text-white shadow-sm"
+                            : "text-slate-400 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <item.icon className={`h-5 w-5 shrink-0 stroke-[1.8] ${isActive ? "text-white" : "text-slate-400"}`} />
+                        <span>{item.title}</span>
+                        {item.title === "Requests" && pendingRequests > 0 && (
+                          <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${isActive ? "bg-white/20 text-white" : "bg-[#2a2a2d] text-slate-300"}`}>
+                            {pendingRequests}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </nav>
+
+                {/* Admin Navigation (if Admin) */}
+                {isAdmin && (
+                  <div className="pt-2 border-t border-[#262626]/80">
+                    <p className="px-4 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      Administration
+                    </p>
+                    <nav className="space-y-1">
+                      {visibleAdminNav.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                          <Link
+                            key={item.title}
+                            href={item.href}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`group flex h-10 items-center gap-3.5 rounded-xl px-4 text-sm font-semibold transition-all duration-150 ${
+                              isActive
+                                ? "bg-[#e21b23] text-white shadow-sm"
+                                : "text-slate-400 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            <item.icon className={`h-4.5 w-4.5 shrink-0 stroke-[1.8] ${isActive ? "text-white" : "text-slate-400"}`} />
+                            <span>{item.title}</span>
+                          </Link>
+                        );
+                      })}
+                    </nav>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom Storage & Help Widget (matching user mockup) */}
+              <div className="space-y-3 pt-3 border-t border-[#262626]/80">
+                <div className="rounded-xl bg-[#18181b] p-3 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
+                    <span>Storage</span>
+                    <span className="text-white font-mono font-bold">{storageInfo.percent}%</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-[#27272a]">
+                    <div
+                      className="h-full rounded-full bg-[#e21b23] transition-all"
+                      style={{ width: `${Math.max(storageInfo.percent, 2)}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium">{storageInfo.text}</p>
+                </div>
+
+                <div className="flex items-center gap-3 px-1 text-slate-400">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#222225] text-slate-300 shrink-0">
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="leading-tight">
+                    <div className="text-xs font-bold text-white">Need help?</div>
+                    <div className="text-[10px] text-slate-400">View studio guide</div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </nav>
+          </div>
         )}
       </div>
     </div>
