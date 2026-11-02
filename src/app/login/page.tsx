@@ -4,22 +4,27 @@ import { MapPin, Phone } from "lucide-react";
 
 export default function LoginPage() {
   return (
-    <div className="font-referenceSans grid min-h-[960px] bg-white dark:bg-[#09090b] lg:grid-cols-2">
-      <section className="flex flex-col items-center justify-between bg-white dark:bg-[#09090b] px-8 py-10 sm:px-12 lg:items-stretch lg:px-16 lg:py-12">
-        <div className="flex h-7 w-full items-center gap-3 border-l-[3px] border-[#D51E25] pl-3 text-[14px] font-normal leading-[17px] text-[#2B2B2B] dark:text-zinc-200">
-          Addis Photography
+    <div className="font-referenceSans grid min-h-screen bg-white dark:bg-[#09090b] lg:min-h-[960px] lg:grid-cols-2">
+      <section className="flex min-h-screen flex-col justify-between bg-white px-5 py-6 sm:px-10 sm:py-8 dark:bg-[#09090b] lg:min-h-[960px] lg:items-stretch lg:px-16 lg:py-12">
+        <div className="flex w-full items-center justify-between">
+          <div className="flex h-7 items-center gap-3 border-l-[3px] border-[#D51E25] pl-3 text-[14px] font-normal leading-[17px] text-[#2B2B2B] dark:text-zinc-200">
+            Addis Photography
+          </div>
+          <span className="text-[10px] font-medium tracking-wider text-zinc-400 uppercase sm:text-[11px] lg:hidden">
+            Jimma Studio
+          </span>
         </div>
 
-        <div className="mx-auto w-full max-w-[472px]">
-          <Suspense fallback={<div className="h-64 flex items-center justify-center text-xs text-slate-400">Loading login form…</div>}>
+        <div className="my-6 mx-auto w-full max-w-[472px] sm:my-8 lg:my-0">
+          <Suspense fallback={<div className="flex h-64 items-center justify-center text-xs text-slate-400">Loading login form…</div>}>
             <LoginForm />
           </Suspense>
         </div>
 
-        <div className="flex h-[13px] w-full items-center justify-between text-[11px] font-normal leading-[13px] text-black dark:text-zinc-400">
+        <div className="flex w-full flex-wrap items-center justify-between gap-2 border-t border-zinc-100 pt-4 text-[11px] font-normal leading-[13px] text-zinc-600 dark:border-zinc-900 dark:text-zinc-400 lg:border-t-0 lg:pt-0">
           <span>Studio Management System</span>
-          <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-sm bg-black dark:bg-zinc-600" />
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-[#D51E25]" />
             Authorized studio access
           </span>
         </div>

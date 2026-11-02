@@ -121,7 +121,7 @@ export function LoginForm({
     return (
       <form
         onSubmit={handlePasswordChange}
-        className={cn('font-referenceSans flex w-full flex-col gap-8', className)}
+        className={cn('font-referenceSans flex w-full flex-col gap-6 sm:gap-8', className)}
         {...props}
       >
         <div className="flex flex-col gap-2">
@@ -129,33 +129,33 @@ export function LoginForm({
             <span className="h-px w-[18px] bg-[#D51E25]" />
             SECURITY REQUIREMENT
           </p>
-          <h1 className="font-referenceDisplay text-[36px] font-medium leading-[42px] tracking-normal text-black">
+          <h1 className="font-referenceDisplay text-[26px] sm:text-[32px] lg:text-[36px] font-medium leading-tight tracking-normal text-black dark:text-zinc-100">
             Initial Password Change
           </h1>
-          <p className="text-[15px] leading-[24px] text-[#2B2B2B]">
+          <p className="text-[14px] sm:text-[15px] leading-relaxed text-[#2B2B2B] dark:text-zinc-400">
             For studio security, you must update your temporary password before accessing the system.
           </p>
         </div>
 
         {serverError && (
-          <div className="flex items-start gap-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="flex items-start gap-3 rounded border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 text-sm text-red-700 dark:text-red-300">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{serverError}</span>
           </div>
         )}
 
-        <div className="grid gap-6">
-          <div className="grid gap-3">
-            <Label htmlFor="new-password" className="font-referenceDisplay text-[17px] font-normal leading-5 text-black">
+        <div className="grid gap-4 sm:gap-6">
+          <div className="grid gap-2 sm:gap-3">
+            <Label htmlFor="new-password" className="font-referenceDisplay text-[15px] sm:text-[17px] font-normal leading-5 text-black dark:text-zinc-200">
               New Password
             </Label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-black" />
+              <Lock className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-black dark:text-zinc-400" />
               <Input
                 id="new-password"
                 type={showNewPassword ? 'text' : 'password'}
                 placeholder="At least 6 characters"
-                className="h-14 rounded-lg border-[#2B2B2B] px-4 pl-12 pr-12 text-[15px] leading-[18px] text-black shadow-none placeholder:text-gray-400 focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
+                className="h-12 sm:h-14 rounded-lg border-[#2B2B2B] dark:border-zinc-700 dark:bg-zinc-900 px-4 pl-12 pr-12 text-[15px] leading-[18px] text-black dark:text-zinc-100 shadow-none placeholder:text-gray-400 focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 disabled={loading}
@@ -165,7 +165,7 @@ export function LoginForm({
               <button
                 type="button"
                 onClick={() => setShowNewPassword((v) => !v)}
-                className="absolute right-4 top-1/2 flex h-[18px] w-[18px] -translate-y-1/2 items-center justify-center p-0 text-black hover:text-slate-800"
+                className="absolute right-4 top-1/2 flex h-[18px] w-[18px] -translate-y-1/2 items-center justify-center p-0 text-black dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200"
                 aria-label={showNewPassword ? 'Hide password' : 'Show password'}
               >
                 {showNewPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
@@ -173,17 +173,17 @@ export function LoginForm({
             </div>
           </div>
 
-          <div className="grid gap-3">
-            <Label htmlFor="confirm-password" className="font-referenceDisplay text-[17px] font-normal leading-5 text-black">
+          <div className="grid gap-2 sm:gap-3">
+            <Label htmlFor="confirm-password" className="font-referenceDisplay text-[15px] sm:text-[17px] font-normal leading-5 text-black dark:text-zinc-200">
               Confirm New Password
             </Label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-black" />
+              <Lock className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-black dark:text-zinc-400" />
               <Input
                 id="confirm-password"
                 type={showNewPassword ? 'text' : 'password'}
                 placeholder="Re-enter new password"
-                className="h-14 rounded-lg border-[#2B2B2B] px-4 pl-12 pr-12 text-[15px] leading-[18px] text-black shadow-none placeholder:text-gray-400 focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
+                className="h-12 sm:h-14 rounded-lg border-[#2B2B2B] dark:border-zinc-700 dark:bg-zinc-900 px-4 pl-12 pr-12 text-[15px] leading-[18px] text-black dark:text-zinc-100 shadow-none placeholder:text-gray-400 focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
@@ -195,7 +195,7 @@ export function LoginForm({
 
           <Button
             type="submit"
-            className="font-referenceDisplay h-16 w-full rounded-lg bg-[#D51E25] px-5 text-[18px] font-medium leading-[23px] text-[#F8F5EF] hover:bg-[#D51E25]/90"
+            className="font-referenceDisplay h-13 sm:h-14 lg:h-16 w-full rounded-lg bg-[#D51E25] px-5 text-[16px] sm:text-[18px] font-medium leading-[23px] text-[#F8F5EF] hover:bg-[#D51E25]/90 active:scale-[0.99] transition-transform"
             disabled={loading}
           >
             {loading ? (
@@ -215,7 +215,7 @@ export function LoginForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className={cn('font-referenceSans flex w-full flex-col gap-8', className)}
+      className={cn('font-referenceSans flex w-full flex-col gap-6 sm:gap-8', className)}
       {...props}
     >
       <div className="flex flex-col gap-2">
@@ -223,10 +223,10 @@ export function LoginForm({
           <span className="h-px w-[18px] bg-[#D51E25]" />
           STUDIO ACCESS
         </p>
-        <h1 className="font-referenceDisplay text-[40px] font-medium leading-[46px] tracking-normal text-black dark:text-zinc-100">
+        <h1 className="font-referenceDisplay text-[28px] sm:text-[34px] lg:text-[40px] font-medium leading-[34px] sm:leading-[40px] lg:leading-[46px] tracking-normal text-black dark:text-zinc-100">
           Login to your account
         </h1>
-        <p className="text-[16px] leading-[26px] text-[#2B2B2B] dark:text-zinc-400">
+        <p className="text-[14px] sm:text-[15px] lg:text-[16px] leading-[22px] sm:leading-[24px] lg:leading-[26px] text-[#2B2B2B] dark:text-zinc-400">
           Enter your studio credentials below to access your account
         </p>
       </div>
@@ -238,15 +238,15 @@ export function LoginForm({
         </div>
       )}
 
-      <div className="grid gap-6">
-        <div className="grid gap-3">
-          <Label htmlFor="username" className="font-referenceDisplay text-[18px] font-normal leading-[23px] text-black dark:text-zinc-200">Username</Label>
+      <div className="grid gap-5 sm:gap-6">
+        <div className="grid gap-2 sm:gap-3">
+          <Label htmlFor="username" className="font-referenceDisplay text-[15px] sm:text-[17px] lg:text-[18px] font-normal leading-[23px] text-black dark:text-zinc-200">Username</Label>
           <div className="relative">
             <User className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-black dark:text-zinc-400" />
             <Input
               id="username"
               placeholder="e.g. yonas"
-              className="h-14 rounded-lg border-[#2B2B2B] dark:border-zinc-700 dark:bg-zinc-900 px-4 pl-12 text-[15px] leading-[18px] text-black dark:text-zinc-100 shadow-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
+              className="h-12 sm:h-14 rounded-lg border-[#2B2B2B] dark:border-zinc-700 dark:bg-zinc-900 px-4 pl-12 text-[15px] leading-[18px] text-black dark:text-zinc-100 shadow-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
@@ -255,15 +255,15 @@ export function LoginForm({
           </div>
         </div>
 
-        <div className="grid gap-3">
-          <Label htmlFor="password" className="font-referenceDisplay text-[18px] font-normal leading-5 text-black dark:text-zinc-200">Password</Label>
+        <div className="grid gap-2 sm:gap-3">
+          <Label htmlFor="password" className="font-referenceDisplay text-[15px] sm:text-[17px] lg:text-[18px] font-normal leading-5 text-black dark:text-zinc-200">Password</Label>
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-black dark:text-zinc-400" />
             <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
-              className="h-14 rounded-lg border-[#2B2B2B] dark:border-zinc-700 dark:bg-zinc-900 px-4 pl-12 pr-12 text-[15px] leading-[18px] text-black dark:text-zinc-100 shadow-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
+              className="h-12 sm:h-14 rounded-lg border-[#2B2B2B] dark:border-zinc-700 dark:bg-zinc-900 px-4 pl-12 pr-12 text-[15px] leading-[18px] text-black dark:text-zinc-100 shadow-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus-visible:border-[#D51E25] focus-visible:ring-[#D51E25]/20 md:text-[15px]"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
@@ -275,8 +275,8 @@ export function LoginForm({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3">
-          <label className="flex cursor-pointer items-center gap-3 text-[14px] font-medium leading-[17px] text-[#2B2B2B] dark:text-zinc-300">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <label className="flex cursor-pointer items-center gap-2.5 text-[13px] sm:text-[14px] font-medium leading-[17px] text-[#2B2B2B] dark:text-zinc-300">
             <input
               type="checkbox"
               checked={rememberMe}
@@ -286,12 +286,12 @@ export function LoginForm({
             Remember me
           </label>
 
-          <button type="button" className="text-[14px] font-medium leading-[17px] text-red-600 hover:text-red-700">
+          <button type="button" className="text-[13px] sm:text-[14px] font-medium leading-[17px] text-red-600 hover:text-red-700">
             Forgot your password?
           </button>
         </div>
 
-        <Button type="submit" className="font-referenceDisplay h-16 w-full rounded-lg bg-[#D51E25] px-5 text-[18px] font-medium leading-[23px] text-[#F8F5EF] hover:bg-[#D51E25]/90" disabled={loading}>
+        <Button type="submit" className="font-referenceDisplay h-13 sm:h-14 lg:h-16 w-full rounded-lg bg-[#D51E25] px-5 text-[16px] sm:text-[18px] font-medium leading-[23px] text-[#F8F5EF] hover:bg-[#D51E25]/90 active:scale-[0.99] transition-transform" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -302,7 +302,7 @@ export function LoginForm({
           )}
         </Button>
 
-        <p className="text-center text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400 max-w-[400px] mx-auto">
+        <p className="text-center text-[13px] sm:text-[15px] lg:text-[16px] leading-[22px] sm:leading-[24px] text-gray-600 dark:text-zinc-400 max-w-[400px] mx-auto">
           Need technical support?{' '}
           <span className="text-red-700 dark:text-red-400">Contact the Studio Administrator</span>
         </p>
