@@ -195,7 +195,7 @@ export function LoginForm({
 
           <Button
             type="submit"
-            className="font-referenceDisplay h-13 sm:h-14 lg:h-16 w-full rounded-lg bg-[#D51E25] px-5 text-[16px] sm:text-[18px] font-medium leading-[23px] text-[#F8F5EF] hover:bg-[#D51E25]/90 active:scale-[0.99] transition-transform"
+            className="font-referenceDisplay h-12 sm:h-14 w-full rounded-lg bg-[#D51E25] px-5 text-[16px] sm:text-[17px] font-semibold tracking-wide text-[#F8F5EF] hover:bg-[#c41920] active:scale-[0.99] transition-all shadow-sm"
             disabled={loading}
           >
             {loading ? (
@@ -291,7 +291,11 @@ export function LoginForm({
           </button>
         </div>
 
-        <Button type="submit" className="font-referenceDisplay h-13 sm:h-14 lg:h-16 w-full rounded-lg bg-[#D51E25] px-5 text-[16px] sm:text-[18px] font-medium leading-[23px] text-[#F8F5EF] hover:bg-[#D51E25]/90 active:scale-[0.99] transition-transform" disabled={loading}>
+        <Button
+          type="submit"
+          className="font-referenceDisplay h-12 sm:h-14 w-full rounded-lg bg-[#D51E25] px-5 text-[16px] sm:text-[17px] font-semibold tracking-wide text-[#F8F5EF] hover:bg-[#c41920] active:scale-[0.99] transition-all shadow-sm"
+          disabled={loading}
+        >
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
