@@ -119,19 +119,14 @@ class DatabaseManager {
   public async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    if (!this.isMemoryMode && this.pool) {
-      try {
-        let sql = SCHEMA_SQL;
-        const schemaPath = path.join(process.cwd(), "src/server/db/schema.sql");
-        if (fs.existsSync(schemaPath)) {
-          sql = fs.readFileSync(schemaPath, "utf-8");
-        }
-        await this.pool.query(sql);
+    if (!this.isMemoryMode) {
+      if (this.neonSql) {
         try {
-          await this.pool.query(`
-            ALTER TABLE albums ADD COLUMN IF NOT EXISTS cover_url TEXT NULL;
-            ALTER TABLE albums ALTER COLUMN cover_url TYPE TEXT;
-            ALTER TABLE media ADD COLUMN IF NOT EXISTS data_url TEXT NULL;
+          // Neon serverless HTTP: execute schema statements individually
+          await this.neonSql.query("ALTER TABLE albums ADD COLUMN IF NOT EXISTS cover_url TEXT NULL").catch(() => {});
+          await this.neonSql.query("ALTER TABLE albums ALTER COLUMN cover_url TYPE TEXT").catch(() => {});
+          await this.neonSql.query("ALTER TABLE media ADD COLUMN IF NOT EXISTS data_url TEXT NULL").catch(() => {});
+          await this.neonSql.query(`
             CREATE TABLE IF NOT EXISTS portfolio (
               id VARCHAR(64) PRIMARY KEY,
               title VARCHAR(255) NOT NULL,
@@ -141,15 +136,43 @@ class DatabaseManager {
               aspect_ratio VARCHAR(32) DEFAULT 'portrait',
               featured BOOLEAN DEFAULT true,
               created_at TIMESTAMPTZ DEFAULT NOW()
-            );
-          `);
-        } catch {}
-      } catch (err: any) {
-        console.error("FATAL: PostgreSQL connection or schema initialization failed:", err);
+            )
+          `).catch(() => {});
+        } catch (neonInitErr) {
+          console.warn("Neon HTTP schema check warning:", neonInitErr);
+        }
+      } else if (this.pool) {
+        try {
+          let sql = SCHEMA_SQL;
+          const schemaPath = path.join(process.cwd(), "src/server/db/schema.sql");
+          if (fs.existsSync(schemaPath)) {
+            sql = fs.readFileSync(schemaPath, "utf-8");
+          }
+          await this.pool.query(sql);
+          try {
+            await this.pool.query(`
+              ALTER TABLE albums ADD COLUMN IF NOT EXISTS cover_url TEXT NULL;
+              ALTER TABLE albums ALTER COLUMN cover_url TYPE TEXT;
+              ALTER TABLE media ADD COLUMN IF NOT EXISTS data_url TEXT NULL;
+              CREATE TABLE IF NOT EXISTS portfolio (
+                id VARCHAR(64) PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                category VARCHAR(64) NOT NULL,
+                image_url TEXT NOT NULL,
+                caption TEXT,
+                aspect_ratio VARCHAR(32) DEFAULT 'portrait',
+                featured BOOLEAN DEFAULT true,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+              );
+            `);
+          } catch {}
+        } catch (err: any) {
+          console.error("FATAL: PostgreSQL connection or schema initialization failed:", err);
 
-        throw new Error(
-          `Database initialization failed: ${err?.message || err}. PostgreSQL must be running and accessible at DATABASE_URL.`
-        );
+          throw new Error(
+            `Database initialization failed: ${err?.message || err}. PostgreSQL must be running and accessible at DATABASE_URL.`
+          );
+        }
       }
     }
 
