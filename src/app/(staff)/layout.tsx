@@ -73,7 +73,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const [pendingRequests, setPendingRequests] = React.useState(0);
   const [storageInfo, setStorageInfo] = React.useState({
     percent: 0,
-    text: "0.0 GB of 100 GB used",
+    text: "0.0 MB of 500 GB used",
   });
 
   React.useEffect(() => {
@@ -88,13 +88,17 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       albums.forEach((a) => {
         usedBytes += Number(a.used_bytes || 0);
       });
-      const totalGb = 100;
+      const totalGb = 500;
       const totalBytes = totalGb * 1024 * 1024 * 1024;
       const pct = Math.min(100, Math.round((usedBytes / totalBytes) * 100));
-      const usedGb = (usedBytes / (1024 * 1024 * 1024)).toFixed(1);
+      const usedMb = usedBytes / (1024 * 1024);
+      const usedText =
+        usedMb >= 1024
+          ? `${(usedMb / 1024).toFixed(1)} GB of ${totalGb} GB used`
+          : `${usedMb.toFixed(1)} MB of ${totalGb} GB used`;
       setStorageInfo({
         percent: pct,
-        text: `${usedGb} GB of ${totalGb} GB used`,
+        text: usedText,
       });
     } catch {}
   }, [pathname]);

@@ -37,32 +37,48 @@ function isBrowser(): boolean {
   return typeof window !== "undefined" && !process.env.VITEST;
 }
 
+const LEGACY_MOCK_ALBUM_IDENTIFIERS = new Set([
+  "alb-1",
+  "bethlehem-wedding-2026",
+  "alb-2",
+  "kidus-grad-2026",
+  "alb-liya-yared",
+  "liya-yared-wedding-2026",
+  "alb-bethlehem-grad",
+  "bethlehem-graduation-2026",
+  "alb-amanuel-family",
+  "amanuel-family-2026",
+]);
+
+function isMockAlbumIdentifier(val?: string | null): boolean {
+  if (!val) return false;
+  return LEGACY_MOCK_ALBUM_IDENTIFIERS.has(val);
+}
+
 function runStorageMigrations(): void {
   if (typeof window === "undefined") return;
   try {
-    // 1. Purge legacy mock albums alb-1 (Bethlehem) and alb-2 (Kidus Girma) from client localStorage
+    // 1. Purge legacy mock albums from client localStorage
     const rawAlbums = localStorage.getItem(STORAGE_KEY_PREFIX + "albums");
     if (rawAlbums) {
       const albums: Album[] = JSON.parse(rawAlbums);
       const filtered = albums.filter(
         (a) =>
           a &&
-          a.id !== "alb-1" &&
-          a.token !== "bethlehem-wedding-2026" &&
-          a.id !== "alb-2" &&
-          a.token !== "kidus-grad-2026"
+          !isMockAlbumIdentifier(a.id) &&
+          !isMockAlbumIdentifier(a.token)
       );
       if (filtered.length !== albums.length) {
         localStorage.setItem(STORAGE_KEY_PREFIX + "albums", JSON.stringify(filtered));
       }
     }
 
-    // 2. Purge associated media files for alb-1 and alb-2
+    // 2. Purge associated media files for mock albums
     const rawMedia = localStorage.getItem(STORAGE_KEY_PREFIX + "media");
     if (rawMedia) {
       const media: MediaFile[] = JSON.parse(rawMedia);
       const filteredMedia = media.filter(
-        (m) => m && m.album_id !== "alb-1" && m.album_id !== "alb-2"
+        (m) => m && !isMockAlbumIdentifier(m.album_id)
       );
       if (filteredMedia.length !== media.length) {
         localStorage.setItem(STORAGE_KEY_PREFIX + "media", JSON.stringify(filteredMedia));
@@ -72,9 +88,15 @@ function runStorageMigrations(): void {
     // 3. Clear any saved PIN or unlock tokens for legacy mock albums
     localStorage.removeItem("addis_album_pin_bethlehem-wedding-2026");
     localStorage.removeItem("addis_album_pin_kidus-grad-2026");
+    localStorage.removeItem("addis_album_pin_liya-yared-wedding-2026");
+    localStorage.removeItem("addis_album_pin_bethlehem-graduation-2026");
+    localStorage.removeItem("addis_album_pin_amanuel-family-2026");
     if (typeof sessionStorage !== "undefined") {
       sessionStorage.removeItem("album_unlocked_bethlehem-wedding-2026");
       sessionStorage.removeItem("album_unlocked_kidus-grad-2026");
+      sessionStorage.removeItem("album_unlocked_liya-yared-wedding-2026");
+      sessionStorage.removeItem("album_unlocked_bethlehem-graduation-2026");
+      sessionStorage.removeItem("album_unlocked_amanuel-family-2026");
     }
 
     // 4. Ensure deleted_album_ids includes legacy mock IDs
@@ -83,10 +105,7 @@ function runStorageMigrations(): void {
     const tombstoned = Array.from(
       new Set([
         ...currentDeleted,
-        "alb-1",
-        "bethlehem-wedding-2026",
-        "alb-2",
-        "kidus-grad-2026",
+        ...Array.from(LEGACY_MOCK_ALBUM_IDENTIFIERS),
       ])
     );
     localStorage.setItem(
@@ -753,10 +772,8 @@ export const studioStore = {
     const albums = getStored<Album[]>("albums", INITIAL_ALBUMS).filter(
       (a) =>
         a &&
-        a.id !== "alb-1" &&
-        a.token !== "bethlehem-wedding-2026" &&
-        a.id !== "alb-2" &&
-        a.token !== "kidus-grad-2026" &&
+        !isMockAlbumIdentifier(a.id) &&
+        !isMockAlbumIdentifier(a.token) &&
         !deletedIds.includes(a.id) &&
         !deletedIds.includes(a.token)
     );
@@ -771,7 +788,7 @@ export const studioStore = {
   },
 
   getAlbumByToken: (token: string): Album | undefined => {
-    if (token === "bethlehem-wedding-2026" || token === "kidus-grad-2026") return undefined;
+    if (isMockAlbumIdentifier(token)) return undefined;
     const deletedIds = getStored<string[]>("deleted_album_ids", []);
     if (deletedIds.includes(token)) return undefined;
     const albums = studioStore.getAlbums();
@@ -779,7 +796,7 @@ export const studioStore = {
   },
 
   getAlbumById: (id: string): Album | undefined => {
-    if (id === "alb-1" || id === "alb-2") return undefined;
+    if (isMockAlbumIdentifier(id)) return undefined;
     const deletedIds = getStored<string[]>("deleted_album_ids", []);
     if (deletedIds.includes(id)) return undefined;
     const albums = studioStore.getAlbums();
@@ -982,10 +999,8 @@ export const studioStore = {
           .filter(
             (remote) =>
               remote &&
-              remote.id !== "alb-1" &&
-              remote.token !== "bethlehem-wedding-2026" &&
-              remote.id !== "alb-2" &&
-              remote.token !== "kidus-grad-2026" &&
+              !isMockAlbumIdentifier(remote.id) &&
+              !isMockAlbumIdentifier(remote.token) &&
               !deletedIds.includes(remote.id) &&
               !deletedIds.includes(remote.token)
           )
@@ -1006,10 +1021,8 @@ export const studioStore = {
 
         for (const local of currentAlbums) {
           if (
-            local.id === "alb-1" ||
-            local.token === "bethlehem-wedding-2026" ||
-            local.id === "alb-2" ||
-            local.token === "kidus-grad-2026" ||
+            isMockAlbumIdentifier(local.id) ||
+            isMockAlbumIdentifier(local.token) ||
             deletedIds.includes(local.id) ||
             deletedIds.includes(local.token)
           )
@@ -1044,10 +1057,10 @@ export const studioStore = {
 
   // --- Media Files ---
   getMediaFiles: (albumId: string): MediaFile[] => {
-    if (albumId === "alb-1") return [];
+    if (isMockAlbumIdentifier(albumId)) return [];
     const media = getStored<MediaFile[]>("media", INITIAL_MEDIA);
     return media
-      .filter((m) => m && m.album_id === albumId && m.album_id !== "alb-1")
+      .filter((m) => m && m.album_id === albumId && !isMockAlbumIdentifier(m.album_id))
       .map((m) => {
         const fn = m.filename || "";
         const isVideo = fn.toLowerCase().endsWith(".mp4") || fn.toLowerCase().endsWith(".mov");
