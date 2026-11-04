@@ -118,6 +118,47 @@ function runStorageMigrations(): void {
 
     // 5. Purge any legacy localStorage portfolio cache (now live server synced)
     localStorage.removeItem(STORAGE_KEY_PREFIX + "portfolio");
+
+    // 6. Studio data reset: purge orders, requests, bookings, audit logs, and non-public albums from client localStorage
+    const RESET_VERSION = "addis_studio_reset_v20261104_pubonly";
+    if (!localStorage.getItem(RESET_VERSION)) {
+      localStorage.removeItem(STORAGE_KEY_PREFIX + "orders");
+      localStorage.removeItem(STORAGE_KEY_PREFIX + "requests");
+      localStorage.removeItem(STORAGE_KEY_PREFIX + "bookings");
+      localStorage.removeItem(STORAGE_KEY_PREFIX + "audit_logs");
+
+      // Filter albums to retain only public albums
+      const rawAlbums = localStorage.getItem(STORAGE_KEY_PREFIX + "albums");
+      if (rawAlbums) {
+        try {
+          const albums: Album[] = JSON.parse(rawAlbums);
+          const filtered = albums.filter((a) => a && ((a as any).visibility === "Public" || a.id === "alb-1792825712379" || !a.is_locked));
+          localStorage.setItem(STORAGE_KEY_PREFIX + "albums", JSON.stringify(filtered));
+        } catch {}
+      }
+
+      // Filter media to retain only public album media
+      const rawMedia = localStorage.getItem(STORAGE_KEY_PREFIX + "media");
+      if (rawMedia) {
+        try {
+          const media: MediaFile[] = JSON.parse(rawMedia);
+          const filteredMedia = media.filter((m) => m && m.album_id === "alb-1792825712379");
+          localStorage.setItem(STORAGE_KEY_PREFIX + "media", JSON.stringify(filteredMedia));
+        } catch {}
+      }
+
+      // Filter customers to only keep the public album customer
+      const rawCust = localStorage.getItem(STORAGE_KEY_PREFIX + "customers");
+      if (rawCust) {
+        try {
+          const custs: Customer[] = JSON.parse(rawCust);
+          const filteredCust = custs.filter((c) => c && c.id === "cust-1792825712628-kt6g");
+          localStorage.setItem(STORAGE_KEY_PREFIX + "customers", JSON.stringify(filteredCust));
+        } catch {}
+      }
+
+      localStorage.setItem(RESET_VERSION, "true");
+    }
   } catch {
     // Suppress migration parsing issues
   }
