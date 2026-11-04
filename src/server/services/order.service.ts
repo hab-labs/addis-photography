@@ -266,6 +266,19 @@ export async function createOrder(
       );
     }
 
+    // Insert into production requests if not marked delivered
+    if (!input.is_delivered) {
+      const reqId = `req-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      const itemsDescription = processedItems.map((i) => `${i.photo_type_name} x${i.quantity}`).join(", ");
+      try {
+        await txClient.query(
+          `INSERT INTO requests (id, customer_id, order_id, description, status, due_date, created_by, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, 'Received', NOW() + INTERVAL '2 days', $5, NOW(), NOW())`,
+          [reqId, customerId, orderId, itemsDescription, actor.id]
+        );
+      } catch {}
+    }
+
     return nextBookingNo;
   });
 

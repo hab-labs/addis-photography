@@ -693,12 +693,32 @@ export const studioStore = {
     status: "received" | "in_progress" | "ready" | "delivered"
   ): ClientRequest => {
     const requests = getStored<ClientRequest[]>("requests", INITIAL_REQUESTS);
+    const target = requests.find((r) => r.id === id);
     const updated = requests.map((r) => (r.id === id ? { ...r, status } : r));
     setStored("requests", updated);
 
+    // Synchronize linked order status in store
+    if (target?.order_id) {
+      const orders = getStored<Order[]>("orders", INITIAL_ORDERS);
+      const updatedOrders = orders.map((o) =>
+        o.id === target.order_id
+          ? {
+              ...o,
+              status,
+              updated_at: new Date().toISOString(),
+              delivered_at: status === "delivered" ? new Date().toISOString() : o.delivered_at,
+            }
+          : o
+      );
+      setStored("orders", updatedOrders);
+    }
+
     if (isBrowser()) {
       api.patch(`/api/requests/${id}`, { status })
-        .then(() => studioStore.syncRequests().catch(() => {}))
+        .then(() => {
+          studioStore.syncRequests().catch(() => {});
+          studioStore.syncOrders().catch(() => {});
+        })
         .catch(console.error);
     }
 

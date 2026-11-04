@@ -94,6 +94,31 @@ export default function RequestsPage() {
       });
       setRequests(mapped);
 
+      // Background sync with server
+      studioStore
+        .syncRequests()
+        .then((fresh) => {
+          if (fresh && fresh.length > 0) {
+            const mappedFresh: RequestCard[] = fresh.map((r) => {
+              const d = r.due_date ? new Date(r.due_date) : new Date();
+              const cal = formatCalendarPair(d);
+              return {
+                id: r.id,
+                orderNumber: r.order_id || r.id.slice(0, 6).toUpperCase(),
+                customerName: r.customer_name || "Customer",
+                phone: r.customer_phone || "—",
+                service: r.service_type || r.notes || "Photo Retouch & Print",
+                dueDate: cal.gregorian,
+                assignedStaff: r.assigned_to_name || "Studio Staff",
+                status: (r.status as RequestCard["status"]) || "received",
+                isOverdue: isOverdue(r.due_date),
+              };
+            });
+            setRequests(mappedFresh);
+          }
+        })
+        .catch(() => {});
+
       // Load standard package names
       try {
         const prices = studioStore.getPrices();

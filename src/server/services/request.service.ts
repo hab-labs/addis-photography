@@ -125,6 +125,27 @@ export async function updateRequestStatus(
     [newStatus, id]
   );
 
+  // Synchronize linked order status
+  if (existing.order_id) {
+    const orderStatusMap: Record<string, string> = {
+      received: "New",
+      in_progress: "In Progress",
+      ready: "Ready",
+      delivered: "Delivered",
+      Received: "New",
+      "In Progress": "In Progress",
+      Ready: "Ready",
+      Delivered: "Delivered",
+    };
+    const mappedOrderStatus = orderStatusMap[newStatus] || newStatus;
+    try {
+      await db.query(
+        `UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2`,
+        [mappedOrderStatus, existing.order_id]
+      );
+    } catch {}
+  }
+
   await logAudit(actor, "REQUEST_STATUS_UPDATED", "Request", id, {
     old_status: existing.status,
     new_status: newStatus,
@@ -156,6 +177,27 @@ export async function updateRequest(
     `UPDATE requests SET description = $1, status = $2, due_date = $3, assigned_to = $4, updated_at = NOW() WHERE id = $5`,
     [desc, status, dueDate, assignedTo, id]
   );
+
+  // Synchronize linked order status
+  if (existing.order_id && status) {
+    const orderStatusMap: Record<string, string> = {
+      received: "New",
+      in_progress: "In Progress",
+      ready: "Ready",
+      delivered: "Delivered",
+      Received: "New",
+      "In Progress": "In Progress",
+      Ready: "Ready",
+      Delivered: "Delivered",
+    };
+    const mappedOrderStatus = orderStatusMap[status] || status;
+    try {
+      await db.query(
+        `UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2`,
+        [mappedOrderStatus, existing.order_id]
+      );
+    } catch {}
+  }
 
   await logAudit(actor, "REQUEST_UPDATED", "Request", id, { status, desc });
   return (await getRequestById(id))!;

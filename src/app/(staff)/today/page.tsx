@@ -25,7 +25,7 @@ import {
   isOverdue,
 } from "@/lib/date";
 import { formatETB } from "@/lib/money";
-import type { Order } from "@/types";
+import type { Order, ClientRequest } from "@/types";
 import { Button } from "@/components/ui/button";
 import { DualCalendarPicker } from "@/components/calendar/DualCalendarPicker";
 
@@ -53,6 +53,7 @@ export default function TodayLedgerPage() {
   const [unpaidOnly, setUnpaidOnly] = React.useState(false);
 
   const [allOrders, setAllOrders] = React.useState<Order[]>([]);
+  const [allRequests, setAllRequests] = React.useState<ClientRequest[]>([]);
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -66,13 +67,26 @@ export default function TodayLedgerPage() {
     if (typeof studioStore !== "undefined" && studioStore.getOrders) {
       setAllOrders(studioStore.getOrders());
 
-      // Sync requests for the Section 6.4 bottom bar
+      // Sync requests for the Section 6.4 bottom bar and status mapping
       try {
         const reqs = studioStore.getRequests();
+        setAllRequests(reqs);
         const open = reqs.filter((r) => r.status !== "delivered").length;
         const overdue = reqs.filter((r) => r.status !== "delivered" && isOverdue(r.due_date)).length;
         setRequestsSummary({ open, overdue });
       } catch {}
+
+      studioStore
+        .syncRequests()
+        .then((reqs) => {
+          if (reqs && reqs.length > 0) {
+            setAllRequests(reqs);
+            const open = reqs.filter((r) => r.status !== "delivered").length;
+            const overdue = reqs.filter((r) => r.status !== "delivered" && isOverdue(r.due_date)).length;
+            setRequestsSummary({ open, overdue });
+          }
+        })
+        .catch(() => {});
 
       // Check today's shoot appointments from Neon Database
       try {
@@ -184,12 +198,29 @@ export default function TodayLedgerPage() {
         (o.payments || []).some((p) => p.payment_method === paymentFilter) ||
         (paymentFilter === "unpaid" && Number(o.paid_amount || 0) === 0);
 
-      const matchesStatus = statusFilter === "all" || o.status === statusFilter;
+      const matchingReq = allRequests.find(
+        (r) =>
+          r.order_id === o.id ||
+          (r.order_id && o.order_number && (r.order_id === o.order_number || r.order_id.includes(o.order_number) || o.id.includes(r.order_id)))
+      );
+
+      const normalizeStatus = (val?: string) => {
+        const s = (val || "").toLowerCase().trim();
+        if (s === "new" || s === "received") return "new";
+        if (s === "in_progress" || s === "in prog" || s === "in progress") return "in_progress";
+        if (s === "ready") return "ready";
+        if (s === "delivered") return "delivered";
+        if (s === "voided" || s === "cancelled") return "voided";
+        return s || "all";
+      };
+
+      const effectiveStatus = normalizeStatus(matchingReq?.status || o.status);
+      const matchesStatus = statusFilter === "all" || effectiveStatus === normalizeStatus(statusFilter);
       const matchesUnpaid = !unpaidOnly || Number(o.balance_amount || 0) > 0;
 
       return matchesSearch && matchesPhotoType && matchesPayment && matchesStatus && matchesUnpaid;
     });
-  }, [dayOrders, search, photoTypeFilter, paymentFilter, statusFilter, unpaidOnly]);
+  }, [dayOrders, allRequests, search, photoTypeFilter, paymentFilter, statusFilter, unpaidOnly]);
 
   const handleExportCSV = React.useCallback(() => {
     if (filteredOrders.length === 0) return;
@@ -227,11 +258,12 @@ export default function TodayLedgerPage() {
     switch (statusStr?.toLowerCase()) {
       case "ready":
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400">
             Ready
           </span>
         );
       case "in_progress":
+      case "in prog":
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
             In prog
@@ -693,7 +725,15 @@ export default function TodayLedgerPage() {
                       {/* Status */}
                       <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
                         <Link href={`/orders/${order.id}`} className="block">
-                          {renderStatusBadge(order.status)}
+                          {(() => {
+                            const matchingReq = allRequests.find(
+                              (r) =>
+                                r.order_id === order.id ||
+                                (r.order_id && order.order_number && (r.order_id === order.order_number || r.order_id.includes(order.order_number) || order.id.includes(r.order_id)))
+                            );
+                            const effectiveStatus = matchingReq?.status || order.status;
+                            return renderStatusBadge(effectiveStatus);
+                          })()}
                         </Link>
                       </td>
                     </tr>

@@ -256,12 +256,12 @@ export default function OrderDetailsPage() {
                 href={`/customers/${order.customer_id}`}
                 className="hover:underline hover:text-amber-600 dark:hover:text-amber-400"
               >
-                {order.customer.name}
+                {order.customer?.name || "Customer"}
               </Link>
             </div>
             <div className="text-slate-600 dark:text-zinc-300 flex items-center space-x-1.5 mt-1 font-mono">
               <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
-              <span>{order.customer.phone}</span>
+              <span>{order.customer?.phone || "—"}</span>
             </div>
           </div>
 
