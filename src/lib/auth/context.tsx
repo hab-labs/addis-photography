@@ -89,11 +89,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setUser(null);
           persistUser(null, false);
-          if (
-            typeof window !== "undefined" &&
-            !window.location.pathname.startsWith("/login") &&
-            !window.location.pathname.startsWith("/a/")
-          ) {
+          const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+          const isPublicRoute =
+            currentPath === "/" ||
+            currentPath.startsWith("/login") ||
+            currentPath.startsWith("/a/") ||
+            currentPath.startsWith("/book");
+
+          if (typeof window !== "undefined" && !isPublicRoute) {
             void fetch("/api/auth/logout", { method: "POST", headers: { "X-Requested-With": "studio" } }).finally(() => {
               window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
             });
