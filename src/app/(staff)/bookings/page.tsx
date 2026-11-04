@@ -33,6 +33,7 @@ import {
 
 import { useAuth } from "@/lib/auth/context";
 import { studioStore } from "@/lib/api/store";
+import { api } from "@/lib/api/client";
 import { formatDate, formatCalendarPair } from "@/lib/date";
 import type { Booking, BookingStatus } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -94,14 +95,19 @@ export default function BookingsManagementPage() {
   const [rescheduleDate, setRescheduleDate] = React.useState("");
   const [rescheduleSlot, setRescheduleSlot] = React.useState("");
 
-  // Load bookings from studio store
-  const loadBookings = React.useCallback(() => {
+  // Load bookings directly from Neon Database
+  const loadBookings = React.useCallback(async () => {
     try {
-      const data = studioStore.getBookings();
-      setBookings(data);
-    } catch (e) {
-      console.error("Failed to load bookings", e);
+      const res = await api.get<{ bookings: Booking[] }>("/api/bookings");
+      if (res?.bookings && Array.isArray(res.bookings)) {
+        setBookings(res.bookings);
+        return;
+      }
+    } catch {
+      // Fallback if network issue
     }
+    const data = studioStore.getBookings();
+    setBookings(data);
   }, []);
 
   React.useEffect(() => {
@@ -110,43 +116,55 @@ export default function BookingsManagementPage() {
     // Default new booking date to tomorrow
     const tomorrow = new Date(Date.now() + 86400000);
     setNewDate(tomorrow.toISOString().split("T")[0]);
-
-    // Background sync with API
-    studioStore.syncBookings().then((res) => {
-      if (res && res.length > 0) {
-        setBookings(res);
-      }
-    }).catch(() => {});
   }, [loadBookings]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      const synced = await studioStore.syncBookings();
-      setBookings(synced);
+      const res = await api.get<{ bookings: Booking[] }>("/api/bookings");
+      if (res?.bookings) {
+        setBookings(res.bookings);
+      }
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  const handleStatusChange = (id: string, newStatus: BookingStatus, photographer?: string) => {
-    studioStore.updateBookingStatus(id, newStatus, photographer);
-    loadBookings();
+  const handleStatusChange = async (id: string, newStatus: BookingStatus, photographer?: string) => {
+    try {
+      await api.patch(`/api/bookings/${id}`, {
+        status: newStatus,
+        assigned_photographer: photographer,
+      });
+      await loadBookings();
+    } catch {
+      studioStore.updateBookingStatus(id, newStatus, photographer);
+      loadBookings();
+    }
   };
 
-  const handleRescheduleSubmit = (e: React.FormEvent) => {
+  const handleRescheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rescheduleTarget || !rescheduleDate) return;
 
-    studioStore.updateBooking(rescheduleTarget.id, {
-      preferred_date: rescheduleDate,
-      preferred_time_slot: rescheduleSlot || rescheduleTarget.preferred_time_slot,
-    });
-    setRescheduleTarget(null);
-    loadBookings();
+    try {
+      await api.patch(`/api/bookings/${rescheduleTarget.id}`, {
+        preferred_date: rescheduleDate,
+        preferred_time_slot: rescheduleSlot || rescheduleTarget.preferred_time_slot,
+      });
+      setRescheduleTarget(null);
+      await loadBookings();
+    } catch {
+      studioStore.updateBooking(rescheduleTarget.id, {
+        preferred_date: rescheduleDate,
+        preferred_time_slot: rescheduleSlot || rescheduleTarget.preferred_time_slot,
+      });
+      setRescheduleTarget(null);
+      loadBookings();
+    }
   };
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError("");
 
@@ -163,26 +181,29 @@ export default function BookingsManagementPage() {
       return;
     }
 
-    studioStore.createBooking({
-      customer_name: newName.trim(),
-      customer_phone: newPhone.trim(),
-      service_type: newService,
-      preferred_date: newDate,
-      preferred_time_slot: newTimeSlot,
-      location_preference: newLocation,
-      source: newSource,
-      notes: newNotes.trim() || undefined,
-      estimated_price: newPrice,
-      status: "confirmed", // internal bookings default to confirmed
-      assigned_photographer: newPhotographer === "Unassigned" ? undefined : newPhotographer,
-    });
+    try {
+      await api.post("/api/bookings", {
+        customer_name: newName.trim(),
+        customer_phone: newPhone.trim(),
+        service_type: newService,
+        preferred_date: newDate,
+        preferred_time_slot: newTimeSlot,
+        location_preference: newLocation,
+        source: newSource,
+        notes: newNotes.trim() || undefined,
+        estimated_price: newPrice,
+        status: "confirmed", // internal bookings default to confirmed
+        assigned_photographer: newPhotographer === "Unassigned" ? undefined : newPhotographer,
+      });
 
-    setIsCreateOpen(false);
-    // Reset form
-    setNewName("");
-    setNewPhone("");
-    setNewNotes("");
-    loadBookings();
+      setIsCreateOpen(false);
+      setNewName("");
+      setNewPhone("");
+      setNewNotes("");
+      await loadBookings();
+    } catch (err: any) {
+      setCreateError(err?.message || "Failed to save booking to database.");
+    }
   };
 
   const handleConvertToOrder = (booking: Booking) => {

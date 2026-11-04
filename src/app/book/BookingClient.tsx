@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 import { studioStore } from "@/lib/api/store";
+import { api } from "@/lib/api/client";
 import { formatCalendarPair, formatDate } from "@/lib/date";
 import type { Booking } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -183,7 +184,7 @@ export function BookingClient() {
 
     setIsSubmitting(true);
     try {
-      const newBooking = studioStore.createBooking({
+      const payload = {
         customer_name: nameTrimmed,
         customer_phone: cleanPhone,
         service_type: serviceName,
@@ -191,10 +192,13 @@ export function BookingClient() {
         preferred_time_slot: `${selectedSlot.label} (${selectedSlot.time})`,
         location_preference: locationPref,
         notes: notes.trim() || undefined,
-        status: "pending",
+        status: "pending" as const,
         estimated_price: selectedService.priceNum,
-        source: "online",
-      });
+        source: "online" as const,
+      };
+
+      const res = await api.post<{ booking: Booking }>("/api/bookings", payload);
+      const newBooking = res?.booking || studioStore.createBooking(payload);
 
       setConfirmedBooking(newBooking);
       // Scroll to top to view confirmation
@@ -215,26 +219,51 @@ export function BookingClient() {
     } catch {}
   };
 
-  const handleLookup = (e: React.FormEvent) => {
+  const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
     const query = lookupQuery.trim();
     if (!query) return;
 
     setIsLookingUp(true);
+    setLookupResult(null);
     try {
+      // 1. Direct server query by reference or ID
+      const res = await api
+        .get<{ booking?: Booking }>(`/api/bookings?ref=${encodeURIComponent(query)}`)
+        .catch(() => null);
+
+      if (res?.booking) {
+        setLookupResult(res.booking);
+        return;
+      }
+
+      // 2. Direct server query by search term (phone or name)
+      const searchRes = await api
+        .get<{ bookings?: Booking[] }>(`/api/bookings?search=${encodeURIComponent(query)}`)
+        .catch(() => null);
+
+      if (searchRes?.bookings && searchRes.bookings.length > 0) {
+        setLookupResult(searchRes.bookings[0]);
+        return;
+      }
+
+      // 3. Fallback to local store
       const found = studioStore.getBookingByReference(query);
       if (found) {
         setLookupResult(found);
       } else {
-        // Also try phone lookup
         const all = studioStore.getBookings();
-        const byPhone = all.find((b) => b.customer_phone.includes(query) || query.includes(b.customer_phone));
+        const byPhone = all.find(
+          (b) => b.customer_phone.includes(query) || query.includes(b.customer_phone)
+        );
         if (byPhone) {
           setLookupResult(byPhone);
         } else {
           setLookupResult("not_found");
         }
       }
+    } catch {
+      setLookupResult("not_found");
     } finally {
       setIsLookingUp(false);
     }

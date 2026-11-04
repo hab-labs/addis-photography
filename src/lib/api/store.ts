@@ -1569,6 +1569,7 @@ export const studioStore = {
         studioStore.syncPrices(),
         studioStore.syncOrders(),
         studioStore.syncRequests(),
+        studioStore.syncBookings(),
         studioStore.syncAlbums(),
         studioStore.syncSettings(),
       ];

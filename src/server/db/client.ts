@@ -109,6 +109,7 @@ class DatabaseManager {
       "sessions",
       "album_unlock_sessions",
       "portfolio",
+      "bookings",
     ];
     tables.forEach((t) => this.memoryStore.set(t, []));
   }
@@ -137,6 +138,26 @@ class DatabaseManager {
               aspect_ratio VARCHAR(32) DEFAULT 'portrait',
               featured BOOLEAN DEFAULT true,
               created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+          `).catch(() => {});
+          await this.neonSql.query(`
+            CREATE TABLE IF NOT EXISTS bookings (
+              id VARCHAR(64) PRIMARY KEY,
+              booking_reference VARCHAR(32) NOT NULL UNIQUE,
+              customer_name VARCHAR(120) NOT NULL,
+              customer_phone VARCHAR(32) NOT NULL,
+              service_type VARCHAR(120) NOT NULL,
+              photo_type_id VARCHAR(64) NULL,
+              preferred_date VARCHAR(32) NOT NULL,
+              preferred_time_slot VARCHAR(64) NULL,
+              location_preference VARCHAR(32) DEFAULT 'studio',
+              notes TEXT NULL,
+              status VARCHAR(32) NOT NULL DEFAULT 'pending',
+              estimated_price VARCHAR(32) NULL,
+              source VARCHAR(32) NOT NULL DEFAULT 'online',
+              assigned_photographer VARCHAR(120) NULL,
+              created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+              updated_at TIMESTAMPTZ NULL
             )
           `).catch(() => {});
         } catch (neonInitErr) {

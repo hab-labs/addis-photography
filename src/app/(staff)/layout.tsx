@@ -33,6 +33,7 @@ import { useI18n } from "@/lib/i18n/context";
 import { useTheme } from "@/lib/theme/context";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { studioStore } from "@/lib/api/store";
+import { api } from "@/lib/api/client";
 
 const navOperations = [
   { title: "Today", href: "/today", icon: CalendarDays },
@@ -88,6 +89,14 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
 
       const bookings = studioStore.getBookings();
       setPendingBookings(bookings.filter((b) => b.status === "pending").length);
+
+      api.get<{ bookings: any[] }>("/api/bookings")
+        .then((res) => {
+          if (res?.bookings && Array.isArray(res.bookings)) {
+            setPendingBookings(res.bookings.filter((b) => b.status === "pending").length);
+          }
+        })
+        .catch(() => {});
 
       const albums = studioStore.getAlbums();
       let usedBytes = 0;

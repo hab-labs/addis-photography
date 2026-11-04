@@ -220,4 +220,29 @@ CREATE TABLE IF NOT EXISTS album_unlock_sessions (
 
 CREATE INDEX IF NOT EXISTS idx_album_unlock_sessions_token ON album_unlock_sessions(token);
 CREATE INDEX IF NOT EXISTS idx_album_unlock_sessions_expires_at ON album_unlock_sessions(expires_at);
+
+-- 15. Photo Shoot Bookings
+CREATE TABLE IF NOT EXISTS bookings (
+    id VARCHAR(64) PRIMARY KEY,
+    booking_reference VARCHAR(32) NOT NULL UNIQUE,
+    customer_name VARCHAR(120) NOT NULL,
+    customer_phone VARCHAR(32) NOT NULL,
+    service_type VARCHAR(120) NOT NULL,
+    photo_type_id VARCHAR(64) NULL,
+    preferred_date VARCHAR(32) NOT NULL,
+    preferred_time_slot VARCHAR(64) NULL,
+    location_preference VARCHAR(32) DEFAULT 'studio',
+    notes TEXT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    estimated_price VARCHAR(32) NULL,
+    source VARCHAR(32) NOT NULL DEFAULT 'online',
+    assigned_photographer VARCHAR(120) NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_bookings_reference ON bookings(booking_reference);
+CREATE INDEX IF NOT EXISTS idx_bookings_preferred_date ON bookings(preferred_date);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+CREATE INDEX IF NOT EXISTS idx_bookings_customer_phone ON bookings(customer_phone);
 `;

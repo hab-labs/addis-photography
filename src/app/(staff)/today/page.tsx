@@ -16,6 +16,7 @@ import {
 
 import { useAuth } from "@/lib/auth/context";
 import { studioStore } from "@/lib/api/store";
+import { api } from "@/lib/api/client";
 import {
   formatCalendarPair,
   formatDate,
@@ -73,12 +74,21 @@ export default function TodayLedgerPage() {
         setRequestsSummary({ open, overdue });
       } catch {}
 
-      // Check today's shoot appointments
+      // Check today's shoot appointments from Neon Database
       try {
-        const allBookings = studioStore.getBookings();
         const todayStr = new Date().toISOString().split("T")[0];
-        const count = allBookings.filter((b) => b.preferred_date === todayStr && b.status !== "cancelled").length;
-        setTodayShootsCount(count);
+        api.get<{ bookings: any[] }>(`/api/bookings?date=${todayStr}`)
+          .then((res) => {
+            if (res?.bookings) {
+              const count = res.bookings.filter((b) => b.status !== "cancelled").length;
+              setTodayShootsCount(count);
+            }
+          })
+          .catch(() => {
+            const allBookings = studioStore.getBookings();
+            const count = allBookings.filter((b) => b.preferred_date === todayStr && b.status !== "cancelled").length;
+            setTodayShootsCount(count);
+          });
       } catch {}
 
       studioStore
