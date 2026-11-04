@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth/context";
 import {
   CalendarDays,
+  CalendarCheck,
   PlusCircle,
   KanbanSquare,
   Users,
@@ -35,6 +36,7 @@ import { studioStore } from "@/lib/api/store";
 
 const navOperations = [
   { title: "Today", href: "/today", icon: CalendarDays },
+  { title: "Bookings", href: "/bookings", icon: CalendarCheck },
   { title: "Customers", href: "/customers", icon: Users },
   { title: "Requests", href: "/requests", icon: KanbanSquare },
   { title: "Albums", href: "/albums", icon: ImageIcon },
@@ -71,6 +73,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     .toUpperCase();
   const userRole = user?.role === "admin" ? "Administrator" : "Staff";
   const [pendingRequests, setPendingRequests] = React.useState(0);
+  const [pendingBookings, setPendingBookings] = React.useState(0);
   const [storageInfo, setStorageInfo] = React.useState({
     percent: 0,
     text: "0.0 MB of 500 GB used",
@@ -82,6 +85,9 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     try {
       const reqs = studioStore.getRequests();
       setPendingRequests(reqs.filter((r) => r.status !== "delivered").length);
+
+      const bookings = studioStore.getBookings();
+      setPendingBookings(bookings.filter((b) => b.status === "pending").length);
 
       const albums = studioStore.getAlbums();
       let usedBytes = 0;
@@ -142,6 +148,11 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                       {item.title === "Requests" && pendingRequests > 0 && (
                         <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${isActive ? "bg-white/20 text-white" : "bg-[#2a2a2d] text-slate-300"}`}>
                           {pendingRequests}
+                        </span>
+                      )}
+                      {item.title === "Bookings" && pendingBookings > 0 && (
+                        <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${isActive ? "bg-white/20 text-white" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"}`}>
+                          {pendingBookings}
                         </span>
                       )}
                     </Link>
@@ -384,6 +395,11 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
                         {item.title === "Requests" && pendingRequests > 0 && (
                           <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${isActive ? "bg-white/20 text-white" : "bg-[#2a2a2d] text-slate-300"}`}>
                             {pendingRequests}
+                          </span>
+                        )}
+                        {item.title === "Bookings" && pendingBookings > 0 && (
+                          <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${isActive ? "bg-white/20 text-white" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"}`}>
+                            {pendingBookings}
                           </span>
                         )}
                       </Link>

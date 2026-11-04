@@ -1,4 +1,4 @@
-import { Customer, PriceItem, Order, ClientRequest, Album, MediaFile, User, AuditLog, DailyReport, StudioSettings, PublicPortfolioItem } from "@/types";
+import { Customer, PriceItem, Order, ClientRequest, Album, MediaFile, User, AuditLog, DailyReport, StudioSettings, PublicPortfolioItem, Booking } from "@/types";
 
 export const INITIAL_USERS: User[] = [
   {
@@ -529,3 +529,72 @@ export const INITIAL_SETTINGS: StudioSettings = {
   album_pin_type: "numeric",
   calendar_display: "both",
 };
+
+export const INITIAL_BOOKINGS: Booking[] = [
+  {
+    id: "bk-101",
+    booking_reference: "BK-8291",
+    customer_name: "Bethlehem Tadesse",
+    customer_phone: "+251911223344",
+    service_type: "Studio Portrait Session",
+    photo_type_id: "prc-7",
+    preferred_date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+    preferred_time_slot: "Morning (09:30 - 11:30)",
+    location_preference: "studio",
+    notes: "Professional LinkedIn headshots and creative portrait shots. 2 outfit changes.",
+    status: "confirmed",
+    estimated_price: "1200.00",
+    created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
+    source: "online",
+    assigned_photographer: "Yonas Mekonnen",
+  },
+  {
+    id: "bk-102",
+    booking_reference: "BK-7430",
+    customer_name: "Dr. Kidus Alemayehu",
+    customer_phone: "+251922334455",
+    service_type: "Graduation Master Package",
+    photo_type_id: "prc-8",
+    preferred_date: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
+    preferred_time_slot: "Afternoon (14:00 - 16:30)",
+    location_preference: "studio",
+    notes: "Graduation shoot with family (4 family members accompanying). Gown and hood provided.",
+    status: "pending",
+    estimated_price: "3500.00",
+    created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
+    source: "online",
+  },
+  {
+    id: "bk-103",
+    booking_reference: "BK-5198",
+    customer_name: "Yohannes Girma & Liya K.",
+    customer_phone: "+251933445566",
+    service_type: "Wedding Ceremony Coverage",
+    photo_type_id: "prc-9",
+    preferred_date: new Date(Date.now() + 86400000 * 10).toISOString().split("T")[0],
+    preferred_time_slot: "Full Day (08:00 - 18:00)",
+    location_preference: "outdoor",
+    notes: "Church ceremony followed by reception hall and couple session at botanical gardens.",
+    status: "confirmed",
+    estimated_price: "15000.00",
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    source: "walk_in",
+    assigned_photographer: "Dawit Haile",
+  },
+  {
+    id: "bk-104",
+    booking_reference: "BK-3921",
+    customer_name: "Rahel Tesfaye",
+    customer_phone: "+251944556677",
+    service_type: "Event Photography and Videography",
+    photo_type_id: "prc-6",
+    preferred_date: new Date(Date.now() + 86400000 * 5).toISOString().split("T")[0],
+    preferred_time_slot: "Afternoon (15:00 - 18:00)",
+    location_preference: "event_venue",
+    notes: "1st Birthday party celebration at hotel terrace. High energy family photos.",
+    status: "pending",
+    estimated_price: "2400.00",
+    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+    source: "online",
+  },
+];

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AUTH_COOKIE_NAME, isUserRole } from '@/lib/auth/config';
 
-const PUBLIC_PATHS = ['/login', '/a'];
+const PUBLIC_PATHS = ['/login', '/a', '/book'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -77,5 +77,6 @@ export const config = {
     '/profile/:path*',
     '/admin/:path*',
     '/reports/:path*',
+    '/bookings/:path*',
   ],
 };

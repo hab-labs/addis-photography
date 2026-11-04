@@ -140,6 +140,15 @@ export function PublicPortfolioClient({ initialItems }: PublicPortfolioClientPro
             Public Album
           </span>
 
+          <Link href="/book">
+            <Button
+              size="sm"
+              className="bg-[#e21b23] hover:bg-[#c9181f] text-white text-xs h-8 px-3 font-semibold shadow-sm shadow-[#e21b23]/30"
+            >
+              Book a Shoot
+            </Button>
+          </Link>
+
           <Button
             variant="outline"
             size="sm"
@@ -178,13 +187,23 @@ export function PublicPortfolioClient({ initialItems }: PublicPortfolioClientPro
               A living collection of portraits, celebrations, and honest moments from Addis Ababa. Curated with artistic vision and master craft.
             </p>
 
-            <div className="pt-4 flex items-baseline gap-3">
-              <span className="text-4xl sm:text-5xl font-serif font-bold text-white tracking-tight">
-                {portfolioItems.length}
-              </span>
-              <span className="text-xs text-zinc-400 font-mono tracking-wider uppercase">
-                Curated Photographs
-              </span>
+            <div className="pt-4 flex items-center gap-4 flex-wrap">
+              <div className="flex items-baseline gap-3">
+                <span className="text-4xl sm:text-5xl font-serif font-bold text-white tracking-tight">
+                  {portfolioItems.length}
+                </span>
+                <span className="text-xs text-zinc-400 font-mono tracking-wider uppercase">
+                  Curated Photographs
+                </span>
+              </div>
+
+              <Link href="/book" className="pointer-events-auto">
+                <Button
+                  className="bg-[#e21b23] hover:bg-[#c9181f] text-white text-xs h-9 px-4 font-semibold shadow-md shadow-[#e21b23]/25"
+                >
+                  Book a Photo Shoot Session
+                </Button>
+              </Link>
             </div>
           </div>
 

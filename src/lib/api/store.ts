@@ -13,6 +13,8 @@ import {
   OrderStatus,
   PaymentMethod,
   PublicPortfolioItem,
+  Booking,
+  BookingStatus,
 } from "@/types";
 import {
   INITIAL_CUSTOMERS,
@@ -25,6 +27,7 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_SETTINGS,
   INITIAL_PORTFOLIO,
+  INITIAL_BOOKINGS,
 } from "./mockData";
 import Decimal from "decimal.js";
 import { calculateBalance, calculateLineTotal, calculateOrderTotal, toDecimal } from "../money";
@@ -764,6 +767,145 @@ export const studioStore = {
       // Fallback
     }
     return studioStore.getRequests();
+  },
+
+  // --- Bookings ---
+  getBookings: (): Booking[] => {
+    return getStored<Booking[]>("bookings", INITIAL_BOOKINGS);
+  },
+
+  getBookingById: (id: string): Booking | undefined => {
+    const bookings = studioStore.getBookings();
+    return bookings.find((b) => b.id === id);
+  },
+
+  getBookingByReference: (ref: string): Booking | undefined => {
+    const bookings = studioStore.getBookings();
+    return bookings.find(
+      (b) => b.booking_reference.toLowerCase() === ref.trim().toLowerCase()
+    );
+  },
+
+  createBooking: (data: {
+    customer_name: string;
+    customer_phone: string;
+    service_type: string;
+    photo_type_id?: string;
+    preferred_date: string;
+    preferred_time_slot?: string;
+    location_preference?: "studio" | "outdoor" | "event_venue";
+    notes?: string;
+    status?: BookingStatus;
+    estimated_price?: string;
+    source?: "online" | "walk_in" | "phone";
+    assigned_photographer?: string;
+  }): Booking => {
+    const bookings = getStored<Booking[]>("bookings", INITIAL_BOOKINGS);
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const newBooking: Booking = {
+      id: `bk-${Date.now()}-${randomSuffix}`,
+      booking_reference: `BK-${randomSuffix}`,
+      customer_name: data.customer_name.trim(),
+      customer_phone: data.customer_phone.trim(),
+      service_type: data.service_type.trim(),
+      photo_type_id: data.photo_type_id,
+      preferred_date: data.preferred_date,
+      preferred_time_slot: data.preferred_time_slot || "Morning (09:00 - 12:00)",
+      location_preference: data.location_preference || "studio",
+      notes: data.notes?.trim() || undefined,
+      status: data.status || "pending",
+      estimated_price: data.estimated_price,
+      created_at: new Date().toISOString(),
+      source: data.source || "online",
+      assigned_photographer: data.assigned_photographer,
+    };
+
+    const updated = [newBooking, ...bookings];
+    setStored("bookings", updated);
+
+    if (isBrowser()) {
+      api.post("/api/bookings", newBooking).catch(() => {});
+    }
+
+    return newBooking;
+  },
+
+  updateBookingStatus: (
+    id: string,
+    status: BookingStatus,
+    assignedPhotographer?: string
+  ): Booking | undefined => {
+    const bookings = getStored<Booking[]>("bookings", INITIAL_BOOKINGS);
+    const updated = bookings.map((b) => {
+      if (b.id === id) {
+        return {
+          ...b,
+          status,
+          updated_at: new Date().toISOString(),
+          assigned_photographer:
+            assignedPhotographer !== undefined
+              ? assignedPhotographer
+              : b.assigned_photographer,
+        };
+      }
+      return b;
+    });
+    setStored("bookings", updated);
+
+    if (isBrowser()) {
+      api.patch(`/api/bookings/${id}`, {
+        status,
+        assigned_photographer: assignedPhotographer,
+      }).catch(() => {});
+    }
+
+    return updated.find((b) => b.id === id);
+  },
+
+  updateBooking: (id: string, updates: Partial<Booking>): Booking | undefined => {
+    const bookings = getStored<Booking[]>("bookings", INITIAL_BOOKINGS);
+    const updated = bookings.map((b) => {
+      if (b.id === id) {
+        return {
+          ...b,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        };
+      }
+      return b;
+    });
+    setStored("bookings", updated);
+
+    if (isBrowser()) {
+      api.patch(`/api/bookings/${id}`, updates).catch(() => {});
+    }
+
+    return updated.find((b) => b.id === id);
+  },
+
+  deleteBooking: (id: string): boolean => {
+    const bookings = getStored<Booking[]>("bookings", INITIAL_BOOKINGS);
+    const filtered = bookings.filter((b) => b.id !== id);
+    setStored("bookings", filtered);
+
+    if (isBrowser()) {
+      api.delete(`/api/bookings/${id}`).catch(() => {});
+    }
+    return true;
+  },
+
+  syncBookings: async (): Promise<Booking[]> => {
+    if (!isBrowser()) return studioStore.getBookings();
+    try {
+      const res = await api.get<{ bookings: Booking[] }>("/api/bookings");
+      if (res?.bookings && Array.isArray(res.bookings)) {
+        setStored("bookings", res.bookings);
+        return res.bookings;
+      }
+    } catch {
+      // Fallback to local
+    }
+    return studioStore.getBookings();
   },
 
   // --- Albums ---

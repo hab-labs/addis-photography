@@ -58,6 +58,7 @@ export default function TodayLedgerPage() {
 
   // Request status counts for bottom bar (Section 6.4)
   const [requestsSummary, setRequestsSummary] = React.useState({ open: 0, overdue: 0 });
+  const [todayShootsCount, setTodayShootsCount] = React.useState(0);
 
   const loadData = React.useCallback(() => {
     setIsRefreshing(true);
@@ -70,6 +71,14 @@ export default function TodayLedgerPage() {
         const open = reqs.filter((r) => r.status !== "delivered").length;
         const overdue = reqs.filter((r) => r.status !== "delivered" && isOverdue(r.due_date)).length;
         setRequestsSummary({ open, overdue });
+      } catch {}
+
+      // Check today's shoot appointments
+      try {
+        const allBookings = studioStore.getBookings();
+        const todayStr = new Date().toISOString().split("T")[0];
+        const count = allBookings.filter((b) => b.preferred_date === todayStr && b.status !== "cancelled").length;
+        setTodayShootsCount(count);
       } catch {}
 
       studioStore
@@ -320,6 +329,30 @@ export default function TodayLedgerPage() {
           </button>
         </div>
       </div>
+
+      {todayShootsCount > 0 && (
+        <div className="rounded-2xl border border-red-500/30 bg-gradient-to-r from-red-950/20 via-zinc-950 to-zinc-950 dark:bg-zinc-900/60 p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e21b23]/20 text-[#e21b23] border border-[#e21b23]/30">
+              <CalendarIcon className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                {todayShootsCount} Photo Shoot Session{todayShootsCount > 1 ? "s" : ""} Scheduled for Today
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                Check client shoot time slots, studio backdrops, and assigned photographers.
+              </p>
+            </div>
+          </div>
+          <Link href="/bookings?date=today">
+            <Button size="sm" variant="outline" className="text-xs h-8 border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 gap-1.5 shrink-0">
+              <span>View Bookings</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* 2. THREE SUMMARY METRIC CARDS (SECTION 6.4: BOOKINGS | PAID | DUE) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">

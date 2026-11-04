@@ -198,3 +198,24 @@ export interface StudioSettings {
   album_pin_type: "numeric";
   calendar_display: "both";
 }
+
+export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
+
+export interface Booking {
+  id: string;
+  booking_reference: string;
+  customer_name: string;
+  customer_phone: string;
+  service_type: string;
+  photo_type_id?: string;
+  preferred_date: string; // YYYY-MM-DD
+  preferred_time_slot?: string;
+  location_preference?: "studio" | "outdoor" | "event_venue";
+  notes?: string;
+  status: BookingStatus;
+  estimated_price?: string;
+  created_at: string;
+  updated_at?: string;
+  source: "online" | "walk_in" | "phone";
+  assigned_photographer?: string;
+}
