@@ -34,6 +34,7 @@ import type { Booking } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/auth/context";
 
 // Service types available for booking
 const SERVICE_OPTIONS = [
@@ -113,6 +114,8 @@ const TIME_SLOTS = [
 ];
 
 export function BookingClient() {
+  const { user } = useAuth();
+
   // Form State
   const [customerName, setCustomerName] = React.useState("");
   const [customerPhone, setCustomerPhone] = React.useState("");
@@ -279,6 +282,27 @@ export function BookingClient() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-slate-100 selection:bg-[#e21b23] selection:text-white">
+      {/* Staff banner if an operator is viewing the public booking page */}
+      {user && (
+        <div className="bg-zinc-900 border-b border-zinc-800 text-xs px-4 sm:px-8 py-2 flex items-center justify-between text-zinc-300">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>
+              Signed in as <strong className="text-white">{user.name}</strong> ({user.role === "admin" ? "Administrator" : "Staff"})
+            </span>
+          </div>
+          <Link href="/today">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 text-[11px] px-2.5 border-zinc-700 bg-zinc-800 text-zinc-200 hover:text-white hover:bg-zinc-700"
+            >
+              Open Studio Dashboard →
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* Top Header */}
       <header className="sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-[#0a0a0c]/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <Link href="/book" className="flex items-center gap-3 group">
@@ -922,8 +946,11 @@ export function BookingClient() {
               Portfolio
             </Link>
             <span>·</span>
-            <Link href="/login" className="hover:text-zinc-300 transition-colors">
-              Internal Staff Portal
+            <Link
+              href={user ? "/today" : "/login"}
+              className="hover:text-zinc-300 transition-colors"
+            >
+              {user ? "Studio Dashboard" : "Studio Staff Access"}
             </Link>
           </div>
         </div>

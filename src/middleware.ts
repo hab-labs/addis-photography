@@ -29,7 +29,7 @@ export function middleware(request: NextRequest) {
   if (pathname === '/login') {
     if (isAuthenticated && mustChangePw !== 'true') {
       const nextUrl = request.nextUrl.searchParams.get('next');
-      const target = nextUrl && nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/today';
+      const target = nextUrl && nextUrl !== '/book' && nextUrl !== '/' && nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/today';
       return NextResponse.redirect(new URL(target, request.url));
     }
     return NextResponse.next();
@@ -43,7 +43,9 @@ export function middleware(request: NextRequest) {
   // 4. Unauthenticated access to protected routes -> redirect to login
   if (!isAuthenticated) {
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('next', pathname);
+    if (pathname !== '/book' && pathname !== '/') {
+      loginUrl.searchParams.set('next', pathname);
+    }
     return NextResponse.redirect(loginUrl);
   }
 

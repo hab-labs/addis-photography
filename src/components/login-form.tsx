@@ -32,7 +32,7 @@ export function LoginForm({
   React.useEffect(() => {
     if (!isLoading && user && !user.must_change_pw && !mustChangePassword) {
       const nextUrl = searchParams.get('next');
-      const target = nextUrl && nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/today';
+      const target = nextUrl && nextUrl !== '/book' && nextUrl !== '/' && nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/today';
       window.location.href = target;
     }
   }, [user, isLoading, mustChangePassword, searchParams]);
@@ -65,7 +65,7 @@ export function LoginForm({
       }
 
       const nextUrl = searchParams.get('next');
-      const target = nextUrl && nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/today';
+      const target = nextUrl && nextUrl !== '/book' && nextUrl !== '/' && nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/today';
       window.location.href = target;
     } catch {
       setServerError('Unable to connect to the authentication server.');
@@ -109,7 +109,7 @@ export function LoginForm({
       }
 
       const nextUrl = searchParams.get('next');
-      const target = nextUrl && nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/today';
+      const target = nextUrl && nextUrl !== '/book' && nextUrl !== '/' && nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/today';
       window.location.href = target;
     } catch {
       setServerError('Unable to connect to the authentication server.');
