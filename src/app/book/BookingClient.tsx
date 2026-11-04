@@ -281,7 +281,7 @@ export function BookingClient() {
     <div className="min-h-screen bg-[#0a0a0c] text-slate-100 selection:bg-[#e21b23] selection:text-white">
       {/* Top Header */}
       <header className="sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-[#0a0a0c]/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group">
+        <Link href="/book" className="flex items-center gap-3 group">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#e21b23] to-[#b9151c] text-white shadow-lg shadow-[#e21b23]/20 group-hover:scale-105 transition-transform">
             <Camera className="h-5 w-5" />
           </div>
@@ -319,16 +319,6 @@ export function BookingClient() {
             >
               <ImageIcon className="h-3.5 w-3.5" />
               <span>Portfolio</span>
-            </Button>
-          </Link>
-
-          <Link href="/login">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-zinc-400 hover:text-zinc-200 h-8 px-2"
-            >
-              Staff Login
             </Button>
           </Link>
         </div>

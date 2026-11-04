@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
       }
       return NextResponse.redirect(new URL('/today', request.url));
     }
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/book', request.url));
   }
 
   // 2. Prevent already-authenticated users from getting stuck on /login
