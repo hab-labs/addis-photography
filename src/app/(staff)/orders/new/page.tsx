@@ -38,15 +38,20 @@ function NewOrderForm() {
   // Price Catalog
   const [catalog, setCatalog] = React.useState<PriceItem[]>([]);
 
+  const paramName = searchParams.get("customer_name") || searchParams.get("name") || "";
+  const paramPhone = searchParams.get("customer_phone") || searchParams.get("phone") || "";
+  const paramCustomerId = searchParams.get("customer_id") || "";
+  const paramBookingRef = searchParams.get("booking_ref") || "";
+
   // Customer State
-  const [searchQuery, setSearchQuery] = React.useState(searchParams.get("phone") || searchParams.get("name") || "");
-  const [customerName, setCustomerName] = React.useState(searchParams.get("name") || "");
-  const [customerPhone, setCustomerPhone] = React.useState(searchParams.get("phone") || "");
-  const [customerId, setCustomerId] = React.useState(searchParams.get("customer_id") || "");
-  const [isNewCustomerManual, setIsNewCustomerManual] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState(paramPhone || paramName || "");
+  const [customerName, setCustomerName] = React.useState(paramName);
+  const [customerPhone, setCustomerPhone] = React.useState(paramPhone);
+  const [customerId, setCustomerId] = React.useState(paramCustomerId);
+  const [isNewCustomerManual, setIsNewCustomerManual] = React.useState(Boolean(paramName));
 
   // Form State
-  const [notes, setNotes] = React.useState("");
+  const [notes, setNotes] = React.useState(paramBookingRef ? `Photo Shoot Booking: ${paramBookingRef}` : "");
   const [paidInput, setPaidInput] = React.useState("");
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>("telebirr");
   const [referenceNo, setReferenceNo] = React.useState("");
@@ -84,20 +89,21 @@ function NewOrderForm() {
   const matchedCustomer = React.useMemo(() => {
     const clean = searchQuery.trim().toLowerCase();
     if (!clean || clean.length < 3) return null;
+    const cleanPhone = clean.replace(/[\s-]/g, "");
     return (
-      allCustomers.find(
-        (c) =>
-          c.phone.replace(/[\s-]/g, "").includes(clean.replace(/[\s-]/g, "")) ||
-          c.name.toLowerCase().includes(clean)
-      ) || null
+      allCustomers.find((c) => {
+        const phone = (c.phone || "").replace(/[\s-]/g, "");
+        const name = (c.name || "").toLowerCase();
+        return (cleanPhone && phone.includes(cleanPhone)) || name.includes(clean);
+      }) || null
     );
   }, [searchQuery, allCustomers]);
 
   React.useEffect(() => {
     if (matchedCustomer && !isNewCustomerManual) {
-      setCustomerName(matchedCustomer.name);
-      setCustomerPhone(matchedCustomer.phone);
-      setCustomerId(matchedCustomer.id);
+      setCustomerName(matchedCustomer.name || "");
+      setCustomerPhone(matchedCustomer.phone || "");
+      setCustomerId(matchedCustomer.id || "");
     }
   }, [matchedCustomer, isNewCustomerManual]);
 
@@ -204,7 +210,9 @@ function NewOrderForm() {
   };
 
   const handleSaveOrder = (markDelivered: boolean = false) => {
-    const finalPhone = (isNewCustomerManual ? customerPhone : matchedCustomer?.phone || customerPhone || searchQuery).replace(/[\s-]/g, "");
+    const finalPhone = (
+      (isNewCustomerManual ? customerPhone : matchedCustomer?.phone || customerPhone || searchQuery) || ""
+    ).replace(/[\s-]/g, "");
     const finalName = (isNewCustomerManual ? customerName : matchedCustomer?.name || customerName || searchQuery).trim();
 
     if (!finalName) {
@@ -346,7 +354,7 @@ function NewOrderForm() {
         ) : matchedCustomer ? (
           <div className="text-xs text-slate-600 dark:text-zinc-300 bg-slate-50 dark:bg-zinc-800/60 rounded px-2.5 py-1.5 flex items-center justify-between">
             <span>
-              <b>{matchedCustomer.name}</b> · {matchedCustomer.phone}
+              <b>{matchedCustomer.name}</b> · {matchedCustomer.phone || "No phone"}
             </span>
             <span className={Number(matchedCustomer.balance_due) > 0 ? "text-red-600 dark:text-red-400 font-bold" : "text-emerald-700 dark:text-emerald-400 font-medium"}>
               Owes ETB {matchedCustomer.balance_due} ({matchedCustomer.total_orders} orders)

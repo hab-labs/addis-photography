@@ -65,8 +65,8 @@ export default function CustomersPage() {
       const q = search.toLowerCase();
       const matchesSearch =
         !q ||
-        c.name.toLowerCase().includes(q) ||
-        c.phone.toLowerCase().includes(q);
+        (c.name || "").toLowerCase().includes(q) ||
+        (c.phone || "").toLowerCase().includes(q);
 
       const hasBalance = Number(c.balance_due || 0) > 0;
       const hasOrders = Number(c.total_orders || 0) > 0;

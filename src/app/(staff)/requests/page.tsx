@@ -154,10 +154,10 @@ export default function RequestsPage() {
       const q = search.toLowerCase();
       const matchesSearch =
         !q ||
-        r.customerName.toLowerCase().includes(q) ||
-        r.orderNumber.toLowerCase().includes(q) ||
-        r.service.toLowerCase().includes(q) ||
-        r.phone.includes(q);
+        (r.customerName || "").toLowerCase().includes(q) ||
+        (r.orderNumber || "").toLowerCase().includes(q) ||
+        (r.service || "").toLowerCase().includes(q) ||
+        (r.phone || "").includes(q);
 
       const matchesOverdue = !overdueOnly || r.isOverdue;
       return matchesSearch && matchesOverdue;

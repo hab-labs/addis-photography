@@ -230,8 +230,8 @@ export const studioStore = {
     const phoneClean = clean.replace(/[^0-9+]/g, "");
     return customers.filter(
       (c) =>
-        c.name.toLowerCase().includes(clean) ||
-        (phoneClean && c.phone.replace(/[^0-9+]/g, "").includes(phoneClean))
+        (c.name || "").toLowerCase().includes(clean) ||
+        (phoneClean && (c.phone || "").replace(/[^0-9+]/g, "").includes(phoneClean))
     );
   },
 
