@@ -24,7 +24,7 @@ function formatTimestamp(timestamp: string) {
       time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
     };
   } catch {
-    return { date: "—", time: "—" };
+    return { date: "—", time: "—" };  
   }
 }
 
